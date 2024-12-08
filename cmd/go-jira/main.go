@@ -73,5 +73,5 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	fmt.Printf("Reporter: %s\n", user.DisplayName)
+	fmt.Printf("login user as: %s\n", user.DisplayName)
 }
