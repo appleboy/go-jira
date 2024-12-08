@@ -12,6 +12,7 @@ import (
 
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/joho/godotenv"
+	"github.com/yassinebenaid/godump"
 )
 
 var (
@@ -43,8 +44,14 @@ func main() {
 	ref := getGlobalValue("ref")                  // git tag or branch name
 	issueFormat := getGlobalValue("issue_format") // issue regular expression pattern
 	toTransition := getGlobalValue("transition")  // move issue to a specific status
-
 	token := getGlobalValue("token")
+	debug := getGlobalValue("debug")
+
+	if debug == "true" {
+		godump.Dump(ref)
+		godump.Dump(issueFormat)
+		godump.Dump(toTransition)
+	}
 
 	var httpTransport *http.Transport = nil
 	var httpClient *http.Client = nil

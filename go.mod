@@ -5,6 +5,7 @@ go 1.22
 require (
 	github.com/andygrunwald/go-jira v1.16.0
 	github.com/joho/godotenv v1.5.1
+	github.com/yassinebenaid/godump v0.11.1
 )
 
 require (
