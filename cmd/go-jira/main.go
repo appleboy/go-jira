@@ -110,7 +110,7 @@ func main() {
 				"current status", issue.Fields.Status.Name,
 			)
 			for _, transition := range issue.Transitions {
-				if strings.ToLower(transition.Name) != strings.ToLower(toTransition) {
+				if !strings.EqualFold(transition.Name, toTransition) {
 					continue
 				}
 
