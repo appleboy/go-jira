@@ -139,8 +139,6 @@ func getIssueKeys(ref, issueFormat string) []string {
 	}
 
 	matches := issuePattern.FindAllString(ref, -1)
-	for _, match := range matches {
-		issueKeys = append(issueKeys, match)
-	}
+	issueKeys = append(issueKeys, matches...)
 	return issueKeys
 }
