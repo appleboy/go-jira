@@ -53,6 +53,7 @@ func main() {
 		godump.Dump(ref)
 		godump.Dump(issueFormat)
 		godump.Dump(toTransition)
+		godump.Dump(resolution)
 	}
 
 	var httpTransport *http.Transport = nil
