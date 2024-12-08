@@ -123,7 +123,6 @@ func main() {
 					slog.Info("issue moved",
 						"key", issue.Key,
 						"summary", issue.Fields.Summary,
-						"status", issue.Fields.Status.Name,
 						"transition", transition.Name,
 					)
 				}
