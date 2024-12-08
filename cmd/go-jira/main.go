@@ -144,10 +144,11 @@ func getIssueKeys(ref, issueFormat string) []string {
 	// Deduplicate issue keys
 	issueKeySet := make(map[string]struct{})
 	for _, match := range matches {
+		if _, ok := issueKeySet[match]; ok {
+			continue
+		}
 		issueKeySet[match] = struct{}{}
-	}
-	for key := range issueKeySet {
-		issueKeys = append(issueKeys, key)
+		issueKeys = append(issueKeys, match)
 	}
 	return issueKeys
 }
