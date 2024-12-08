@@ -9,6 +9,8 @@
 
 ## Motivation
 
-Since there is no official Jira API integration with GitHub Action available online, and considering that Jira now has both Cloud and Data Center versions with different API implementations, this project will initially focus on the Data Center version. This will allow friends who have purchased the enterprise version to achieve automatic integration of Jira Issue status adjustments through CI/CD.
+Since there is no official Jira API integration with GitHub Action available online, and considering that Jira now has both [Cloud][5] and [Data Center][1] versions with different API implementations, this project will initially focus on the [Data Center][1] version. This will allow friends who have purchased the enterprise version to achieve automatic integration of Jira Issue status adjustments through CI/CD.
 
 The motivation behind this project is to provide a simple way to integrate Jira with GitHub or Gitea Actions for JIRA Data Center.
+
+[5]: https://developer.atlassian.com/cloud/jira/platform/
