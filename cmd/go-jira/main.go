@@ -68,7 +68,7 @@ func main() {
 		return
 	}
 
-	user, _, err := jiraClient.User.GetByUsernameWithContext(context.Background(), username)
+	user, _, err := jiraClient.User.GetSelfWithContext(context.Background())
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
