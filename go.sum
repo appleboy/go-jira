@@ -1,5 +1,7 @@
-github.com/appleboy/go-jira-lib v1.16.1 h1:U3ffgmjrMBvw6KsxsYcbBjyKcQ7jgx/1rRvJWS07rBs=
-github.com/appleboy/go-jira-lib v1.16.1/go.mod h1:UQH4IBVxIYWbgagc0LF/k9FRs9xjIiQ8hIcC6HfLwFU=
+github.com/appleboy/com v0.2.1 h1:dHAHauX3eYDuheAahI83HIGFxpi0SEb2ZAu9EZ9hbUM=
+github.com/appleboy/com v0.2.1/go.mod h1:kByEI3/vzI5GM1+O5QdBHLsXaOsmFsJcOpCSgASi4sg=
+github.com/appleboy/go-jira-lib v1.16.2 h1:3sKknS4Z98uEuDvAGYBmZ/zQ+WF3to/F+VK/cu1PDdU=
+github.com/appleboy/go-jira-lib v1.16.2/go.mod h1:UQH4IBVxIYWbgagc0LF/k9FRs9xjIiQ8hIcC6HfLwFU=
 github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
 github.com/golang-jwt/jwt/v4 v4.4.2/go.mod h1:m21LjoU+eqJr34lmDMbreY2eSTRJ1cv77w39/MY0Ch0=
@@ -22,4 +24,6 @@ github.com/yassinebenaid/godump v0.11.1/go.mod h1:dc/0w8wmg6kVIvNGAzbKH1Oa54dXQx
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
+golang.org/x/text v0.20.0 h1:gK/Kv2otX8gz+wn7Rmb3vT96ZwuoxnQlY+HlJVj7Qug=
+golang.org/x/text v0.20.0/go.mod h1:D4IsuqiFMhST5bX19pQ9ikHC2GsaKyk/oF+pn3ducp4=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=

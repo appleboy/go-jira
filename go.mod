@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/andygrunwald/go-jira v1.16.0
+	github.com/appleboy/com v0.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/yassinebenaid/godump v0.11.1
 )
@@ -15,6 +16,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/trivago/tgo v1.0.7 // indirect
+	golang.org/x/text v0.20.0 // indirect
 )
 
-replace github.com/andygrunwald/go-jira => github.com/appleboy/go-jira-lib v1.16.1
+replace github.com/andygrunwald/go-jira => github.com/appleboy/go-jira-lib v1.16.2

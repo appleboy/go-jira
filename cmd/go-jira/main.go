@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	jira "github.com/andygrunwald/go-jira"
+	"github.com/appleboy/com/convert"
 	"github.com/joho/godotenv"
 	"github.com/yassinebenaid/godump"
 )
@@ -41,10 +42,11 @@ func main() {
 	insecure := getGlobalValue("insecure")
 	username := getGlobalValue("username")
 	password := getGlobalValue("password")
+	token := getGlobalValue("token")
 	ref := getGlobalValue("ref")                  // git tag or branch name
 	issueFormat := getGlobalValue("issue_format") // issue regular expression pattern
 	toTransition := getGlobalValue("transition")  // move issue to a specific status
-	token := getGlobalValue("token")
+	resolution := getGlobalValue("resolution")    // set resolution when moving issue to a specific status
 	debug := getGlobalValue("debug")
 
 	if debug == "true" {
@@ -97,6 +99,25 @@ func main() {
 		"username", user.Name,
 	)
 
+	// get resolution id
+	if resolution != "" {
+		resolutions, resp, err := jiraClient.Resolution.GetListWithContext(context.Background())
+		if err != nil {
+			slog.Error("error getting resolution", "error", err)
+			return
+		}
+		if resp.StatusCode != http.StatusOK {
+			slog.Error("error getting resolution", "status", resp.Status)
+			return
+		}
+		for _, r := range resolutions {
+			if strings.EqualFold(r.Name, resolution) {
+				resolution = r.ID
+				break
+			}
+		}
+	}
+
 	if ref != "" && toTransition != "" {
 		issueKeys := getIssueKeys(ref, issueFormat)
 		for _, issueKey := range issueKeys {
@@ -121,7 +142,17 @@ func main() {
 					continue
 				}
 
-				resp, err := jiraClient.Issue.DoTransitionWithContext(context.Background(), issueKey, transition.ID)
+				input := &jira.TransitionPayloadInput{
+					TicketID:     issue.Key,
+					TransitionID: transition.ID,
+				}
+				if resolution != "" {
+					input.ResolutionID = convert.ToPtr(resolution)
+				}
+				resp, err := jiraClient.Issue.DoTransitionPayloadWithContext(
+					context.Background(),
+					input,
+				)
 				if err != nil {
 					slog.Error("error moving issue", "issue", issueKey, "error", err)
 					continue
