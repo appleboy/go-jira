@@ -141,6 +141,13 @@ func getIssueKeys(ref, issueFormat string) []string {
 	}
 
 	matches := issuePattern.FindAllString(ref, -1)
-	issueKeys = append(issueKeys, matches...)
+	// Deduplicate issue keys
+	issueKeySet := make(map[string]struct{})
+	for _, match := range matches {
+		issueKeySet[match] = struct{}{}
+	}
+	for key := range issueKeySet {
+		issueKeys = append(issueKeys, key)
+	}
 	return issueKeys
 }
