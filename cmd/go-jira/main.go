@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"regexp"
 
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/joho/godotenv"
@@ -16,6 +18,9 @@ var (
 	Commit      string
 	showVersion bool
 )
+
+// issueAlphanumericPattern matches string that references to an alphanumeric issue, e.g. ABC-1234
+var issueAlphanumericPattern = regexp.MustCompile(`([A-Z]{1,10}-[1-9][0-9]*)`)
 
 func main() {
 	var envfile string
@@ -34,6 +39,10 @@ func main() {
 	insecure := getGlobalValue("insecure")
 	username := getGlobalValue("username")
 	password := getGlobalValue("password")
+	ref := getGlobalValue("ref")                  // git tag or branch name
+	issueFormat := getGlobalValue("issue_format") // issue regular expression pattern
+	toTransition := getGlobalValue("transition")  // move issue to a specific status
+
 	token := getGlobalValue("token")
 
 	var httpTransport *http.Transport = nil
@@ -64,14 +73,75 @@ func main() {
 
 	jiraClient, err := jira.NewClient(httpClient, baseURL)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		slog.Error("error creating jira client", "error", err)
 		return
 	}
 
 	user, _, err := jiraClient.User.GetSelfWithContext(context.Background())
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		slog.Error("error getting self", "error", err)
 		return
 	}
-	fmt.Printf("login user as: %s\n", user.DisplayName)
+
+	slog.Info("login account",
+		"displayName", user.DisplayName,
+		"email", user.EmailAddress,
+		"username", user.Name,
+	)
+
+	if ref != "" && toTransition != "" {
+		issueKeys := getIssueKeys(ref, issueFormat)
+		for _, issueKey := range issueKeys {
+
+			issue, resp, err := jiraClient.Issue.GetWithContext(context.Background(), issueKey, &jira.GetQueryOptions{
+				Expand: "transitions",
+			})
+			if err != nil {
+				slog.Error("error getting issue", "issue", issueKey, "error", err)
+				continue
+			}
+			if resp.StatusCode != http.StatusOK {
+				slog.Error("error getting issue", "issue", issueKey, "status", resp.Status)
+				continue
+			}
+			slog.Info("issue info",
+				"key", issue.Key,
+				"summary", issue.Fields.Summary,
+				"current status", issue.Fields.Status.Name,
+			)
+			for _, transition := range issue.Transitions {
+				if transition.Name == toTransition {
+					resp, err := jiraClient.Issue.DoTransitionWithContext(context.Background(), issueKey, transition.ID)
+					if err != nil {
+						slog.Error("error moving issue", "issue", issueKey, "error", err)
+						continue
+					}
+					if resp.StatusCode != http.StatusNoContent {
+						slog.Error("error moving issue", "issue", issueKey, "status", resp.Status)
+						continue
+					}
+					slog.Info("issue moved",
+						"key", issue.Key,
+						"summary", issue.Fields.Summary,
+						"status", issue.Fields.Status.Name,
+						"transition", transition.Name,
+					)
+				}
+			}
+		}
+	}
+}
+
+func getIssueKeys(ref, issueFormat string) []string {
+	var issuePattern *regexp.Regexp = issueAlphanumericPattern
+	issueKeys := []string{}
+	if issueFormat != "" {
+		issuePattern = regexp.MustCompile(issueFormat)
+	}
+
+	matches := issuePattern.FindAllString(ref, -1)
+	for _, match := range matches {
+		issueKeys = append(issueKeys, match)
+	}
+	return issueKeys
 }
