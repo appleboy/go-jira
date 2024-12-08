@@ -1,6 +1,6 @@
-module example
+module github/appleboy/go-jira
 
-go 1.23
+go 1.22
 
 require (
 	github.com/andygrunwald/go-jira v1.16.0
