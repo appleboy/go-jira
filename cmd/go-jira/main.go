@@ -50,10 +50,10 @@ func main() {
 	debug := getGlobalValue("debug")
 
 	if debug == "true" {
-		godump.Dump(ref)
-		godump.Dump(issueFormat)
-		godump.Dump(toTransition)
-		godump.Dump(resolution)
+		_ = godump.Dump(ref)
+		_ = godump.Dump(issueFormat)
+		_ = godump.Dump(toTransition)
+		_ = godump.Dump(resolution)
 	}
 
 	var httpTransport *http.Transport = nil
