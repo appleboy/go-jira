@@ -38,16 +38,16 @@ func main() {
 
 	_ = godotenv.Load(envfile)
 
-	baseURL := getGlobalValue("base_url")
-	insecure := getGlobalValue("insecure")
-	username := getGlobalValue("username")
-	password := getGlobalValue("password")
-	token := getGlobalValue("token")
+	baseURL := getGlobalValue("base_url")         // jira base url
+	insecure := getGlobalValue("insecure")        // skip verify ssl certificate
+	username := getGlobalValue("username")        // jira username
+	password := getGlobalValue("password")        // use token instead of username and password
+	token := getGlobalValue("token")              // token for authentication
 	ref := getGlobalValue("ref")                  // git tag or branch name
 	issueFormat := getGlobalValue("issue_format") // issue regular expression pattern
 	toTransition := getGlobalValue("transition")  // move issue to a specific status
 	resolution := getGlobalValue("resolution")    // set resolution when moving issue to a specific status
-	debug := getGlobalValue("debug")
+	debug := getGlobalValue("debug")              // enable debug mode
 
 	if debug == "true" {
 		_ = godump.Dump(ref)
