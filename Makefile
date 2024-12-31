@@ -17,19 +17,30 @@ else
 endif
 COMMIT ?= $(shell git rev-parse --short HEAD)
 
+## help: print this help message
+.PHONY: help
+help:
+	@echo 'Usage:'
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
+
+## build: build the binary
 build: $(EXECUTABLE)
 
 $(EXECUTABLE): $(GOFILES)
 	$(GO) build -v -tags '$(TAGS)' -ldflags '$(EXTLDFLAGS)-s -w $(LDFLAGS)' -o bin/$@ ./cmd/$(EXECUTABLE)
 
+## install: install the binary
 install: $(GOFILES)
 	$(GO) install -v -tags '$(TAGS)' -ldflags '$(EXTLDFLAGS)-s -w $(LDFLAGS)'
 
+## test: run tests
 test:
 	@$(GO) test -v -cover -coverprofile coverage.txt ./... && echo "\n==>\033[32m Ok\033[m\n" || exit 1
 
+## build_linux_amd64: build the binary for linux amd64
 build_linux_amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -a -tags '$(TAGS)' -ldflags '$(EXTLDFLAGS)-s -w $(LDFLAGS)' -o release/linux/amd64/$(EXECUTABLE) ./cmd/$(EXECUTABLE)
 
+## build_linux_arm64: build the binary for linux arm64
 build_linux_arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build -a -tags '$(TAGS)' -ldflags '$(EXTLDFLAGS)-s -w $(LDFLAGS)' -o release/linux/arm64/$(EXECUTABLE) ./cmd/$(EXECUTABLE)
