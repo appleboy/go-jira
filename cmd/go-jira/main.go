@@ -60,8 +60,9 @@ func main() {
 	var httpClient *http.Client = nil
 
 	if insecure == "true" {
+		slog.Warn("Skipping SSL certificate verification is insecure and not recommended")
 		httpTransport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec
 		}
 	}
 
@@ -173,7 +174,7 @@ func main() {
 }
 
 func getIssueKeys(ref, issueFormat string) []string {
-	var issuePattern *regexp.Regexp = issueAlphanumericPattern
+	issuePattern := issueAlphanumericPattern
 	issueKeys := []string{}
 	if issueFormat != "" {
 		issuePattern = regexp.MustCompile(issueFormat)
