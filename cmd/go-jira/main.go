@@ -41,12 +41,14 @@ func main() {
 
 	config := loadConfig()
 	if config.debug == "true" {
-		_ = godump.Dump(config.ref)
-		_ = godump.Dump(config.issueFormat)
-		_ = godump.Dump(config.toTransition)
-		_ = godump.Dump(config.resolution)
-		_ = godump.Dump(config.comment)
-		_ = godump.Dump(config.author)
+		_ = godump.Dump(map[string]interface{}{
+			"ref":          config.ref,
+			"issueFormat":  config.issueFormat,
+			"toTransition": config.toTransition,
+			"resolution":   config.resolution,
+			"comment":      config.comment,
+			"author":       config.author,
+		})
 	}
 
 	httpClient := createHTTPClient(config)
