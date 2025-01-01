@@ -203,6 +203,7 @@ func main() {
 				"author",
 				"displayName", currentUser.DisplayName,
 				"email", currentUser.EmailAddress,
+				"username", currentUser.Name,
 			)
 			comment, resp, err := jiraClient.Issue.AddCommentWithContext(
 				context.Background(),
@@ -210,7 +211,11 @@ func main() {
 				&jira.Comment{
 					Author:       *currentUser,
 					UpdateAuthor: *currentUser,
-					Body:         fmt.Sprintf("%s\n\n%s\n\n%s", comment, ref, currentUser.DisplayName),
+					Body: fmt.Sprintf(
+						"%s\n\ncomment from [~%s]",
+						comment,
+						currentUser.Name,
+					),
 				},
 			)
 			if err != nil {
