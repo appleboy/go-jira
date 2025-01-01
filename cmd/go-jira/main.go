@@ -209,6 +209,7 @@ func main() {
 				context.Background(),
 				issueKey,
 				&jira.Comment{
+					Name:         currentUser.Name,
 					Author:       *currentUser,
 					UpdateAuthor: *currentUser,
 					Body: fmt.Sprintf(
