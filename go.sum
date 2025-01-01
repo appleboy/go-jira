@@ -1,7 +1,7 @@
 github.com/appleboy/com v0.2.1 h1:dHAHauX3eYDuheAahI83HIGFxpi0SEb2ZAu9EZ9hbUM=
 github.com/appleboy/com v0.2.1/go.mod h1:kByEI3/vzI5GM1+O5QdBHLsXaOsmFsJcOpCSgASi4sg=
-github.com/appleboy/go-jira-lib v1.16.2 h1:3sKknS4Z98uEuDvAGYBmZ/zQ+WF3to/F+VK/cu1PDdU=
-github.com/appleboy/go-jira-lib v1.16.2/go.mod h1:UQH4IBVxIYWbgagc0LF/k9FRs9xjIiQ8hIcC6HfLwFU=
+github.com/appleboy/go-jira-lib v1.16.3-0.20250101032454-c5d474159557 h1:oLIIUxs4pUzfVjSA4gYea9cPnVHLtRQTXe7lMafap4g=
+github.com/appleboy/go-jira-lib v1.16.3-0.20250101032454-c5d474159557/go.mod h1:UQH4IBVxIYWbgagc0LF/k9FRs9xjIiQ8hIcC6HfLwFU=
 github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
 github.com/golang-jwt/jwt/v4 v4.4.2/go.mod h1:m21LjoU+eqJr34lmDMbreY2eSTRJ1cv77w39/MY0Ch0=

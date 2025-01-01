@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"regexp"
@@ -47,6 +48,8 @@ func main() {
 	issueFormat := getGlobalValue("issue_format") // issue regular expression pattern
 	toTransition := getGlobalValue("transition")  // move issue to a specific status
 	resolution := getGlobalValue("resolution")    // set resolution when moving issue to a specific status
+	comment := getGlobalValue("comment")          // add comment when moving issue to a specific status
+	author := getGlobalValue("author")            // author of the comment
 	debug := getGlobalValue("debug")              // enable debug mode
 
 	if debug == "true" {
@@ -100,6 +103,22 @@ func main() {
 		"email", user.EmailAddress,
 		"username", user.Name,
 	)
+
+	var authorUser *jira.User
+	if author != "" {
+		authorUser, _, err = jiraClient.User.GetByUsernameWithContext(context.Background(), author)
+		if err != nil {
+			slog.Error("error getting author", "error", err)
+			return
+		}
+		if authorUser != nil {
+			slog.Info("author account",
+				"displayName", authorUser.DisplayName,
+				"email", authorUser.EmailAddress,
+				"username", authorUser.Name,
+			)
+		}
+	}
 
 	// get resolution id
 	if resolution != "" {
@@ -169,6 +188,45 @@ func main() {
 					"transition", transition.Name,
 				)
 			}
+		}
+	}
+
+	if comment != "" {
+		currentUser := user
+		if authorUser != nil {
+			currentUser = authorUser
+		}
+
+		issueKeys := getIssueKeys(ref, issueFormat)
+		for _, issueKey := range issueKeys {
+			slog.Info(
+				"author",
+				"displayName", currentUser.DisplayName,
+				"email", currentUser.EmailAddress,
+			)
+			comment, resp, err := jiraClient.Issue.AddCommentWithContext(
+				context.Background(),
+				issueKey,
+				&jira.Comment{
+					Author:       *currentUser,
+					UpdateAuthor: *currentUser,
+					Body:         fmt.Sprintf("%s\n\n%s\n\n%s", comment, ref, currentUser.DisplayName),
+				},
+			)
+			if err != nil {
+				slog.Error("error adding comment", "issue", issueKey, "error", err)
+				continue
+			}
+
+			if resp.StatusCode != http.StatusCreated {
+				body, _ := io.ReadAll(resp.Body)
+				slog.Error("error adding comment", "issue", issueKey, "status", resp.StatusCode, "body", string(body))
+				continue
+			}
+			slog.Info("comment added",
+				"issue", issueKey,
+				"comment", comment.Body,
+			)
 		}
 	}
 }
