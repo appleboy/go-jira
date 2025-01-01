@@ -212,10 +212,7 @@ func main() {
 					Name:         currentUser.Name,
 					Author:       *currentUser,
 					UpdateAuthor: *currentUser,
-					Body: fmt.Sprintf(
-						"%s",
-						comment,
-					),
+					Body:         comment,
 				},
 			)
 			if err != nil {
