@@ -213,9 +213,8 @@ func main() {
 					Author:       *currentUser,
 					UpdateAuthor: *currentUser,
 					Body: fmt.Sprintf(
-						"%s\n\ncomment from [~%s]",
+						"%s",
 						comment,
-						currentUser.Name,
 					),
 				},
 			)
