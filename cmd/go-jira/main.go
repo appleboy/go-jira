@@ -58,15 +58,21 @@ func main() {
 		return
 	}
 
-	user, err := getUser(jiraClient)
+	user, err := getSelf(jiraClient)
 	if err != nil {
 		slog.Error("error getting self", "error", err)
 		return
 	}
 
-	authorUser, err := getAuthorUser(jiraClient, config.author)
+	authorUser, err := getUser(jiraClient, config.author)
 	if err != nil {
 		slog.Error("error getting author", "error", err)
+		return
+	}
+
+	assignee, err := getUser(jiraClient, config.assignee)
+	if err != nil {
+		slog.Error("error getting assignee", "error", err)
 		return
 	}
 
@@ -79,11 +85,40 @@ func main() {
 	}
 
 	if config.ref != "" && config.toTransition != "" {
-		processTransitions(jiraClient, config, user)
+		processTransitions(jiraClient, config)
+	}
+
+	if assignee != nil {
+		processAssignee(jiraClient, config, assignee)
 	}
 
 	if config.comment != "" {
 		addComments(jiraClient, config, user, authorUser)
+	}
+}
+
+func processAssignee(jiraClient *jira.Client, config Config, assignee *jira.User) {
+	issueKeys := getIssueKeys(config.ref, config.issueFormat)
+	for _, issueKey := range issueKeys {
+		resp, err := jiraClient.Issue.UpdateAssigneeWithContext(
+			context.Background(),
+			issueKey,
+			&jira.User{
+				Name: assignee.Name,
+			},
+		)
+		if err != nil {
+			slog.Error("error updating assignee", "issue", issueKey, "error", err)
+			continue
+		}
+		if resp.StatusCode != http.StatusNoContent {
+			slog.Error("error updating assignee", "issue", issueKey, "status", resp.Status)
+			continue
+		}
+		slog.Info("assignee updated",
+			"issue", issueKey,
+			"assignee", assignee.Name,
+		)
 	}
 }
 
@@ -119,6 +154,7 @@ type Config struct {
 	resolution   string
 	comment      string
 	author       string
+	assignee     string
 	debug        string
 }
 
@@ -135,6 +171,7 @@ func loadConfig() Config {
 		resolution:   getGlobalValue("resolution"),
 		comment:      getGlobalValue("comment"),
 		author:       getGlobalValue("author"),
+		assignee:     getGlobalValue("assignee"),
 		debug:        getGlobalValue("debug"),
 	}
 }
@@ -169,7 +206,7 @@ func createHTTPClient(config Config) *http.Client {
 	return &http.Client{Transport: httpTransport}
 }
 
-func getUser(jiraClient *jira.Client) (*jira.User, error) {
+func getSelf(jiraClient *jira.Client) (*jira.User, error) {
 	user, _, err := jiraClient.User.GetSelfWithContext(context.Background())
 	if err != nil {
 		return nil, err
@@ -183,7 +220,7 @@ func getUser(jiraClient *jira.Client) (*jira.User, error) {
 	return user, nil
 }
 
-func getAuthorUser(jiraClient *jira.Client, author string) (*jira.User, error) {
+func getUser(jiraClient *jira.Client, author string) (*jira.User, error) {
 	if author == "" {
 		return nil, nil
 	}
@@ -219,7 +256,7 @@ func getResolutionID(jiraClient *jira.Client, resolution string) (string, error)
 	return "", nil
 }
 
-func processTransitions(jiraClient *jira.Client, config Config, _ *jira.User) {
+func processTransitions(jiraClient *jira.Client, config Config) {
 	issueKeys := getIssueKeys(config.ref, config.issueFormat)
 	for _, issueKey := range issueKeys {
 		issue, resp, err := jiraClient.Issue.GetWithContext(context.Background(), issueKey, &jira.GetQueryOptions{
