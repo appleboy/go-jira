@@ -47,7 +47,7 @@ func main() {
 			"toTransition": config.toTransition,
 			"resolution":   config.resolution,
 			"comment":      config.comment,
-			"author":       config.author,
+			"assignee":     config.assignee,
 		})
 	}
 
@@ -61,12 +61,6 @@ func main() {
 	user, err := getSelf(jiraClient)
 	if err != nil {
 		slog.Error("error getting self", "error", err)
-		return
-	}
-
-	authorUser, err := getUser(jiraClient, config.author)
-	if err != nil {
-		slog.Error("error getting author", "error", err)
 		return
 	}
 
@@ -93,7 +87,7 @@ func main() {
 	}
 
 	if config.comment != "" {
-		addComments(jiraClient, config, user, authorUser)
+		addComments(jiraClient, config, user)
 	}
 }
 
@@ -153,7 +147,6 @@ type Config struct {
 	toTransition string
 	resolution   string
 	comment      string
-	author       string
 	assignee     string
 	debug        string
 }
@@ -170,7 +163,6 @@ func loadConfig() Config {
 		toTransition: getGlobalValue("transition"),
 		resolution:   getGlobalValue("resolution"),
 		comment:      getGlobalValue("comment"),
-		author:       getGlobalValue("author"),
 		assignee:     getGlobalValue("assignee"),
 		debug:        getGlobalValue("debug"),
 	}
@@ -220,24 +212,24 @@ func getSelf(jiraClient *jira.Client) (*jira.User, error) {
 	return user, nil
 }
 
-func getUser(jiraClient *jira.Client, author string) (*jira.User, error) {
-	if author == "" {
+func getUser(jiraClient *jira.Client, username string) (*jira.User, error) {
+	if username == "" {
 		return nil, nil
 	}
 
-	authorUser, _, err := jiraClient.User.GetByUsernameWithContext(context.Background(), author)
+	user, _, err := jiraClient.User.GetByUsernameWithContext(context.Background(), username)
 	if err != nil {
 		return nil, err
 	}
 
-	if authorUser != nil {
-		slog.Info("author account",
-			"displayName", authorUser.DisplayName,
-			"email", authorUser.EmailAddress,
-			"username", authorUser.Name,
+	if user != nil {
+		slog.Info("user account",
+			"displayName", user.DisplayName,
+			"email", user.EmailAddress,
+			"username", user.Name,
 		)
 	}
-	return authorUser, nil
+	return user, nil
 }
 
 func getResolutionID(jiraClient *jira.Client, resolution string) (string, error) {
@@ -308,28 +300,17 @@ func processTransitions(jiraClient *jira.Client, config Config) {
 	}
 }
 
-func addComments(jiraClient *jira.Client, config Config, user, authorUser *jira.User) {
+func addComments(jiraClient *jira.Client, config Config, user *jira.User) {
 	currentUser := user
-	if authorUser != nil {
-		currentUser = authorUser
-	}
 
 	issueKeys := getIssueKeys(config.ref, config.issueFormat)
 	for _, issueKey := range issueKeys {
-		slog.Info(
-			"author",
-			"displayName", currentUser.DisplayName,
-			"email", currentUser.EmailAddress,
-			"username", currentUser.Name,
-		)
 		comment, resp, err := jiraClient.Issue.AddCommentWithContext(
 			context.Background(),
 			issueKey,
 			&jira.Comment{
-				Name:         currentUser.Name,
-				Author:       *currentUser,
-				UpdateAuthor: *currentUser,
-				Body:         config.comment,
+				Name: currentUser.Name,
+				Body: config.comment,
 			},
 		)
 		if err != nil {
