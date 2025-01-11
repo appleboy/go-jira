@@ -82,6 +82,13 @@ func main() {
 		)
 	}
 
+	// Get issue lists from ref
+	issues := processIssues(jiraClient, config)
+	if len(issues) == 0 {
+		slog.Error("no issues found")
+		return
+	}
+
 	if config.resolution != "" {
 		config.resolution, err = getResolutionID(jiraClient, config.resolution)
 		if err != nil {
@@ -90,39 +97,58 @@ func main() {
 		}
 	}
 
-	if config.ref != "" && config.toTransition != "" {
-		processTransitions(jiraClient, config)
+	if config.toTransition != "" {
+		processTransitions(jiraClient, config.toTransition, config.resolution, issues)
 	}
 
 	if assignee != nil {
-		processAssignee(jiraClient, config, assignee)
+		processAssignee(jiraClient, issues, assignee)
 	}
 
 	if config.comment != "" {
-		addComments(jiraClient, config, user)
+		addComments(jiraClient, config.comment, issues, user)
 	}
 }
 
-func processAssignee(jiraClient *jira.Client, config Config, assignee *jira.User) {
+func processIssues(jiraClient *jira.Client, config Config) []*jira.Issue {
 	issueKeys := getIssueKeys(config.ref, config.issuePattern)
+	issues := []*jira.Issue{}
 	for _, issueKey := range issueKeys {
+		issue, resp, err := jiraClient.Issue.GetWithContext(context.Background(), issueKey, &jira.GetQueryOptions{
+			Expand: "transitions",
+		})
+		if err != nil {
+			slog.Error("error getting issue", "issue", issueKey, "error", err)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			slog.Error("error getting issue", "issue", issueKey, "status", resp.Status)
+			continue
+		}
+		issues = append(issues, issue)
+	}
+	return issues
+}
+
+func processAssignee(jiraClient *jira.Client, issues []*jira.Issue, assignee *jira.User) {
+	for _, issue := range issues {
 		resp, err := jiraClient.Issue.UpdateAssigneeWithContext(
 			context.Background(),
-			issueKey,
+			issue.Key,
 			&jira.User{
 				Name: assignee.Name,
 			},
 		)
 		if err != nil {
-			slog.Error("error updating assignee", "issue", issueKey, "error", err)
+			slog.Error("error updating assignee", "issue", issue.Key, "error", err)
 			continue
 		}
 		if resp.StatusCode != http.StatusNoContent {
-			slog.Error("error updating assignee", "issue", issueKey, "status", resp.Status)
+			slog.Error("error updating assignee", "issue", issue.Key, "status", resp.Status)
 			continue
 		}
 		slog.Info("assignee updated",
-			"issue", issueKey,
+			"issue", issue.Key,
 			"assignee", assignee.Name,
 		)
 	}
@@ -248,27 +274,15 @@ func getResolutionID(jiraClient *jira.Client, resolution string) (string, error)
 	return "", nil
 }
 
-func processTransitions(jiraClient *jira.Client, config Config) {
-	issueKeys := getIssueKeys(config.ref, config.issuePattern)
-	for _, issueKey := range issueKeys {
-		issue, resp, err := jiraClient.Issue.GetWithContext(context.Background(), issueKey, &jira.GetQueryOptions{
-			Expand: "transitions",
-		})
-		if err != nil {
-			slog.Error("error getting issue", "issue", issueKey, "error", err)
-			continue
-		}
-		if resp.StatusCode != http.StatusOK {
-			slog.Error("error getting issue", "issue", issueKey, "status", resp.Status)
-			continue
-		}
+func processTransitions(jiraClient *jira.Client, toTransition string, resolution string, issues []*jira.Issue) {
+	for _, issue := range issues {
 		slog.Info("issue info",
 			"key", issue.Key,
 			"summary", issue.Fields.Summary,
 			"current status", issue.Fields.Status.Name,
 		)
 		for _, transition := range issue.Transitions {
-			if !strings.EqualFold(transition.Name, config.toTransition) {
+			if !strings.EqualFold(transition.Name, toTransition) {
 				continue
 			}
 
@@ -276,22 +290,22 @@ func processTransitions(jiraClient *jira.Client, config Config) {
 				TicketID:     issue.Key,
 				TransitionID: transition.ID,
 			}
-			if config.resolution != "" {
-				input.ResolutionID = convert.ToPtr(config.resolution)
+			if resolution != "" {
+				input.ResolutionID = convert.ToPtr(resolution)
 			}
 			resp, err := jiraClient.Issue.DoTransitionPayloadWithContext(
 				context.Background(),
 				input,
 			)
 			if err != nil {
-				slog.Error("error moving issue", "issue", issueKey, "error", err)
+				slog.Error("error moving issue", "issue", issue.Key, "error", err)
 				continue
 			}
 			if resp.StatusCode != http.StatusNoContent {
-				slog.Error("error moving issue", "issue", issueKey, "status", resp.Status)
+				slog.Error("error moving issue", "issue", issue.Key, "status", resp.Status)
 				continue
 			}
-			slog.Info("issue moved",
+			slog.Info("issue moved to transition",
 				"key", issue.Key,
 				"summary", issue.Fields.Summary,
 				"transition", transition.Name,
@@ -300,32 +314,31 @@ func processTransitions(jiraClient *jira.Client, config Config) {
 	}
 }
 
-func addComments(jiraClient *jira.Client, config Config, user *jira.User) {
+func addComments(jiraClient *jira.Client, comment string, issues []*jira.Issue, user *jira.User) {
 	currentUser := user
 
-	issueKeys := getIssueKeys(config.ref, config.issuePattern)
-	for _, issueKey := range issueKeys {
-		comment, resp, err := jiraClient.Issue.AddCommentWithContext(
+	for _, issue := range issues {
+		item, resp, err := jiraClient.Issue.AddCommentWithContext(
 			context.Background(),
-			issueKey,
+			issue.Key,
 			&jira.Comment{
 				Name: currentUser.Name,
-				Body: config.comment,
+				Body: comment,
 			},
 		)
 		if err != nil {
-			slog.Error("error adding comment", "issue", issueKey, "error", err)
+			slog.Error("error adding comment", "issue", issue.Key, "error", err)
 			continue
 		}
 
 		if resp.StatusCode != http.StatusCreated {
 			body, _ := io.ReadAll(resp.Body)
-			slog.Error("error adding comment", "issue", issueKey, "status", resp.StatusCode, "body", string(body))
+			slog.Error("error adding comment", "issue", issue.Key, "status", resp.StatusCode, "body", string(body))
 			continue
 		}
-		slog.Info("comment added",
-			"issue", issueKey,
-			"comment", comment.Body,
+		slog.Info("added comment to issue",
+			"issue", issue.Key,
+			"comment", item.Body,
 		)
 	}
 }
