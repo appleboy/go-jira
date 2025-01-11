@@ -43,7 +43,7 @@ func main() {
 	if config.debug == "true" {
 		_ = godump.Dump(map[string]interface{}{
 			"ref":          config.ref,
-			"issueFormat":  config.issueFormat,
+			"issuePattern": config.issuePattern,
 			"toTransition": config.toTransition,
 			"resolution":   config.resolution,
 			"comment":      config.comment,
@@ -92,7 +92,7 @@ func main() {
 }
 
 func processAssignee(jiraClient *jira.Client, config Config, assignee *jira.User) {
-	issueKeys := getIssueKeys(config.ref, config.issueFormat)
+	issueKeys := getIssueKeys(config.ref, config.issuePattern)
 	for _, issueKey := range issueKeys {
 		resp, err := jiraClient.Issue.UpdateAssigneeWithContext(
 			context.Background(),
@@ -116,14 +116,14 @@ func processAssignee(jiraClient *jira.Client, config Config, assignee *jira.User
 	}
 }
 
-func getIssueKeys(ref, issueFormat string) []string {
-	issuePattern := issueAlphanumericPattern
+func getIssueKeys(ref, issuePattern string) []string {
+	pattern := issueAlphanumericPattern
 	issueKeys := []string{}
-	if issueFormat != "" {
-		issuePattern = regexp.MustCompile(issueFormat)
+	if issuePattern != "" {
+		pattern = regexp.MustCompile(issuePattern)
 	}
 
-	matches := issuePattern.FindAllString(ref, -1)
+	matches := pattern.FindAllString(ref, -1)
 	// Deduplicate issue keys
 	issueKeySet := make(map[string]struct{})
 	for _, match := range matches {
@@ -143,7 +143,7 @@ type Config struct {
 	password     string
 	token        string
 	ref          string
-	issueFormat  string
+	issuePattern string
 	toTransition string
 	resolution   string
 	comment      string
@@ -159,7 +159,7 @@ func loadConfig() Config {
 		password:     getGlobalValue("password"),
 		token:        getGlobalValue("token"),
 		ref:          getGlobalValue("ref"),
-		issueFormat:  getGlobalValue("issue_format"),
+		issuePattern: getGlobalValue("issue_format"),
 		toTransition: getGlobalValue("transition"),
 		resolution:   getGlobalValue("resolution"),
 		comment:      getGlobalValue("comment"),
@@ -249,7 +249,7 @@ func getResolutionID(jiraClient *jira.Client, resolution string) (string, error)
 }
 
 func processTransitions(jiraClient *jira.Client, config Config) {
-	issueKeys := getIssueKeys(config.ref, config.issueFormat)
+	issueKeys := getIssueKeys(config.ref, config.issuePattern)
 	for _, issueKey := range issueKeys {
 		issue, resp, err := jiraClient.Issue.GetWithContext(context.Background(), issueKey, &jira.GetQueryOptions{
 			Expand: "transitions",
@@ -303,7 +303,7 @@ func processTransitions(jiraClient *jira.Client, config Config) {
 func addComments(jiraClient *jira.Client, config Config, user *jira.User) {
 	currentUser := user
 
-	issueKeys := getIssueKeys(config.ref, config.issueFormat)
+	issueKeys := getIssueKeys(config.ref, config.issuePattern)
 	for _, issueKey := range issueKeys {
 		comment, resp, err := jiraClient.Issue.AddCommentWithContext(
 			context.Background(),
