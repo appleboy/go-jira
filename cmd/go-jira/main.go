@@ -63,11 +63,23 @@ func main() {
 		slog.Error("error getting self", "error", err)
 		return
 	}
+	slog.Info("user account",
+		"displayName", user.DisplayName,
+		"email", user.EmailAddress,
+		"username", user.Name,
+	)
 
 	assignee, err := getUser(jiraClient, config.assignee)
 	if err != nil {
 		slog.Error("error getting assignee", "error", err)
 		return
+	}
+	if assignee != nil {
+		slog.Info("assignee account",
+			"displayName", assignee.DisplayName,
+			"email", assignee.EmailAddress,
+			"username", assignee.Name,
+		)
 	}
 
 	if config.resolution != "" {
@@ -204,11 +216,6 @@ func getSelf(jiraClient *jira.Client) (*jira.User, error) {
 		return nil, err
 	}
 
-	slog.Info("login account",
-		"displayName", user.DisplayName,
-		"email", user.EmailAddress,
-		"username", user.Name,
-	)
 	return user, nil
 }
 
@@ -222,13 +229,6 @@ func getUser(jiraClient *jira.Client, username string) (*jira.User, error) {
 		return nil, err
 	}
 
-	if user != nil {
-		slog.Info("user account",
-			"displayName", user.DisplayName,
-			"email", user.EmailAddress,
-			"username", user.Name,
-		)
-	}
 	return user, nil
 }
 
