@@ -166,7 +166,7 @@ func BenchmarkConvertMentions(b *testing.B) {
 		b.ResetTimer()
 		text := "Hello @user! How are you?"
 		for i := 0; i < b.N; i++ {
-			ConvertMentions(text)
+			_ = ConvertMentions(text)
 		}
 	})
 	b.Run("complex", func(b *testing.B) {
@@ -174,7 +174,7 @@ func BenchmarkConvertMentions(b *testing.B) {
 		b.ResetTimer()
 		text := "Hello @user! How are you? How are you?How are you?How are you?How are you?How are you?How are you?"
 		for i := 0; i < b.N; i++ {
-			ConvertMentions(text)
+			_ = ConvertMentions(text)
 		}
 	})
 	b.Run("no mention", func(b *testing.B) {
@@ -182,7 +182,7 @@ func BenchmarkConvertMentions(b *testing.B) {
 		b.ResetTimer()
 		text := "Hello How are you? How are you?How are you?How are you?How are you?How are you?How are you?"
 		for i := 0; i < b.N; i++ {
-			ConvertMentions(text)
+			_ = ConvertMentions(text)
 		}
 	})
 }

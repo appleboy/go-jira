@@ -49,7 +49,7 @@ vendor:
 ## bench: run benchmarks
 .PHONY: bench
 bench:
-	@$(GO) test -bench=. ./...
+	@$(GO) test -bench=. -run=^# ./...
 
 ## help: print this help message
 .PHONY: help
