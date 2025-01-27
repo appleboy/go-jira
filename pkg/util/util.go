@@ -5,6 +5,19 @@ import (
 	"strings"
 )
 
+// GetGlobalValue returns the value of an environment variable.
+// It first checks if there is an environment variable with the format "INPUT_<KEY>",
+// where "<KEY>" is the input key converted to uppercase.
+// If the "INPUT_<KEY>" environment variable doesn't exist or is empty,
+// it returns the value of the "<KEY>" environment variable.
+//
+// Parameters:
+//
+//	key - the key of the environment variable to retrieve.
+//
+// Returns:
+//
+//	string - the value of the environment variable.
 func GetGlobalValue(key string) string {
 	key = strings.ToUpper(key) // Convert key to uppercase
 
