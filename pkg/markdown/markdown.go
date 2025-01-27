@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/appleboy/com/bytesconv"
 	bf "github.com/russross/blackfriday/v2"
@@ -112,7 +113,8 @@ func (r *JiraRenderer) renderHeading(w *bytes.Buffer, node *bf.Node, entering bo
 }
 
 func (r *JiraRenderer) renderText(w *bytes.Buffer, node *bf.Node, _ bool) {
-	w.Write(node.Literal)
+	text := ConvertMentions(bytesconv.BytesToStr(node.Literal))
+	w.WriteString(text)
 }
 
 func (r *JiraRenderer) renderStrong(w *bytes.Buffer, _ *bf.Node, _ bool) {
@@ -213,4 +215,56 @@ func ToJira(markdown string) string {
 	})
 
 	return strings.TrimSpace(bytesconv.BytesToStr(buf.Bytes()))
+}
+
+// isValidMentionChar checks if a given rune is a valid character for a mention.
+// A valid mention character is a letter, a number, a hyphen, or an underscore.
+//
+// Parameters:
+//
+//	c (rune): The character to check.
+//
+// Returns:
+//
+//	bool: True if the character is valid for a mention, false otherwise.
+func isValidMentionChar(c rune) bool {
+	return unicode.IsLetter(c) || unicode.IsNumber(c) || c == '-' || c == '_'
+}
+
+// ConvertMentions converts @mentions in the input text to a specific format.
+// It looks for substrings starting with '@' followed by valid mention characters
+// and replaces them with the format "[~mention]". If the input text does not
+// contain any '@' characters, it returns the original text.
+//
+// Parameters:
+//   - text: The input string that may contain @mentions.
+//
+// Returns:
+//   - A string with @mentions converted to the format "[~mention]".
+func ConvertMentions(text string) string {
+	// check the text include @ syntax
+	if !strings.Contains(text, "@") {
+		return text
+	}
+	length := len(text)
+	var builder strings.Builder
+	builder.Grow(length)
+	for i := 0; i < length; i++ {
+		if text[i] == '@' && i+1 < length && isValidMentionChar(rune(text[i+1])) {
+			builder.WriteString("[~")
+			i++
+			for i < length && isValidMentionChar(rune(text[i])) {
+				builder.WriteByte(text[i])
+				i++
+			}
+			builder.WriteString("]")
+			if i < length {
+				builder.WriteByte(text[i])
+			}
+			continue
+		}
+		// copy the character
+		builder.WriteByte(text[i])
+	}
+	return builder.String()
 }
