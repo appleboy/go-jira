@@ -2,7 +2,7 @@ package markdown
 
 import (
 	"bytes"
-	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/appleboy/com/bytesconv"
@@ -103,7 +103,9 @@ func (r *JiraRenderer) renderHeading(w *bytes.Buffer, node *bf.Node, entering bo
 		if r.buf.Len() > 0 {
 			w.WriteString("\n")
 		}
-		w.WriteString(fmt.Sprintf("h%d. ", node.HeadingData.Level))
+		w.WriteString("h")
+		w.WriteString(strconv.Itoa(node.HeadingData.Level))
+		w.WriteString(". ")
 		return
 	}
 	w.WriteString("\n")
@@ -171,7 +173,9 @@ func (r *JiraRenderer) renderCodeBlock(w *bytes.Buffer, node *bf.Node, entering 
 		if r.buf.Len() > 0 {
 			w.WriteString("\n")
 		}
-		w.WriteString(fmt.Sprintf("{code:language=%s}\n", language))
+		w.WriteString("{code:language=")
+		w.WriteString(language)
+		w.WriteString("}\n")
 		w.Write(node.Literal)
 		w.WriteString("{code}")
 	}
@@ -202,10 +206,10 @@ func ToJira(markdown string) string {
 
 	ast := md.Parse(bytesconv.StrToBytes(markdown))
 
-	var buf bytes.Buffer
+	buf := bytes.NewBuffer(make([]byte, 0, 1024)) // Preallocate buffer with an initial capacity
 	renderer := NewJiraRenderer()
 	ast.Walk(func(node *bf.Node, entering bool) bf.WalkStatus {
-		return renderer.RenderNode(&buf, node, entering)
+		return renderer.RenderNode(buf, node, entering)
 	})
 
 	return strings.TrimSpace(bytesconv.BytesToStr(buf.Bytes()))
