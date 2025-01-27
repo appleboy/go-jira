@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -266,7 +267,7 @@ func getResolutionID(jiraClient *jira.Client, resolution string) (string, error)
 		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("error getting resolution: %s", resp.Status)
+		return "", errors.New("error getting resolution: " + resp.Status)
 	}
 	for _, r := range resolutions {
 		if strings.EqualFold(r.Name, resolution) {
