@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github/appleboy/go-jira/pkg/util"
+
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/appleboy/com/convert"
 	"github.com/joho/godotenv"
@@ -40,7 +42,7 @@ func main() {
 	_ = godotenv.Load(envfile)
 
 	config := loadConfig()
-	if config.debug == "true" {
+	if config.debug {
 		_ = godump.Dump(map[string]interface{}{
 			"ref":          config.ref,
 			"issuePattern": config.issuePattern,
@@ -186,23 +188,23 @@ type Config struct {
 	resolution   string
 	comment      string
 	assignee     string
-	debug        string
+	debug        bool
 }
 
 func loadConfig() Config {
 	return Config{
-		baseURL:      getGlobalValue("base_url"),
-		insecure:     getGlobalValue("insecure"),
-		username:     getGlobalValue("username"),
-		password:     getGlobalValue("password"),
-		token:        getGlobalValue("token"),
-		ref:          getGlobalValue("ref"),
-		issuePattern: getGlobalValue("issue_format"),
-		toTransition: getGlobalValue("transition"),
-		resolution:   getGlobalValue("resolution"),
-		comment:      getGlobalValue("comment"),
-		assignee:     getGlobalValue("assignee"),
-		debug:        getGlobalValue("debug"),
+		baseURL:      util.GetGlobalValue("base_url"),
+		insecure:     util.GetGlobalValue("insecure"),
+		username:     util.GetGlobalValue("username"),
+		password:     util.GetGlobalValue("password"),
+		token:        util.GetGlobalValue("token"),
+		ref:          util.GetGlobalValue("ref"),
+		issuePattern: util.GetGlobalValue("issue_format"),
+		toTransition: util.GetGlobalValue("transition"),
+		resolution:   util.GetGlobalValue("resolution"),
+		comment:      util.GetGlobalValue("comment"),
+		assignee:     util.GetGlobalValue("assignee"),
+		debug:        util.ToBool(util.GetGlobalValue("debug")),
 	}
 }
 
