@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github/appleboy/go-jira/pkg/markdown"
 	"github/appleboy/go-jira/pkg/util"
 
 	jira "github.com/andygrunwald/go-jira"
@@ -109,6 +110,9 @@ func main() {
 	}
 
 	if config.comment != "" {
+		if config.markdown {
+			config.comment = markdown.ToJira(config.comment)
+		}
 		addComments(jiraClient, config.comment, issues, user)
 	}
 }
@@ -189,6 +193,7 @@ type Config struct {
 	resolution   string
 	comment      string
 	assignee     string
+	markdown     bool
 	debug        bool
 }
 
@@ -205,6 +210,7 @@ func loadConfig() Config {
 		resolution:   util.GetGlobalValue("resolution"),
 		comment:      util.GetGlobalValue("comment"),
 		assignee:     util.GetGlobalValue("assignee"),
+		markdown:     util.ToBool(util.GetGlobalValue("markdown")),
 		debug:        util.ToBool(util.GetGlobalValue("debug")),
 	}
 }
