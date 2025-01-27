@@ -57,8 +57,8 @@ func TestMarkdownToJira(t *testing.T) {
 		},
 		{
 			name:     "custom comment",
-			markdown: `🧑‍💻 [~${{ github.event.pusher.username }}] push code to repository {color:#ff8b00}**${{ github.repository }}**{color} {color:#00875A}**${{ github.ref }}**{color} branch.\n\nSee the detailed information from [commit link](${{ github.event.head_commit.url }}).\n\n${{ github.event.head_commit.message }}`,
-			want:     `🧑‍💻 [~${{ github.event.pusher.username }}] push code to repository {color:#ff8b00}*${{ github.repository }}*{color} {color:#00875A}*${{ github.ref }}*{color} branch.\n\nSee the detailed information from [commit link|${{ github.event.head_commit.url }}].\n\n${{ github.event.head_commit.message }}`,
+			markdown: `🧑‍💻 [~appleboy] push code to repository {color:#ff8b00}**davinci/rag-service**{color} {color:#00875A}**refs/heads/GAIS-4223**{color} branch.\n\nSee the detailed information from [commit link](http://exampl.com).\n\nimprove logging and error handling for PDF page count validation`,
+			want:     `🧑‍💻 [~appleboy] push code to repository {color:#ff8b00}*davinci/rag-service*{color} {color:#00875A}*refs/heads/GAIS-4223*{color} branch.\n\nSee the detailed information from [commit link|http://exampl.com].\n\nimprove logging and error handling for PDF page count validation`,
 		},
 		{
 			name:     "code block and item list",
