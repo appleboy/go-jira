@@ -62,6 +62,10 @@ jobs:
         run: |
           make test
 
+      - name: Run Benchmarks
+        run: |
+          make bench
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:

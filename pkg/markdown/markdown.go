@@ -18,7 +18,7 @@ type JiraRenderer struct {
 
 func NewJiraRenderer() *JiraRenderer {
 	return &JiraRenderer{
-		buf: &bytes.Buffer{},
+		buf: bytes.NewBuffer(make([]byte, 0, 1024)), // Preallocate buffer with an initial capacity
 	}
 }
 
@@ -80,7 +80,7 @@ func (r *JiraRenderer) renderImage(w *bytes.Buffer, node *bf.Node, entering bool
 		return
 	}
 	w.WriteString("|")
-	w.Write(node.Destination)
+	w.Write(node.LinkData.Destination)
 	w.WriteString("!")
 }
 
@@ -89,11 +89,11 @@ func (r *JiraRenderer) renderSoftbreak(w *bytes.Buffer, _ *bf.Node, _ bool) {
 }
 
 func (r *JiraRenderer) renderParagraph(w *bytes.Buffer, _ *bf.Node, entering bool) {
-	if entering {
-		if !r.inList && r.buf.Len() > 0 {
-			w.WriteString("\n")
-		}
-	} else {
+	if entering && !r.inList && r.buf.Len() > 0 {
+		w.WriteString("\n")
+		return
+	}
+	if !entering {
 		w.WriteString("\n")
 	}
 }
@@ -103,10 +103,10 @@ func (r *JiraRenderer) renderHeading(w *bytes.Buffer, node *bf.Node, entering bo
 		if r.buf.Len() > 0 {
 			w.WriteString("\n")
 		}
-		w.WriteString(fmt.Sprintf("h%d. ", node.Level))
-	} else {
-		w.WriteString("\n")
+		w.WriteString(fmt.Sprintf("h%d. ", node.HeadingData.Level))
+		return
 	}
+	w.WriteString("\n")
 }
 
 func (r *JiraRenderer) renderText(w *bytes.Buffer, node *bf.Node, _ bool) {
@@ -124,34 +124,35 @@ func (r *JiraRenderer) renderEmph(w *bytes.Buffer, _ *bf.Node, _ bool) {
 func (r *JiraRenderer) renderLink(w *bytes.Buffer, node *bf.Node, entering bool) {
 	if entering {
 		w.WriteString("[")
-	} else {
-		w.WriteString("|")
-		w.Write(node.Destination)
-		w.WriteString("]")
+		return
 	}
+	w.WriteString("|")
+	w.Write(node.LinkData.Destination)
+	w.WriteString("]")
 }
 
 func (r *JiraRenderer) renderList(w *bytes.Buffer, _ *bf.Node, entering bool) {
 	if entering {
 		r.inList = true
 		r.listDepth++
-	} else {
-		r.listDepth--
-		if r.listDepth == 0 {
-			r.inList = false
-			w.WriteString("\n")
-		}
+		return
+	}
+	r.listDepth--
+	if r.listDepth == 0 {
+		r.inList = false
+		w.WriteString("\n")
 	}
 }
 
 func (r *JiraRenderer) renderItem(w *bytes.Buffer, _ *bf.Node, entering bool) {
-	if entering {
-		indent := strings.Repeat("*", r.listDepth)
-		if r.buf.Len() > 0 && !strings.HasSuffix(r.buf.String(), "\n") {
-			w.WriteString("\n")
-		}
-		w.WriteString(indent + " ")
+	if !entering {
+		return
 	}
+	indent := strings.Repeat("*", r.listDepth)
+	if r.buf.Len() > 0 && !strings.HasSuffix(r.buf.String(), "\n") {
+		w.WriteString("\n")
+	}
+	w.WriteString(indent + " ")
 }
 
 func (r *JiraRenderer) renderCode(w *bytes.Buffer, node *bf.Node, _ bool) {
@@ -163,7 +164,7 @@ func (r *JiraRenderer) renderCode(w *bytes.Buffer, node *bf.Node, _ bool) {
 func (r *JiraRenderer) renderCodeBlock(w *bytes.Buffer, node *bf.Node, entering bool) {
 	if entering {
 		r.inCodeBlock = true
-		language := string(node.Info)
+		language := string(node.CodeBlockData.Info)
 		if language == "" {
 			language = "java"
 		}

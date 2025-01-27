@@ -46,6 +46,11 @@ vendor:
 	go mod tidy
 	go mod verify
 
+## bench: run benchmarks
+.PHONY: bench
+bench:
+	@$(GO) test -bench=. ./...
+
 ## help: print this help message
 .PHONY: help
 help:
