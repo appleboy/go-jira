@@ -246,23 +246,24 @@ func ToJira(markdown string) string {
 	return strings.TrimSpace(bytesconv.BytesToStr(buf.Bytes()))
 }
 
-var validMentionChars [256]struct{}
+var validMentionChars [256]bool
 
 func init() {
 	for c := 'a'; c <= 'z'; c++ {
-		validMentionChars[c] = struct{}{}
+		validMentionChars[c] = true
 	}
 	for c := 'A'; c <= 'Z'; c++ {
-		validMentionChars[c] = struct{}{}
+		validMentionChars[c] = true
 	}
 	for c := '0'; c <= '9'; c++ {
-		validMentionChars[c] = struct{}{}
+		validMentionChars[c] = true
 	}
-	validMentionChars['-'] = struct{}{}
-	validMentionChars['_'] = struct{}{}
+	validMentionChars['-'] = true
+	validMentionChars['_'] = true
 }
 
+// isValidMentionChar checks if the given byte character is a valid mention character.
+// It returns true if the character is valid, otherwise false.
 func isValidMentionChar(c byte) bool {
-	ok := validMentionChars[c]
-	return ok == struct{}{}
+	return validMentionChars[c]
 }

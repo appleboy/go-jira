@@ -161,6 +161,63 @@ func TestConvertMentions(t *testing.T) {
 	}
 }
 
+func TestIsValidMentionChar(t *testing.T) {
+	tests := []struct {
+		name string
+		char byte
+		want bool
+	}{
+		{
+			name: "lowercase letter",
+			char: 'a',
+			want: true,
+		},
+		{
+			name: "uppercase letter",
+			char: 'Z',
+			want: true,
+		},
+		{
+			name: "digit",
+			char: '5',
+			want: true,
+		},
+		{
+			name: "hyphen",
+			char: '-',
+			want: true,
+		},
+		{
+			name: "underscore",
+			char: '_',
+			want: true,
+		},
+		{
+			name: "space",
+			char: ' ',
+			want: false,
+		},
+		{
+			name: "special character",
+			char: '@',
+			want: false,
+		},
+		{
+			name: "non-ASCII character",
+			char: 200,
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isValidMentionChar(tt.char); got != tt.want {
+				t.Errorf("isValidMentionChar2(%v) = %v, want %v", tt.char, got, tt.want)
+			}
+		})
+	}
+}
+
 func BenchmarkConvertMentions(b *testing.B) {
 	r := NewJiraRenderer()
 	b.Run("simple", func(b *testing.B) {
