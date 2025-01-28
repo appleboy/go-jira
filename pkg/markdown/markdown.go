@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/appleboy/com/bytesconv"
 	bf "github.com/russross/blackfriday/v2"
@@ -203,10 +202,10 @@ func (r *JiraRenderer) convertMentions(text string) string {
 	r.builder.Reset()
 	r.builder.Grow(length + count*2) // Preallocate buffer with an initial capacity
 	for i := 0; i < length; i++ {
-		if text[i] == '@' && i+1 < length && isValidMentionChar(rune(text[i+1])) {
+		if text[i] == '@' && i+1 < length && isValidMentionChar(text[i+1]) {
 			r.builder.WriteString("[~")
 			i++
-			for i < length && isValidMentionChar(rune(text[i])) {
+			for i < length && isValidMentionChar(text[i]) {
 				r.builder.WriteByte(text[i])
 				i++
 			}
@@ -247,16 +246,23 @@ func ToJira(markdown string) string {
 	return strings.TrimSpace(bytesconv.BytesToStr(buf.Bytes()))
 }
 
-// isValidMentionChar checks if a given rune is a valid character for a mention.
-// A valid mention character is a letter, a number, a hyphen, or an underscore.
-//
-// Parameters:
-//
-//	c (rune): The character to check.
-//
-// Returns:
-//
-//	bool: True if the character is valid for a mention, false otherwise.
-func isValidMentionChar(c rune) bool {
-	return unicode.IsLetter(c) || unicode.IsNumber(c) || c == '-' || c == '_'
+var validMentionChars [256]struct{}
+
+func init() {
+	for c := 'a'; c <= 'z'; c++ {
+		validMentionChars[c] = struct{}{}
+	}
+	for c := 'A'; c <= 'Z'; c++ {
+		validMentionChars[c] = struct{}{}
+	}
+	for c := '0'; c <= '9'; c++ {
+		validMentionChars[c] = struct{}{}
+	}
+	validMentionChars['-'] = struct{}{}
+	validMentionChars['_'] = struct{}{}
+}
+
+func isValidMentionChar(c byte) bool {
+	ok := validMentionChars[c]
+	return ok == struct{}{}
 }
