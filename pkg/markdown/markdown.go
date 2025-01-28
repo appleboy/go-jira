@@ -12,6 +12,7 @@ import (
 
 type JiraRenderer struct {
 	buf         *bytes.Buffer
+	builder     strings.Builder
 	inList      bool
 	listDepth   int
 	inCodeBlock bool
@@ -19,7 +20,8 @@ type JiraRenderer struct {
 
 func NewJiraRenderer() *JiraRenderer {
 	return &JiraRenderer{
-		buf: bytes.NewBuffer(make([]byte, 0, 1024)), // Preallocate buffer with an initial capacity
+		buf:     bytes.NewBuffer(make([]byte, 0, 1024)), // Preallocate buffer with an initial capacity
+		builder: strings.Builder{},
 	}
 }
 
@@ -113,7 +115,7 @@ func (r *JiraRenderer) renderHeading(w *bytes.Buffer, node *bf.Node, entering bo
 }
 
 func (r *JiraRenderer) renderText(w *bytes.Buffer, node *bf.Node, _ bool) {
-	text := ConvertMentions(bytesconv.BytesToStr(node.Literal))
+	text := r.convertMentions(bytesconv.BytesToStr(node.Literal))
 	w.WriteString(text)
 }
 
@@ -192,6 +194,36 @@ func (r *JiraRenderer) renderDel(w *bytes.Buffer, _ *bf.Node, _ bool) {
 	w.WriteString("-")
 }
 
+func (r *JiraRenderer) convertMentions(text string) string {
+	// check the text include @ syntax
+	if !strings.Contains(text, "@") {
+		return text
+	}
+
+	count := strings.Count(text, "@")
+	length := len(text)
+	r.builder.Reset()
+	r.builder.Grow(length + count*2) // Preallocate buffer with an initial capacity
+	for i := 0; i < length; i++ {
+		if text[i] == '@' && i+1 < length && isValidMentionChar(rune(text[i+1])) {
+			r.builder.WriteString("[~")
+			i++
+			for i < length && isValidMentionChar(rune(text[i])) {
+				r.builder.WriteByte(text[i])
+				i++
+			}
+			r.builder.WriteString("]")
+			if i < length {
+				r.builder.WriteByte(text[i])
+			}
+			continue
+		}
+		// copy the character
+		r.builder.WriteByte(text[i])
+	}
+	return r.builder.String()
+}
+
 // MarkdownToJira converts a given Markdown string to Jira markup format.
 // It uses the blackfriday library to parse the Markdown and a custom Jira renderer
 // to generate the corresponding Jira markup.
@@ -229,42 +261,4 @@ func ToJira(markdown string) string {
 //	bool: True if the character is valid for a mention, false otherwise.
 func isValidMentionChar(c rune) bool {
 	return unicode.IsLetter(c) || unicode.IsNumber(c) || c == '-' || c == '_'
-}
-
-// ConvertMentions converts @mentions in the input text to a specific format.
-// It looks for substrings starting with '@' followed by valid mention characters
-// and replaces them with the format "[~mention]". If the input text does not
-// contain any '@' characters, it returns the original text.
-//
-// Parameters:
-//   - text: The input string that may contain @mentions.
-//
-// Returns:
-//   - A string with @mentions converted to the format "[~mention]".
-func ConvertMentions(text string) string {
-	// check the text include @ syntax
-	if !strings.Contains(text, "@") {
-		return text
-	}
-	length := len(text)
-	var builder strings.Builder
-	builder.Grow(length)
-	for i := 0; i < length; i++ {
-		if text[i] == '@' && i+1 < length && isValidMentionChar(rune(text[i+1])) {
-			builder.WriteString("[~")
-			i++
-			for i < length && isValidMentionChar(rune(text[i])) {
-				builder.WriteByte(text[i])
-				i++
-			}
-			builder.WriteString("]")
-			if i < length {
-				builder.WriteByte(text[i])
-			}
-			continue
-		}
-		// copy the character
-		builder.WriteByte(text[i])
-	}
-	return builder.String()
 }

@@ -93,6 +93,7 @@ func TestMarkdownToJira(t *testing.T) {
 }
 
 func TestConvertMentions(t *testing.T) {
+	r := NewJiraRenderer()
 	tests := []struct {
 		name string
 		text string
@@ -152,7 +153,7 @@ func TestConvertMentions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ConvertMentions(tt.text)
+			got := r.convertMentions(tt.text)
 			if got != tt.want {
 				t.Errorf("ConvertMentions() = %v, want %v", got, tt.want)
 			}
@@ -161,12 +162,13 @@ func TestConvertMentions(t *testing.T) {
 }
 
 func BenchmarkConvertMentions(b *testing.B) {
+	r := NewJiraRenderer()
 	b.Run("simple", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		text := "Hello @user! How are you?"
 		for i := 0; i < b.N; i++ {
-			_ = ConvertMentions(text)
+			_ = r.convertMentions(text)
 		}
 	})
 	b.Run("complex", func(b *testing.B) {
@@ -174,7 +176,7 @@ func BenchmarkConvertMentions(b *testing.B) {
 		b.ResetTimer()
 		text := "Hello @user! How are you? How are you?How are you?How are you?How are you?How are you?How are you?"
 		for i := 0; i < b.N; i++ {
-			_ = ConvertMentions(text)
+			_ = r.convertMentions(text)
 		}
 	})
 	b.Run("no mention", func(b *testing.B) {
@@ -182,7 +184,7 @@ func BenchmarkConvertMentions(b *testing.B) {
 		b.ResetTimer()
 		text := "Hello How are you? How are you?How are you?How are you?How are you?How are you?How are you?"
 		for i := 0; i < b.N; i++ {
-			_ = ConvertMentions(text)
+			_ = r.convertMentions(text)
 		}
 	})
 }
