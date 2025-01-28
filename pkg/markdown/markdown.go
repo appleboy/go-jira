@@ -11,7 +11,6 @@ import (
 )
 
 type JiraRenderer struct {
-	buf         *bytes.Buffer
 	builder     strings.Builder
 	inList      bool
 	listDepth   int
@@ -20,7 +19,6 @@ type JiraRenderer struct {
 
 func NewJiraRenderer() *JiraRenderer {
 	return &JiraRenderer{
-		buf:     bytes.NewBuffer(make([]byte, 0, 1024)), // Preallocate buffer with an initial capacity
 		builder: strings.Builder{},
 	}
 }
@@ -92,7 +90,7 @@ func (r *JiraRenderer) renderSoftbreak(w *bytes.Buffer, _ *bf.Node, _ bool) {
 }
 
 func (r *JiraRenderer) renderParagraph(w *bytes.Buffer, _ *bf.Node, entering bool) {
-	if entering && !r.inList && r.buf.Len() > 0 {
+	if entering && !r.inList && w.Len() > 0 {
 		w.WriteString("\n")
 		return
 	}
@@ -103,7 +101,7 @@ func (r *JiraRenderer) renderParagraph(w *bytes.Buffer, _ *bf.Node, entering boo
 
 func (r *JiraRenderer) renderHeading(w *bytes.Buffer, node *bf.Node, entering bool) {
 	if entering {
-		if r.buf.Len() > 0 {
+		if w.Len() > 0 {
 			w.WriteString("\n")
 		}
 		w.WriteString("h")
@@ -155,7 +153,7 @@ func (r *JiraRenderer) renderItem(w *bytes.Buffer, _ *bf.Node, entering bool) {
 		return
 	}
 	indent := strings.Repeat("*", r.listDepth)
-	if r.buf.Len() > 0 && !strings.HasSuffix(r.buf.String(), "\n") {
+	if w.Len() > 0 && !strings.HasSuffix(w.String(), "\n") {
 		w.WriteString("\n")
 	}
 	w.WriteString(indent + " ")
@@ -174,7 +172,7 @@ func (r *JiraRenderer) renderCodeBlock(w *bytes.Buffer, node *bf.Node, entering 
 		if language == "" {
 			language = "java"
 		}
-		if r.buf.Len() > 0 {
+		if w.Len() > 0 {
 			w.WriteString("\n")
 		}
 		w.WriteString("{code:language=")
@@ -240,7 +238,7 @@ func ToJira(markdown string) string {
 
 	ast := md.Parse(bytesconv.StrToBytes(markdown))
 
-	buf := bytes.NewBuffer(make([]byte, 0, 1024)) // Preallocate buffer with an initial capacity
+	buf := bytes.NewBuffer(make([]byte, 0, 512)) // Preallocate buffer with an initial capacity
 	renderer := NewJiraRenderer()
 	ast.Walk(func(node *bf.Node, entering bool) bf.WalkStatus {
 		return renderer.RenderNode(buf, node, entering)

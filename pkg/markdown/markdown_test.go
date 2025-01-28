@@ -196,7 +196,7 @@ func BenchmarkMarkdownToJira(b *testing.B) {
 	markdown := `
 # Heading 1
 
-Hi @appleboy, This is a paragraph with **bold text** and _italic text_.
+This is a paragraph with **bold text** and _italic text_.
 
 * List item 1
 * List item 2
