@@ -2,6 +2,11 @@
 
 [Jira][1] integration with [GitHub][2] or [Gitea Action][3] for [JIRA Data Center][4].
 
+- [Integrating Gitea with Jira Software Development Workflow][01]
+- [Gitea 與 Jira 軟體開發流程整合][02]
+
+[01]: https://blog.wu-boy.com/2025/03/gitea-jira-integration-en/
+[02]: https://blog.wu-boy.com/2025/03/gitea-jira-integration-zh-tw/
 [1]: https://www.atlassian.com/software/jira
 [2]: https://docs.github.com/en/actions
 [3]: https://docs.gitea.com/usage/actions/overview
