@@ -80,7 +80,7 @@ func (r *JiraRenderer) renderImage(w *bytes.Buffer, node *bf.Node, entering bool
 		return
 	}
 	w.WriteString("|")
-	w.Write(node.LinkData.Destination)
+	w.Write(node.Destination)
 	w.WriteString("!")
 }
 
@@ -104,7 +104,7 @@ func (r *JiraRenderer) renderHeading(w *bytes.Buffer, node *bf.Node, entering bo
 			w.WriteString("\n")
 		}
 		w.WriteString("h")
-		w.WriteString(strconv.Itoa(node.HeadingData.Level))
+		w.WriteString(strconv.Itoa(node.Level))
 		w.WriteString(". ")
 		return
 	}
@@ -130,7 +130,7 @@ func (r *JiraRenderer) renderLink(w *bytes.Buffer, node *bf.Node, entering bool)
 		return
 	}
 	w.WriteString("|")
-	w.Write(node.LinkData.Destination)
+	w.Write(node.Destination)
 	w.WriteString("]")
 }
 
@@ -167,7 +167,7 @@ func (r *JiraRenderer) renderCode(w *bytes.Buffer, node *bf.Node, _ bool) {
 func (r *JiraRenderer) renderCodeBlock(w *bytes.Buffer, node *bf.Node, entering bool) {
 	if entering {
 		r.inCodeBlock = true
-		language := string(node.CodeBlockData.Info)
+		language := string(node.Info)
 		if language == "" {
 			language = "java"
 		}
