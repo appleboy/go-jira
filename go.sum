@@ -1,5 +1,5 @@
-github.com/appleboy/com v0.4.0 h1:z6Yx16K5nqnUrT5N40elwvcFFuCbIwJn80FeYXS1H4I=
-github.com/appleboy/com v0.4.0/go.mod h1:IbC1mLvqcIYn2YVNJgAYB9XnhbUh1xYKsOzdEOy0n+c=
+github.com/appleboy/com v1.0.0 h1:P6p0V8W1MVWUybFFR4e74ufvv1fjK1cTNOTVOi0+DFU=
+github.com/appleboy/com v1.0.0/go.mod h1:IbC1mLvqcIYn2YVNJgAYB9XnhbUh1xYKsOzdEOy0n+c=
 github.com/appleboy/go-jira-lib v1.16.3 h1:NeQSUQTt0brgzWa64kUgsZHBfMt2kB6w4IIjDYFCrHY=
 github.com/appleboy/go-jira-lib v1.16.3/go.mod h1:UQH4IBVxIYWbgagc0LF/k9FRs9xjIiQ8hIcC6HfLwFU=
 github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=

@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/andygrunwald/go-jira v1.16.0
-	github.com/appleboy/com v0.4.0
+	github.com/appleboy/com v1.0.0
 	github.com/joho/godotenv v1.5.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/yassinebenaid/godump v0.11.1
