@@ -17,7 +17,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/trivago/tgo v1.0.7 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 )
 
 replace github.com/andygrunwald/go-jira => github.com/appleboy/go-jira-lib v1.16.3
