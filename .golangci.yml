@@ -36,12 +36,13 @@ linters:
       - builtin$
       - examples$
 formatters:
+  # Enable specific formatter.
+  # Default: [] (uses standard Go formatting)
   enable:
+    - gci
     - gofmt
+    - gofumpt
     - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+    - golines
+    - swaggo
+

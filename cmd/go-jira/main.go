@@ -12,13 +12,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github/appleboy/go-jira/pkg/markdown"
-	"github/appleboy/go-jira/pkg/util"
-
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/appleboy/com/convert"
 	"github.com/joho/godotenv"
 	"github.com/yassinebenaid/godump"
+	"github/appleboy/go-jira/pkg/markdown"
+	"github/appleboy/go-jira/pkg/util"
 )
 
 var (
@@ -121,9 +120,13 @@ func processIssues(jiraClient *jira.Client, config Config) []*jira.Issue {
 	issueKeys := getIssueKeys(config.ref, config.issuePattern)
 	issues := []*jira.Issue{}
 	for _, issueKey := range issueKeys {
-		issue, resp, err := jiraClient.Issue.GetWithContext(context.Background(), issueKey, &jira.GetQueryOptions{
-			Expand: "transitions",
-		})
+		issue, resp, err := jiraClient.Issue.GetWithContext(
+			context.Background(),
+			issueKey,
+			&jira.GetQueryOptions{
+				Expand: "transitions",
+			},
+		)
 		if err != nil {
 			slog.Error("error getting issue", "issue", issueKey, "error", err)
 			continue
@@ -283,7 +286,12 @@ func getResolutionID(jiraClient *jira.Client, resolution string) (string, error)
 	return "", nil
 }
 
-func processTransitions(jiraClient *jira.Client, toTransition string, resolution string, issues []*jira.Issue) {
+func processTransitions(
+	jiraClient *jira.Client,
+	toTransition string,
+	resolution string,
+	issues []*jira.Issue,
+) {
 	for _, issue := range issues {
 		slog.Info("issue info",
 			"key", issue.Key,
@@ -342,7 +350,15 @@ func addComments(jiraClient *jira.Client, comment string, issues []*jira.Issue, 
 
 		if resp.StatusCode != http.StatusCreated {
 			body, _ := io.ReadAll(resp.Body)
-			slog.Error("error adding comment", "issue", issue.Key, "status", resp.StatusCode, "body", string(body))
+			slog.Error(
+				"error adding comment",
+				"issue",
+				issue.Key,
+				"status",
+				resp.StatusCode,
+				"body",
+				string(body),
+			)
 			continue
 		}
 		slog.Info("added comment to issue",
