@@ -47,3 +47,4 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
           scanners: 'vuln,secret,misconfig'
+          exit-code: '1'
