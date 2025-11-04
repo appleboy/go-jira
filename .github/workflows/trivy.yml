@@ -6,7 +6,8 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: "0 0 * * 0" # Weekly scan on Sundays
+    - cron: "0 0 1 1,4,7,10 *" # Quarterly scan on 1st day of Jan, Apr, Jul, Oct
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
   trivy-scan:
