@@ -13,8 +13,13 @@ LABEL org.opencontainers.image.description="Jira API CLI"
 LABEL org.opencontainers.image.licenses=MIT
 
 RUN apk add --no-cache ca-certificates && \
-  rm -rf /var/cache/apk/*
+  rm -rf /var/cache/apk/* && \
+  addgroup -g 1000 jira && \
+  adduser -D -u 1000 -G jira jira
 
 COPY release/${TARGETOS}/${TARGETARCH}/go-jira /bin/
+RUN chown jira:jira /bin/go-jira
+
+USER jira
 
 ENTRYPOINT ["/bin/go-jira"]
