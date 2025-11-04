@@ -1,5 +1,7 @@
 # go-jira
 
+[![Trivy Security Scan](https://github.com/appleboy/go-jira/actions/workflows/trivy.yml/badge.svg)](https://github.com/appleboy/go-jira/actions/workflows/trivy.yml)
+
 [繁體中文](./README.zh-tw.md) | [簡體中文](./README.zh-cn.md)
 
 [Jira][1] integration with [GitHub][2] or [Gitea Action][3] for [JIRA Data Center][4].
