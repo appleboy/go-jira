@@ -16,10 +16,6 @@ on:
 jobs:
   build-docker:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      packages: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -39,24 +35,24 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         with:
           image-ref: ghcr.io/${{ github.repository }}:latest
-          format: 'sarif'
-          output: 'trivy-docker-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: "sarif"
+          output: "trivy-docker-results.sarif"
+          severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy results to GitHub Security tab (scheduled)
         uses: github/codeql-action/upload-sarif@v4
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && always()
         with:
-          sarif_file: 'trivy-docker-results.sarif'
+          sarif_file: "trivy-docker-results.sarif"
 
       - name: Run Trivy vulnerability scanner (table output for scheduled)
         uses: aquasecurity/trivy-action@0.33.1
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         with:
           image-ref: ghcr.io/${{ github.repository }}:latest
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
 
       # Build and scan workflow for push/PR
       - name: Setup go
@@ -109,24 +105,24 @@ jobs:
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
           image-ref: ${{ github.repository }}:scan
-          format: 'sarif'
-          output: 'trivy-docker-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: "sarif"
+          output: "trivy-docker-results.sarif"
+          severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
         if: (github.event_name != 'schedule' && github.event_name != 'workflow_dispatch') && always()
         with:
-          sarif_file: 'trivy-docker-results.sarif'
+          sarif_file: "trivy-docker-results.sarif"
 
       - name: Run Trivy vulnerability scanner (table output)
         uses: aquasecurity/trivy-action@0.33.1
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
           image-ref: ${{ github.repository }}:scan
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
 
       - name: Build and push
         uses: docker/build-push-action@v6
