@@ -12,12 +12,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github/appleboy/go-jira/pkg/markdown"
+	"github/appleboy/go-jira/pkg/util"
+
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/appleboy/com/convert"
 	"github.com/joho/godotenv"
 	"github.com/yassinebenaid/godump"
-	"github/appleboy/go-jira/pkg/markdown"
-	"github/appleboy/go-jira/pkg/util"
 )
 
 var (
