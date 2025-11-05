@@ -44,5 +44,3 @@ formatters:
     - gofumpt
     - goimports
     - golines
-    - swaggo
-
