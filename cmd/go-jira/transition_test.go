@@ -192,7 +192,7 @@ func TestProcessTransitions(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusBadRequest)
-						w.Write([]byte(`{"errorMessages":["Invalid transition"]}`))
+						_, _ = w.Write([]byte(`{"errorMessages":["Invalid transition"]}`))
 					}),
 				)
 			},

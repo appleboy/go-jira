@@ -26,7 +26,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 		if r.URL.Path == "/rest/api/2/myself" {
 			if options.selfError {
 				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"errorMessages":["Unauthorized"]}`))
+				_, _ = w.Write([]byte(`{"errorMessages":["Unauthorized"]}`))
 				return
 			}
 			w.WriteHeader(http.StatusOK)
@@ -35,7 +35,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 				DisplayName:  "Test User",
 				EmailAddress: "test@example.com",
 			}
-			json.NewEncoder(w).Encode(user)
+			_ = json.NewEncoder(w).Encode(user)
 			return
 		}
 
@@ -43,7 +43,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 		if r.URL.Path == "/rest/api/2/user" {
 			if options.assigneeError {
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"errorMessages":["User not found"]}`))
+				_, _ = w.Write([]byte(`{"errorMessages":["User not found"]}`))
 				return
 			}
 			w.WriteHeader(http.StatusOK)
@@ -52,7 +52,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 				DisplayName:  "Assignee User",
 				EmailAddress: "assignee@example.com",
 			}
-			json.NewEncoder(w).Encode(user)
+			_ = json.NewEncoder(w).Encode(user)
 			return
 		}
 
@@ -60,7 +60,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 		if r.URL.Path == "/rest/api/2/resolution" {
 			if options.resolutionError {
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"errorMessages":["Internal error"]}`))
+				_, _ = w.Write([]byte(`{"errorMessages":["Internal error"]}`))
 				return
 			}
 			w.WriteHeader(http.StatusOK)
@@ -68,7 +68,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 				{ID: "1", Name: "Fixed"},
 				{ID: "2", Name: "Done"},
 			}
-			json.NewEncoder(w).Encode(resolutions)
+			_ = json.NewEncoder(w).Encode(resolutions)
 			return
 		}
 
@@ -84,7 +84,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 
 			if options.issueError {
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"errorMessages":["Issue not found"]}`))
+				_, _ = w.Write([]byte(`{"errorMessages":["Issue not found"]}`))
 				return
 			}
 			w.WriteHeader(http.StatusOK)
@@ -100,7 +100,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 					{ID: "1", Name: "Done"},
 				},
 			}
-			json.NewEncoder(w).Encode(issue)
+			_ = json.NewEncoder(w).Encode(issue)
 			return
 		}
 
@@ -110,7 +110,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 			if r.Method == http.MethodPost {
 				if options.transitionError {
 					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte(`{"errorMessages":["Invalid transition"]}`))
+					_, _ = w.Write([]byte(`{"errorMessages":["Invalid transition"]}`))
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -122,7 +122,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 		if strings.Contains(r.URL.Path, "/assignee") {
 			if options.assigneeUpdateError {
 				w.WriteHeader(http.StatusForbidden)
-				w.Write([]byte(`{"errorMessages":["Permission denied"]}`))
+				_, _ = w.Write([]byte(`{"errorMessages":["Permission denied"]}`))
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -133,7 +133,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 		if strings.Contains(r.URL.Path, "/comment") {
 			if options.commentError {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"errorMessages":["Invalid comment"]}`))
+				_, _ = w.Write([]byte(`{"errorMessages":["Invalid comment"]}`))
 				return
 			}
 			w.WriteHeader(http.StatusCreated)
@@ -141,7 +141,7 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 				ID:   "12345",
 				Body: "Test comment",
 			}
-			json.NewEncoder(w).Encode(comment)
+			_ = json.NewEncoder(w).Encode(comment)
 			return
 		}
 

@@ -13,6 +13,8 @@ import (
 	jira "github.com/andygrunwald/go-jira"
 )
 
+const testUserJohnDoe = "john.doe"
+
 func TestProcessAssignee(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -32,7 +34,7 @@ func TestProcessAssignee(t *testing.T) {
 				},
 			},
 			assignee: &jira.User{
-				Name:         "john.doe",
+				Name:         testUserJohnDoe,
 				DisplayName:  "John Doe",
 				EmailAddress: "john.doe@example.com",
 			},
@@ -54,8 +56,12 @@ func TestProcessAssignee(t *testing.T) {
 						if err := json.Unmarshal(body, &user); err != nil {
 							t.Errorf("failed to unmarshal body: %v", err)
 						}
-						if user.Name != "john.doe" {
-							t.Errorf("expected assignee name 'john.doe', got %s", user.Name)
+						if user.Name != testUserJohnDoe {
+							t.Errorf(
+								"expected assignee name '%s', got %s",
+								testUserJohnDoe,
+								user.Name,
+							)
 						}
 						w.WriteHeader(http.StatusNoContent)
 					}),
@@ -121,7 +127,9 @@ func TestProcessAssignee(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusBadRequest)
-						w.Write([]byte(`{"errorMessages":["User not found"]}`))
+						if _, err := w.Write([]byte(`{"errorMessages":["User not found"]}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},
@@ -138,13 +146,15 @@ func TestProcessAssignee(t *testing.T) {
 				},
 			},
 			assignee: &jira.User{
-				Name: "john.doe",
+				Name: testUserJohnDoe,
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusOK) // Should be 204
-						w.Write([]byte(`{"status":"updated"}`))
+						if _, err := w.Write([]byte(`{"status":"updated"}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},
@@ -173,7 +183,7 @@ func TestProcessAssignee(t *testing.T) {
 				},
 			},
 			assignee: &jira.User{
-				Name: "john.doe",
+				Name: testUserJohnDoe,
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
 				var mu sync.Mutex
@@ -187,7 +197,9 @@ func TestProcessAssignee(t *testing.T) {
 						// Fail the second request
 						if count == 2 {
 							w.WriteHeader(http.StatusForbidden)
-							w.Write([]byte(`{"errorMessages":["Permission denied"]}`))
+							if _, err := w.Write([]byte(`{"errorMessages":["Permission denied"]}`)); err != nil {
+								t.Errorf("failed to write response: %v", err)
+							}
 						} else {
 							w.WriteHeader(http.StatusNoContent)
 						}
@@ -211,7 +223,7 @@ func TestProcessAssignee(t *testing.T) {
 				return issues
 			}(),
 			assignee: &jira.User{
-				Name: "john.doe",
+				Name: testUserJohnDoe,
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
 				var mu sync.Mutex
@@ -245,7 +257,7 @@ func TestProcessAssignee(t *testing.T) {
 			name:   "empty issues list",
 			issues: []*jira.Issue{},
 			assignee: &jira.User{
-				Name: "john.doe",
+				Name: testUserJohnDoe,
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
 				return httptest.NewServer(
@@ -268,13 +280,15 @@ func TestProcessAssignee(t *testing.T) {
 				},
 			},
 			assignee: &jira.User{
-				Name: "john.doe",
+				Name: testUserJohnDoe,
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusInternalServerError)
-						w.Write([]byte(`{"errorMessages":["Internal server error"]}`))
+						if _, err := w.Write([]byte(`{"errorMessages":["Internal server error"]}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},

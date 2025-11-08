@@ -39,7 +39,9 @@ func TestProcessIssues(t *testing.T) {
 								},
 							},
 						}
-						json.NewEncoder(w).Encode(issue)
+						if err := json.NewEncoder(w).Encode(issue); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -75,7 +77,9 @@ func TestProcessIssues(t *testing.T) {
 						// Simulate failure for DEF-456
 						if issueKey == "DEF-456" {
 							w.WriteHeader(http.StatusNotFound)
-							w.Write([]byte(`{"errorMessages":["Issue not found"]}`))
+							if _, err := w.Write([]byte(`{"errorMessages":["Issue not found"]}`)); err != nil {
+								t.Errorf("failed to write response: %v", err)
+							}
 							return
 						}
 						w.WriteHeader(http.StatusOK)
@@ -88,7 +92,9 @@ func TestProcessIssues(t *testing.T) {
 								},
 							},
 						}
-						json.NewEncoder(w).Encode(issue)
+						if err := json.NewEncoder(w).Encode(issue); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -112,7 +118,9 @@ func TestProcessIssues(t *testing.T) {
 								Summary: "Test issue " + issueKey,
 							},
 						}
-						json.NewEncoder(w).Encode(issue)
+						if err := json.NewEncoder(w).Encode(issue); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},

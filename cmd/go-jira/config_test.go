@@ -110,10 +110,8 @@ func TestValidateConfig(t *testing.T) {
 				if err.Error() != tt.errMsg {
 					t.Errorf("validateConfig() error = %v, want %v", err.Error(), tt.errMsg)
 				}
-			} else {
-				if err != nil {
-					t.Errorf("validateConfig() unexpected error = %v", err)
-				}
+			} else if err != nil {
+				t.Errorf("validateConfig() unexpected error = %v", err)
 			}
 		})
 	}

@@ -24,10 +24,9 @@ func TestCreateHTTPClient(t *testing.T) {
 			verify: func(t *testing.T, client *http.Client) {
 				if client == nil {
 					t.Error("expected non-nil client")
+					return
 				}
-				if client.Transport == nil {
-					// Default transport or nil is acceptable
-				}
+				// Default transport or nil is acceptable
 			},
 		},
 		{
@@ -40,6 +39,7 @@ func TestCreateHTTPClient(t *testing.T) {
 			verify: func(t *testing.T, client *http.Client) {
 				if client == nil {
 					t.Error("expected non-nil client")
+					return
 				}
 				// Transport should be set with BasicAuth
 				if client.Transport == nil {
@@ -56,6 +56,7 @@ func TestCreateHTTPClient(t *testing.T) {
 			verify: func(t *testing.T, client *http.Client) {
 				if client == nil {
 					t.Error("expected non-nil client")
+					return
 				}
 				// Transport should be set with BearerAuth
 				if client.Transport == nil {
@@ -74,6 +75,7 @@ func TestCreateHTTPClient(t *testing.T) {
 			verify: func(t *testing.T, client *http.Client) {
 				if client == nil {
 					t.Error("expected non-nil client")
+					return
 				}
 				if client.Transport == nil {
 					t.Error("expected non-nil transport for insecure mode")
@@ -111,7 +113,9 @@ func TestGetSelf(t *testing.T) {
 							DisplayName:  "Test User",
 							EmailAddress: "test@example.com",
 						}
-						json.NewEncoder(w).Encode(user)
+						if err := json.NewEncoder(w).Encode(user); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -128,7 +132,9 @@ func TestGetSelf(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusUnauthorized)
-						w.Write([]byte(`{"errorMessages":["Unauthorized"]}`))
+						if _, err := w.Write([]byte(`{"errorMessages":["Unauthorized"]}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},
@@ -206,7 +212,9 @@ func TestGetUser(t *testing.T) {
 							DisplayName:  "John Doe",
 							EmailAddress: "john.doe@example.com",
 						}
-						json.NewEncoder(w).Encode(user)
+						if err := json.NewEncoder(w).Encode(user); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -231,7 +239,9 @@ func TestGetUser(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusNotFound)
-						w.Write([]byte(`{"errorMessages":["User not found"]}`))
+						if _, err := w.Write([]byte(`{"errorMessages":["User not found"]}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},
@@ -315,7 +325,9 @@ func TestGetResolutionID(t *testing.T) {
 							{ID: "2", Name: "Won't Fix"},
 							{ID: "3", Name: "Duplicate"},
 						}
-						json.NewEncoder(w).Encode(resolutions)
+						if err := json.NewEncoder(w).Encode(resolutions); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -333,7 +345,9 @@ func TestGetResolutionID(t *testing.T) {
 							{ID: "1", Name: "Fixed"},
 							{ID: "2", Name: "Won't Fix"},
 						}
-						json.NewEncoder(w).Encode(resolutions)
+						if err := json.NewEncoder(w).Encode(resolutions); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -351,7 +365,9 @@ func TestGetResolutionID(t *testing.T) {
 							{ID: "1", Name: "Fixed"},
 							{ID: "2", Name: "Won't Fix"},
 						}
-						json.NewEncoder(w).Encode(resolutions)
+						if err := json.NewEncoder(w).Encode(resolutions); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -365,7 +381,9 @@ func TestGetResolutionID(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusInternalServerError)
-						w.Write([]byte(`{"errorMessages":["Internal error"]}`))
+						if _, err := w.Write([]byte(`{"errorMessages":["Internal error"]}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},

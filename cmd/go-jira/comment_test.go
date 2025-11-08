@@ -13,6 +13,7 @@ import (
 	jira "github.com/andygrunwald/go-jira"
 )
 
+//nolint:gocyclo
 func TestAddComments(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -70,7 +71,9 @@ func TestAddComments(t *testing.T) {
 								Name: "john.doe",
 							},
 						}
-						json.NewEncoder(w).Encode(returnComment)
+						if err := json.NewEncoder(w).Encode(returnComment); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -115,7 +118,9 @@ func TestAddComments(t *testing.T) {
 							ID:   "12345",
 							Body: "Closing this issue",
 						}
-						json.NewEncoder(w).Encode(returnComment)
+						if err := json.NewEncoder(w).Encode(returnComment); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -139,7 +144,9 @@ func TestAddComments(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusBadRequest)
-						w.Write([]byte(`{"errorMessages":["Invalid comment"]}`))
+						if _, err := w.Write([]byte(`{"errorMessages":["Invalid comment"]}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},
@@ -163,7 +170,9 @@ func TestAddComments(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusOK) // Should be 201
-						w.Write([]byte(`{"id":"12345"}`))
+						if _, err := w.Write([]byte(`{"id":"12345"}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},
@@ -207,14 +216,18 @@ func TestAddComments(t *testing.T) {
 						// Fail the first and third requests
 						if count == 1 || count == 3 {
 							w.WriteHeader(http.StatusForbidden)
-							w.Write([]byte(`{"errorMessages":["Permission denied"]}`))
+							if _, err := w.Write([]byte(`{"errorMessages":["Permission denied"]}`)); err != nil {
+								t.Errorf("failed to write response: %v", err)
+							}
 						} else {
 							w.WriteHeader(http.StatusCreated)
 							returnComment := jira.Comment{
 								ID:   "12345",
 								Body: "Test comment",
 							}
-							json.NewEncoder(w).Encode(returnComment)
+							if err := json.NewEncoder(w).Encode(returnComment); err != nil {
+								t.Errorf("failed to encode response: %v", err)
+							}
 						}
 					}),
 				)
@@ -255,7 +268,9 @@ func TestAddComments(t *testing.T) {
 							ID:   "12345",
 							Body: comment.Body,
 						}
-						json.NewEncoder(w).Encode(returnComment)
+						if err := json.NewEncoder(w).Encode(returnComment); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -292,7 +307,9 @@ func TestAddComments(t *testing.T) {
 							ID:   "12345",
 							Body: "Test comment",
 						}
-						json.NewEncoder(w).Encode(returnComment)
+						if err := json.NewEncoder(w).Encode(returnComment); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
@@ -333,7 +350,9 @@ func TestAddComments(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusInternalServerError)
-						w.Write([]byte(`{"errorMessages":["Internal server error"]}`))
+						if _, err := w.Write([]byte(`{"errorMessages":["Internal server error"]}`)); err != nil {
+							t.Errorf("failed to write response: %v", err)
+						}
 					}),
 				)
 			},
@@ -372,7 +391,9 @@ func TestAddComments(t *testing.T) {
 							ID:   "12345",
 							Body: "",
 						}
-						json.NewEncoder(w).Encode(returnComment)
+						if err := json.NewEncoder(w).Encode(returnComment); err != nil {
+							t.Errorf("failed to encode response: %v", err)
+						}
 					}),
 				)
 			},
