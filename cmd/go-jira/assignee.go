@@ -11,7 +11,12 @@ import (
 )
 
 // processAssignee updates assignee for issues concurrently
-func processAssignee(ctx context.Context, jiraClient *jira.Client, issues []*jira.Issue, assignee *jira.User) error {
+func processAssignee(
+	ctx context.Context,
+	jiraClient *jira.Client,
+	issues []*jira.Issue,
+	assignee *jira.User,
+) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(issues))
 

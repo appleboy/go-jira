@@ -73,7 +73,11 @@ func getUser(ctx context.Context, jiraClient *jira.Client, username string) (*ji
 }
 
 // getResolutionID retrieves the resolution ID by name
-func getResolutionID(ctx context.Context, jiraClient *jira.Client, resolution string) (string, error) {
+func getResolutionID(
+	ctx context.Context,
+	jiraClient *jira.Client,
+	resolution string,
+) (string, error) {
 	resolutions, resp, err := jiraClient.Resolution.GetListWithContext(ctx)
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()

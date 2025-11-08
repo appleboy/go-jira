@@ -16,7 +16,11 @@ import (
 var issueAlphanumericPattern = regexp.MustCompile(`([A-Z]{1,10}-[1-9][0-9]*)`)
 
 // processIssues retrieves issues from JIRA concurrently
-func processIssues(ctx context.Context, jiraClient *jira.Client, config Config) ([]*jira.Issue, error) {
+func processIssues(
+	ctx context.Context,
+	jiraClient *jira.Client,
+	config Config,
+) ([]*jira.Issue, error) {
 	issueKeys := getIssueKeys(config.ref, config.issuePattern)
 	if len(issueKeys) == 0 {
 		return nil, errors.New("no issue keys found in ref")

@@ -12,7 +12,13 @@ import (
 )
 
 // addComments adds comments to issues concurrently
-func addComments(ctx context.Context, jiraClient *jira.Client, comment string, issues []*jira.Issue, user *jira.User) error {
+func addComments(
+	ctx context.Context,
+	jiraClient *jira.Client,
+	comment string,
+	issues []*jira.Issue,
+	user *jira.User,
+) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(issues))
 

@@ -5,11 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github/appleboy/go-jira/pkg/markdown"
 	"log/slog"
 	"os"
 	"time"
-
-	"github/appleboy/go-jira/pkg/markdown"
 
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/joho/godotenv"
