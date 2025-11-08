@@ -36,10 +36,23 @@ linters:
       - builtin$
       - examples$
 formatters:
-  # Enable specific formatter.
-  # Default: [] (uses standard Go formatting)
   enable:
     - gofmt
     - gofumpt
     - goimports
     - golines
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+  settings:
+    gofumpt:
+      # Module path which contains the source code being formatted.
+      # Default: ""
+      module-path: github/appleboy/go-jira
+      # Choose whether to use the extra rules.
+      # Default: false
+      extra-rules: true
