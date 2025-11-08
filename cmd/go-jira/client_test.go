@@ -100,18 +100,20 @@ func TestGetSelf(t *testing.T) {
 		{
 			name: "successful get self",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.Path != "/rest/api/2/myself" {
-						t.Errorf("unexpected path: %s", r.URL.Path)
-					}
-					w.WriteHeader(http.StatusOK)
-					user := jira.User{
-						Name:         "testuser",
-						DisplayName:  "Test User",
-						EmailAddress: "test@example.com",
-					}
-					json.NewEncoder(w).Encode(user)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.URL.Path != "/rest/api/2/myself" {
+							t.Errorf("unexpected path: %s", r.URL.Path)
+						}
+						w.WriteHeader(http.StatusOK)
+						user := jira.User{
+							Name:         "testuser",
+							DisplayName:  "Test User",
+							EmailAddress: "test@example.com",
+						}
+						json.NewEncoder(w).Encode(user)
+					}),
+				)
 			},
 			wantErr: false,
 			wantUser: &jira.User{
@@ -123,10 +125,12 @@ func TestGetSelf(t *testing.T) {
 		{
 			name: "api error",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusUnauthorized)
-					w.Write([]byte(`{"errorMessages":["Unauthorized"]}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusUnauthorized)
+						w.Write([]byte(`{"errorMessages":["Unauthorized"]}`))
+					}),
+				)
 			},
 			wantErr:  true,
 			wantUser: nil,
@@ -162,7 +166,11 @@ func TestGetSelf(t *testing.T) {
 				t.Errorf("user name = %v, want %v", user.Name, tt.wantUser.Name)
 			}
 			if user.DisplayName != tt.wantUser.DisplayName {
-				t.Errorf("user display name = %v, want %v", user.DisplayName, tt.wantUser.DisplayName)
+				t.Errorf(
+					"user display name = %v, want %v",
+					user.DisplayName,
+					tt.wantUser.DisplayName,
+				)
 			}
 			if user.EmailAddress != tt.wantUser.EmailAddress {
 				t.Errorf("user email = %v, want %v", user.EmailAddress, tt.wantUser.EmailAddress)
@@ -183,22 +191,24 @@ func TestGetUser(t *testing.T) {
 			name:     "successful get user",
 			username: "john.doe",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.Path != "/rest/api/2/user" {
-						t.Errorf("unexpected path: %s", r.URL.Path)
-					}
-					username := r.URL.Query().Get("username")
-					if username != "john.doe" {
-						t.Errorf("unexpected username: %s", username)
-					}
-					w.WriteHeader(http.StatusOK)
-					user := jira.User{
-						Name:         "john.doe",
-						DisplayName:  "John Doe",
-						EmailAddress: "john.doe@example.com",
-					}
-					json.NewEncoder(w).Encode(user)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.URL.Path != "/rest/api/2/user" {
+							t.Errorf("unexpected path: %s", r.URL.Path)
+						}
+						username := r.URL.Query().Get("username")
+						if username != "john.doe" {
+							t.Errorf("unexpected username: %s", username)
+						}
+						w.WriteHeader(http.StatusOK)
+						user := jira.User{
+							Name:         "john.doe",
+							DisplayName:  "John Doe",
+							EmailAddress: "john.doe@example.com",
+						}
+						json.NewEncoder(w).Encode(user)
+					}),
+				)
 			},
 			wantErr: false,
 			wantUser: &jira.User{
@@ -218,10 +228,12 @@ func TestGetUser(t *testing.T) {
 			name:     "user not found",
 			username: "nonexistent",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNotFound)
-					w.Write([]byte(`{"errorMessages":["User not found"]}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusNotFound)
+						w.Write([]byte(`{"errorMessages":["User not found"]}`))
+					}),
+				)
 			},
 			wantErr:  true,
 			wantUser: nil,
@@ -269,7 +281,11 @@ func TestGetUser(t *testing.T) {
 					t.Errorf("user name = %v, want %v", user.Name, tt.wantUser.Name)
 				}
 				if user.DisplayName != tt.wantUser.DisplayName {
-					t.Errorf("user display name = %v, want %v", user.DisplayName, tt.wantUser.DisplayName)
+					t.Errorf(
+						"user display name = %v, want %v",
+						user.DisplayName,
+						tt.wantUser.DisplayName,
+					)
 				}
 			}
 		})
@@ -288,18 +304,20 @@ func TestGetResolutionID(t *testing.T) {
 			name:       "successful resolution lookup",
 			resolution: "Fixed",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.Path != "/rest/api/2/resolution" {
-						t.Errorf("unexpected path: %s", r.URL.Path)
-					}
-					w.WriteHeader(http.StatusOK)
-					resolutions := []jira.Resolution{
-						{ID: "1", Name: "Fixed"},
-						{ID: "2", Name: "Won't Fix"},
-						{ID: "3", Name: "Duplicate"},
-					}
-					json.NewEncoder(w).Encode(resolutions)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.URL.Path != "/rest/api/2/resolution" {
+							t.Errorf("unexpected path: %s", r.URL.Path)
+						}
+						w.WriteHeader(http.StatusOK)
+						resolutions := []jira.Resolution{
+							{ID: "1", Name: "Fixed"},
+							{ID: "2", Name: "Won't Fix"},
+							{ID: "3", Name: "Duplicate"},
+						}
+						json.NewEncoder(w).Encode(resolutions)
+					}),
+				)
 			},
 			wantErr: false,
 			wantID:  "1",
@@ -308,14 +326,16 @@ func TestGetResolutionID(t *testing.T) {
 			name:       "case insensitive match",
 			resolution: "fixed",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
-					resolutions := []jira.Resolution{
-						{ID: "1", Name: "Fixed"},
-						{ID: "2", Name: "Won't Fix"},
-					}
-					json.NewEncoder(w).Encode(resolutions)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						resolutions := []jira.Resolution{
+							{ID: "1", Name: "Fixed"},
+							{ID: "2", Name: "Won't Fix"},
+						}
+						json.NewEncoder(w).Encode(resolutions)
+					}),
+				)
 			},
 			wantErr: false,
 			wantID:  "1",
@@ -324,14 +344,16 @@ func TestGetResolutionID(t *testing.T) {
 			name:       "resolution not found",
 			resolution: "NonExistent",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
-					resolutions := []jira.Resolution{
-						{ID: "1", Name: "Fixed"},
-						{ID: "2", Name: "Won't Fix"},
-					}
-					json.NewEncoder(w).Encode(resolutions)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						resolutions := []jira.Resolution{
+							{ID: "1", Name: "Fixed"},
+							{ID: "2", Name: "Won't Fix"},
+						}
+						json.NewEncoder(w).Encode(resolutions)
+					}),
+				)
 			},
 			wantErr: false,
 			wantID:  "",
@@ -340,10 +362,12 @@ func TestGetResolutionID(t *testing.T) {
 			name:       "api error",
 			resolution: "Fixed",
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"errorMessages":["Internal error"]}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusInternalServerError)
+						w.Write([]byte(`{"errorMessages":["Internal error"]}`))
+					}),
+				)
 			},
 			wantErr: true,
 			wantID:  "",

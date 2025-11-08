@@ -26,20 +26,22 @@ func TestProcessIssues(t *testing.T) {
 				issuePattern: "",
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					issueKey := r.URL.Path[len("/rest/api/2/issue/"):]
-					w.WriteHeader(http.StatusOK)
-					issue := jira.Issue{
-						Key: issueKey,
-						Fields: &jira.IssueFields{
-							Summary: "Test issue " + issueKey,
-							Status: &jira.Status{
-								Name: "Open",
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						issueKey := r.URL.Path[len("/rest/api/2/issue/"):]
+						w.WriteHeader(http.StatusOK)
+						issue := jira.Issue{
+							Key: issueKey,
+							Fields: &jira.IssueFields{
+								Summary: "Test issue " + issueKey,
+								Status: &jira.Status{
+									Name: "Open",
+								},
 							},
-						},
-					}
-					json.NewEncoder(w).Encode(issue)
-				}))
+						}
+						json.NewEncoder(w).Encode(issue)
+					}),
+				)
 			},
 			wantErr:   false,
 			wantCount: 2,
@@ -51,9 +53,11 @@ func TestProcessIssues(t *testing.T) {
 				issuePattern: "",
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+					}),
+				)
 			},
 			wantErr:   true,
 			wantCount: 0,
@@ -65,26 +69,28 @@ func TestProcessIssues(t *testing.T) {
 				issuePattern: "",
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					issueKey := r.URL.Path[len("/rest/api/2/issue/"):]
-					// Simulate failure for DEF-456
-					if issueKey == "DEF-456" {
-						w.WriteHeader(http.StatusNotFound)
-						w.Write([]byte(`{"errorMessages":["Issue not found"]}`))
-						return
-					}
-					w.WriteHeader(http.StatusOK)
-					issue := jira.Issue{
-						Key: issueKey,
-						Fields: &jira.IssueFields{
-							Summary: "Test issue " + issueKey,
-							Status: &jira.Status{
-								Name: "Open",
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						issueKey := r.URL.Path[len("/rest/api/2/issue/"):]
+						// Simulate failure for DEF-456
+						if issueKey == "DEF-456" {
+							w.WriteHeader(http.StatusNotFound)
+							w.Write([]byte(`{"errorMessages":["Issue not found"]}`))
+							return
+						}
+						w.WriteHeader(http.StatusOK)
+						issue := jira.Issue{
+							Key: issueKey,
+							Fields: &jira.IssueFields{
+								Summary: "Test issue " + issueKey,
+								Status: &jira.Status{
+									Name: "Open",
+								},
 							},
-						},
-					}
-					json.NewEncoder(w).Encode(issue)
-				}))
+						}
+						json.NewEncoder(w).Encode(issue)
+					}),
+				)
 			},
 			wantErr:   false,
 			wantCount: 2, // Should succeed for ABC-123 and GHI-789
@@ -96,17 +102,19 @@ func TestProcessIssues(t *testing.T) {
 				issuePattern: `(PROJ-\d+)`,
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					issueKey := r.URL.Path[len("/rest/api/2/issue/"):]
-					w.WriteHeader(http.StatusOK)
-					issue := jira.Issue{
-						Key: issueKey,
-						Fields: &jira.IssueFields{
-							Summary: "Test issue " + issueKey,
-						},
-					}
-					json.NewEncoder(w).Encode(issue)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						issueKey := r.URL.Path[len("/rest/api/2/issue/"):]
+						w.WriteHeader(http.StatusOK)
+						issue := jira.Issue{
+							Key: issueKey,
+							Fields: &jira.IssueFields{
+								Summary: "Test issue " + issueKey,
+							},
+						}
+						json.NewEncoder(w).Encode(issue)
+					}),
+				)
 			},
 			wantErr:   false,
 			wantCount: 2,
@@ -118,11 +126,13 @@ func TestProcessIssues(t *testing.T) {
 				issuePattern: "",
 			},
 			setupServer: func() *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					// Simulate slow response
-					time.Sleep(200 * time.Millisecond)
-					w.WriteHeader(http.StatusOK)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						// Simulate slow response
+						time.Sleep(200 * time.Millisecond)
+						w.WriteHeader(http.StatusOK)
+					}),
+				)
 			},
 			wantErr:   false,
 			wantCount: 0, // With very short timeout, we might get 0 results

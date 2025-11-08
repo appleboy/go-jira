@@ -77,7 +77,8 @@ func setupTestServer(options testServerOptions) *httptest.Server {
 			issueKey := r.URL.Path[len("/rest/api/2/issue/"):]
 
 			// Check if it's a comment or assignee endpoint
-			if strings.Contains(issueKey, "/comment") || strings.Contains(issueKey, "/assignee") || strings.Contains(issueKey, "/transitions") {
+			if strings.Contains(issueKey, "/comment") || strings.Contains(issueKey, "/assignee") ||
+				strings.Contains(issueKey, "/transitions") {
 				goto handleOtherEndpoints
 			}
 

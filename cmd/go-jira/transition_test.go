@@ -57,15 +57,17 @@ func TestProcessTransitions(t *testing.T) {
 			setupServer: func(t *testing.T) *httptest.Server {
 				var mu sync.Mutex
 				transitionCount := 0
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if !strings.Contains(r.URL.Path, "/transitions") {
-						t.Errorf("unexpected path: %s", r.URL.Path)
-					}
-					mu.Lock()
-					transitionCount++
-					mu.Unlock()
-					w.WriteHeader(http.StatusNoContent)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if !strings.Contains(r.URL.Path, "/transitions") {
+							t.Errorf("unexpected path: %s", r.URL.Path)
+						}
+						mu.Lock()
+						transitionCount++
+						mu.Unlock()
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},
@@ -88,25 +90,27 @@ func TestProcessTransitions(t *testing.T) {
 				},
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					// Verify resolution is sent
-					body, err := io.ReadAll(r.Body)
-					if err != nil {
-						t.Errorf("failed to read body: %v", err)
-					}
-					var payload map[string]interface{}
-					if err := json.Unmarshal(body, &payload); err != nil {
-						t.Errorf("failed to unmarshal body: %v", err)
-					}
-					if fields, ok := payload["fields"].(map[string]interface{}); ok {
-						if resolution, ok := fields["resolution"].(map[string]interface{}); ok {
-							if id, ok := resolution["id"].(string); ok && id != "10" {
-								t.Errorf("expected resolution ID 10, got %s", id)
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						// Verify resolution is sent
+						body, err := io.ReadAll(r.Body)
+						if err != nil {
+							t.Errorf("failed to read body: %v", err)
+						}
+						var payload map[string]interface{}
+						if err := json.Unmarshal(body, &payload); err != nil {
+							t.Errorf("failed to unmarshal body: %v", err)
+						}
+						if fields, ok := payload["fields"].(map[string]interface{}); ok {
+							if resolution, ok := fields["resolution"].(map[string]interface{}); ok {
+								if id, ok := resolution["id"].(string); ok && id != "10" {
+									t.Errorf("expected resolution ID 10, got %s", id)
+								}
 							}
 						}
-					}
-					w.WriteHeader(http.StatusNoContent)
-				}))
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},
@@ -130,10 +134,12 @@ func TestProcessTransitions(t *testing.T) {
 				},
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					t.Error("should not make any requests when transition not found")
-					w.WriteHeader(http.StatusNoContent)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						t.Error("should not make any requests when transition not found")
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false, // Not an error, just a warning
 		},
@@ -156,9 +162,11 @@ func TestProcessTransitions(t *testing.T) {
 				},
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNoContent)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},
@@ -181,10 +189,12 @@ func TestProcessTransitions(t *testing.T) {
 				},
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte(`{"errorMessages":["Invalid transition"]}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(`{"errorMessages":["Invalid transition"]}`))
+					}),
+				)
 			},
 			wantErr: true,
 		},
@@ -221,18 +231,20 @@ func TestProcessTransitions(t *testing.T) {
 			setupServer: func(t *testing.T) *httptest.Server {
 				var mu sync.Mutex
 				requestCount := 0
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					mu.Lock()
-					requestCount++
-					count := requestCount
-					mu.Unlock()
-					// Fail the first request, succeed the second
-					if count == 1 {
-						w.WriteHeader(http.StatusInternalServerError)
-					} else {
-						w.WriteHeader(http.StatusNoContent)
-					}
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						mu.Lock()
+						requestCount++
+						count := requestCount
+						mu.Unlock()
+						// Fail the first request, succeed the second
+						if count == 1 {
+							w.WriteHeader(http.StatusInternalServerError)
+						} else {
+							w.WriteHeader(http.StatusNoContent)
+						}
+					}),
+				)
 			},
 			wantErr: true, // Should error because at least one failed
 		},
@@ -244,12 +256,14 @@ func TestProcessTransitions(t *testing.T) {
 			setupServer: func(t *testing.T) *httptest.Server {
 				var mu sync.Mutex
 				transitionCount := 0
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					mu.Lock()
-					transitionCount++
-					mu.Unlock()
-					w.WriteHeader(http.StatusNoContent)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						mu.Lock()
+						transitionCount++
+						mu.Unlock()
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},

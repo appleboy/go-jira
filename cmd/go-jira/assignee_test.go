@@ -37,27 +37,29 @@ func TestProcessAssignee(t *testing.T) {
 				EmailAddress: "john.doe@example.com",
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if !strings.Contains(r.URL.Path, "/assignee") {
-						t.Errorf("unexpected path: %s", r.URL.Path)
-					}
-					if r.Method != http.MethodPut {
-						t.Errorf("expected PUT method, got %s", r.Method)
-					}
-					// Verify assignee name in request body
-					body, err := io.ReadAll(r.Body)
-					if err != nil {
-						t.Errorf("failed to read body: %v", err)
-					}
-					var user jira.User
-					if err := json.Unmarshal(body, &user); err != nil {
-						t.Errorf("failed to unmarshal body: %v", err)
-					}
-					if user.Name != "john.doe" {
-						t.Errorf("expected assignee name 'john.doe', got %s", user.Name)
-					}
-					w.WriteHeader(http.StatusNoContent)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if !strings.Contains(r.URL.Path, "/assignee") {
+							t.Errorf("unexpected path: %s", r.URL.Path)
+						}
+						if r.Method != http.MethodPut {
+							t.Errorf("expected PUT method, got %s", r.Method)
+						}
+						// Verify assignee name in request body
+						body, err := io.ReadAll(r.Body)
+						if err != nil {
+							t.Errorf("failed to read body: %v", err)
+						}
+						var user jira.User
+						if err := json.Unmarshal(body, &user); err != nil {
+							t.Errorf("failed to unmarshal body: %v", err)
+						}
+						if user.Name != "john.doe" {
+							t.Errorf("expected assignee name 'john.doe', got %s", user.Name)
+						}
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},
@@ -91,12 +93,14 @@ func TestProcessAssignee(t *testing.T) {
 			setupServer: func(t *testing.T) *httptest.Server {
 				var mu sync.Mutex
 				updateCount := 0
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					mu.Lock()
-					updateCount++
-					mu.Unlock()
-					w.WriteHeader(http.StatusNoContent)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						mu.Lock()
+						updateCount++
+						mu.Unlock()
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},
@@ -114,10 +118,12 @@ func TestProcessAssignee(t *testing.T) {
 				Name: "invalid.user",
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte(`{"errorMessages":["User not found"]}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(`{"errorMessages":["User not found"]}`))
+					}),
+				)
 			},
 			wantErr: true,
 		},
@@ -135,10 +141,12 @@ func TestProcessAssignee(t *testing.T) {
 				Name: "john.doe",
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK) // Should be 204
-					w.Write([]byte(`{"status":"updated"}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK) // Should be 204
+						w.Write([]byte(`{"status":"updated"}`))
+					}),
+				)
 			},
 			wantErr: true,
 		},
@@ -170,19 +178,21 @@ func TestProcessAssignee(t *testing.T) {
 			setupServer: func(t *testing.T) *httptest.Server {
 				var mu sync.Mutex
 				requestCount := 0
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					mu.Lock()
-					requestCount++
-					count := requestCount
-					mu.Unlock()
-					// Fail the second request
-					if count == 2 {
-						w.WriteHeader(http.StatusForbidden)
-						w.Write([]byte(`{"errorMessages":["Permission denied"]}`))
-					} else {
-						w.WriteHeader(http.StatusNoContent)
-					}
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						mu.Lock()
+						requestCount++
+						count := requestCount
+						mu.Unlock()
+						// Fail the second request
+						if count == 2 {
+							w.WriteHeader(http.StatusForbidden)
+							w.Write([]byte(`{"errorMessages":["Permission denied"]}`))
+						} else {
+							w.WriteHeader(http.StatusNoContent)
+						}
+					}),
+				)
 			},
 			wantErr: true, // Should error because at least one failed
 		},
@@ -208,24 +218,26 @@ func TestProcessAssignee(t *testing.T) {
 				updateCount := 0
 				maxConcurrent := 0
 				currentConcurrent := 0
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					mu.Lock()
-					updateCount++
-					currentConcurrent++
-					if currentConcurrent > maxConcurrent {
-						maxConcurrent = currentConcurrent
-					}
-					mu.Unlock()
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						mu.Lock()
+						updateCount++
+						currentConcurrent++
+						if currentConcurrent > maxConcurrent {
+							maxConcurrent = currentConcurrent
+						}
+						mu.Unlock()
 
-					// Simulate some processing time
-					// time.Sleep(10 * time.Millisecond)
+						// Simulate some processing time
+						// time.Sleep(10 * time.Millisecond)
 
-					mu.Lock()
-					currentConcurrent--
-					mu.Unlock()
+						mu.Lock()
+						currentConcurrent--
+						mu.Unlock()
 
-					w.WriteHeader(http.StatusNoContent)
-				}))
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},
@@ -236,10 +248,12 @@ func TestProcessAssignee(t *testing.T) {
 				Name: "john.doe",
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					t.Error("should not make any requests with empty issues list")
-					w.WriteHeader(http.StatusNoContent)
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						t.Error("should not make any requests with empty issues list")
+						w.WriteHeader(http.StatusNoContent)
+					}),
+				)
 			},
 			wantErr: false,
 		},
@@ -257,10 +271,12 @@ func TestProcessAssignee(t *testing.T) {
 				Name: "john.doe",
 			},
 			setupServer: func(t *testing.T) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(`{"errorMessages":["Internal server error"]}`))
-				}))
+				return httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusInternalServerError)
+						w.Write([]byte(`{"errorMessages":["Internal server error"]}`))
+					}),
+				)
 			},
 			wantErr: true,
 		},
