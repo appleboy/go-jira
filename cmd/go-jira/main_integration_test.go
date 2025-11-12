@@ -282,8 +282,7 @@ func TestRun(t *testing.T) {
 				"INPUT_INSECURE": "true",
 			},
 			serverOptions: testServerOptions{},
-			wantErr:       true,
-			errContains:   "no issue keys found",
+			wantErr:       false, // Changed: now returns success with warning
 		},
 		{
 			name: "issue retrieval error",
@@ -295,8 +294,7 @@ func TestRun(t *testing.T) {
 			serverOptions: testServerOptions{
 				issueError: true,
 			},
-			wantErr:     true,
-			errContains: "no issues found",
+			wantErr: false, // Changed: now returns success with warning when all issues fail
 		},
 		{
 			name: "resolution retrieval error",
