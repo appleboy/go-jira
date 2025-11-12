@@ -102,6 +102,9 @@ release:
 
 changelog:
   use: github
+  filters:
+    exclude:
+      - "^build\\(deps\\):"
   groups:
     - title: Features
       regexp: "^.*feat[(\\w)]*:+.*$"
