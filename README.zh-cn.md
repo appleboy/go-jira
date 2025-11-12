@@ -36,6 +36,8 @@
 
 本项目的目标是让 Jira Data Center 能够轻松地与 GitHub 或 Gitea Actions 整合。
 
+> **⚠️ 重要提示**：本项目目前**仅支持 Jira Data Center**。由于两个版本的 API 实现方式不同，目前**不支持 Jira Cloud**。
+
 ## 配置说明
 
 ### 认证方式

@@ -36,6 +36,8 @@ Since there isn't an official Jira API integration available for GitHub Actions,
 
 The goal of this project is to make it easy to integrate Jira with GitHub or Gitea Actions for Jira Data Center.
 
+> **⚠️ Important Note**: This project currently **only supports Jira Data Center**. Jira Cloud is **not supported** at this time due to different API implementations between the two versions.
+
 ## Configuration
 
 ### Authentication
