@@ -16,7 +16,6 @@ func TestProcessIssues(t *testing.T) {
 		name        string
 		config      Config
 		setupServer func() *httptest.Server
-		wantErr     bool
 		wantCount   int
 	}{
 		{
@@ -45,7 +44,6 @@ func TestProcessIssues(t *testing.T) {
 					}),
 				)
 			},
-			wantErr:   false,
 			wantCount: 2,
 		},
 		{
@@ -61,7 +59,6 @@ func TestProcessIssues(t *testing.T) {
 					}),
 				)
 			},
-			wantErr:   false,
 			wantCount: 0,
 		},
 		{
@@ -98,7 +95,6 @@ func TestProcessIssues(t *testing.T) {
 					}),
 				)
 			},
-			wantErr:   false,
 			wantCount: 2, // Should succeed for ABC-123 and GHI-789
 		},
 		{
@@ -124,7 +120,6 @@ func TestProcessIssues(t *testing.T) {
 					}),
 				)
 			},
-			wantErr:   false,
 			wantCount: 2,
 		},
 		{
@@ -142,7 +137,6 @@ func TestProcessIssues(t *testing.T) {
 					}),
 				)
 			},
-			wantErr:   false,
 			wantCount: 0, // With very short timeout, we might get 0 results
 		},
 	}
@@ -165,19 +159,7 @@ func TestProcessIssues(t *testing.T) {
 				defer cancel()
 			}
 
-			issues, err := processIssues(ctx, jiraClient, tt.config)
-
-			if tt.wantErr {
-				if err == nil {
-					t.Error("expected error but got nil")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-				return
-			}
+			issues := processIssues(ctx, jiraClient, tt.config)
 
 			if len(issues) != tt.wantCount {
 				t.Errorf("got %d issues, want %d", len(issues), tt.wantCount)

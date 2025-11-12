@@ -19,11 +19,11 @@ func processIssues(
 	ctx context.Context,
 	jiraClient *jira.Client,
 	config Config,
-) ([]*jira.Issue, error) {
+) []*jira.Issue {
 	issueKeys := getIssueKeys(config.ref, config.issuePattern)
 	if len(issueKeys) == 0 {
 		slog.Warn("no issue keys found in ref")
-		return []*jira.Issue{}, nil
+		return []*jira.Issue{}
 	}
 
 	type result struct {
@@ -76,7 +76,7 @@ func processIssues(
 		issues = append(issues, r.issue)
 	}
 
-	return issues, nil
+	return issues
 }
 
 // getIssueKeys extracts issue keys from a reference string using a pattern
