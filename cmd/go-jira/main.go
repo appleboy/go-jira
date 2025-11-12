@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -96,7 +95,8 @@ func run(envfile string) error {
 		return fmt.Errorf("error processing issues: %w", err)
 	}
 	if len(issues) == 0 {
-		return errors.New("no issues found")
+		slog.Warn("no issues found, skipping further processing")
+		return nil
 	}
 
 	if config.resolution != "" {

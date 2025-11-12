@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -23,7 +22,8 @@ func processIssues(
 ) ([]*jira.Issue, error) {
 	issueKeys := getIssueKeys(config.ref, config.issuePattern)
 	if len(issueKeys) == 0 {
-		return nil, errors.New("no issue keys found in ref")
+		slog.Warn("no issue keys found in ref")
+		return []*jira.Issue{}, nil
 	}
 
 	type result struct {

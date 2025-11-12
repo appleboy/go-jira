@@ -61,7 +61,7 @@ func TestProcessIssues(t *testing.T) {
 					}),
 				)
 			},
-			wantErr:   true,
+			wantErr:   false,
 			wantCount: 0,
 		},
 		{
