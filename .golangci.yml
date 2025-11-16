@@ -24,6 +24,8 @@ linters:
     - unparam
     - unused
     - whitespace
+    - copyloopvar
+    - predeclared
   exclusions:
     generated: lax
     presets:
@@ -32,6 +34,7 @@ linters:
       - legacy
       - std-error-handling
     paths:
+      - internal/mocks
       - third_party$
       - builtin$
       - examples$
@@ -49,6 +52,8 @@ formatters:
       - examples$
 
   settings:
+    gofmt:
+      simplify: true
     gofumpt:
       # Module path which contains the source code being formatted.
       # Default: ""
