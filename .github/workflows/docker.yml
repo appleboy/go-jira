@@ -31,7 +31,7 @@ jobs:
 
       # Scheduled scan: scan existing published image
       - name: Run Trivy vulnerability scanner on published image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         with:
           image-ref: ghcr.io/${{ github.repository }}:latest
@@ -46,7 +46,7 @@ jobs:
           sarif_file: "trivy-docker-results.sarif"
 
       - name: Run Trivy vulnerability scanner (table output for scheduled)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         with:
           image-ref: ghcr.io/${{ github.repository }}:latest
@@ -101,7 +101,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner on Docker image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
           image-ref: ${{ github.repository }}:scan
@@ -116,7 +116,7 @@ jobs:
           sarif_file: "trivy-docker-results.sarif"
 
       - name: Run Trivy vulnerability scanner (table output)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
           image-ref: ${{ github.repository }}:scan
