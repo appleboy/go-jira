@@ -19,11 +19,14 @@ func processIssues(
 	ctx context.Context,
 	jiraClient *jira.Client,
 	config Config,
-) []*jira.Issue {
-	issueKeys := getIssueKeys(config.ref, config.issuePattern)
+) ([]*jira.Issue, error) {
+	issueKeys, err := getIssueKeys(config.ref, config.issuePattern)
+	if err != nil {
+		return nil, err
+	}
 	if len(issueKeys) == 0 {
 		slog.Warn("no issue keys found in ref")
-		return []*jira.Issue{}
+		return []*jira.Issue{}, nil
 	}
 
 	type result struct {
@@ -76,15 +79,19 @@ func processIssues(
 		issues = append(issues, r.issue)
 	}
 
-	return issues
+	return issues, nil
 }
 
 // getIssueKeys extracts issue keys from a reference string using a pattern
-func getIssueKeys(ref, issuePattern string) []string {
+func getIssueKeys(ref, issuePattern string) ([]string, error) {
 	pattern := issueAlphanumericPattern
 	issueKeys := []string{}
 	if issuePattern != "" {
-		pattern = regexp.MustCompile(issuePattern)
+		var err error
+		pattern, err = regexp.Compile(issuePattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid issue pattern %q: %w", issuePattern, err)
+		}
 	}
 
 	matches := pattern.FindAllString(ref, -1)
@@ -97,5 +104,5 @@ func getIssueKeys(ref, issuePattern string) []string {
 		issueKeySet[match] = struct{}{}
 		issueKeys = append(issueKeys, match)
 	}
-	return issueKeys
+	return issueKeys, nil
 }

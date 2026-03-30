@@ -159,7 +159,10 @@ func TestProcessIssues(t *testing.T) {
 				defer cancel()
 			}
 
-			issues := processIssues(ctx, jiraClient, tt.config)
+			issues, err := processIssues(ctx, jiraClient, tt.config)
+			if err != nil {
+				t.Fatalf("processIssues() unexpected error: %v", err)
+			}
 
 			if len(issues) != tt.wantCount {
 				t.Errorf("got %d issues, want %d", len(issues), tt.wantCount)
@@ -258,7 +261,10 @@ func TestGetIssueKeys_ExtendedCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getIssueKeys(tt.ref, tt.issuePattern)
+			got, err := getIssueKeys(tt.ref, tt.issuePattern)
+			if err != nil {
+				t.Fatalf("getIssueKeys() unexpected error: %v", err)
+			}
 			if len(got) != len(tt.want) {
 				t.Errorf("getIssueKeys() returned %d keys, want %d. Got: %v, Want: %v",
 					len(got), len(tt.want), got, tt.want)

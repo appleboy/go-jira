@@ -90,7 +90,10 @@ func run(envfile string) error {
 	}
 
 	// Get issue lists from ref
-	issues := processIssues(ctx, jiraClient, config)
+	issues, err := processIssues(ctx, jiraClient, config)
+	if err != nil {
+		return fmt.Errorf("error processing issues: %w", err)
+	}
 	if len(issues) == 0 {
 		slog.Warn("no issues found, skipping further processing")
 		return nil

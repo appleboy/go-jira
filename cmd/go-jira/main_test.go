@@ -1,7 +1,7 @@
 package main
 
 import (
-	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -11,6 +11,7 @@ func TestGetIssueKeys(t *testing.T) {
 		ref          string
 		issuePattern string
 		want         []string
+		wantErr      bool
 	}{
 		{
 			name:         "default pattern",
@@ -36,12 +37,25 @@ func TestGetIssueKeys(t *testing.T) {
 			issuePattern: "",
 			want:         []string{"ABC-1234"},
 		},
+		{
+			name:         "invalid regex pattern",
+			ref:          "ABC-1234",
+			issuePattern: `([invalid`,
+			wantErr:      true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getIssueKeys(tt.ref, tt.issuePattern)
-			if !reflect.DeepEqual(got, tt.want) {
+			got, err := getIssueKeys(tt.ref, tt.issuePattern)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getIssueKeys() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				return
+			}
+			if !slices.Equal(got, tt.want) {
 				t.Errorf("getIssueKeys() = %v, want %v", got, tt.want)
 			}
 		})
