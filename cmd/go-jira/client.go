@@ -16,9 +16,13 @@ func createHTTPClient(config Config) *http.Client {
 	var httpTransport *http.Transport
 
 	if config.insecure == "true" {
-		slog.Warn("Skipping SSL certificate verification is insecure and not recommended")
 		httpTransport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			Proxy:           http.ProxyFromEnvironment, // fix 1
+		}
+	} else {
+		httpTransport = &http.Transport{
+			Proxy: http.ProxyFromEnvironment, // fix 2 — no longer nil
 		}
 	}
 
