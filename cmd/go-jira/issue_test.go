@@ -74,7 +74,9 @@ func TestProcessIssues(t *testing.T) {
 						// Simulate failure for DEF-456
 						if issueKey == "DEF-456" {
 							w.WriteHeader(http.StatusNotFound)
-							if _, err := w.Write([]byte(`{"errorMessages":["Issue not found"]}`)); err != nil {
+							if _, err := w.Write(
+								[]byte(`{"errorMessages":["Issue not found"]}`),
+							); err != nil {
 								t.Errorf("failed to write response: %v", err)
 							}
 							return

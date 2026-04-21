@@ -144,7 +144,9 @@ func TestAddComments(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusBadRequest)
-						if _, err := w.Write([]byte(`{"errorMessages":["Invalid comment"]}`)); err != nil {
+						if _, err := w.Write(
+							[]byte(`{"errorMessages":["Invalid comment"]}`),
+						); err != nil {
 							t.Errorf("failed to write response: %v", err)
 						}
 					}),
@@ -216,7 +218,9 @@ func TestAddComments(t *testing.T) {
 						// Fail the first and third requests
 						if count == 1 || count == 3 {
 							w.WriteHeader(http.StatusForbidden)
-							if _, err := w.Write([]byte(`{"errorMessages":["Permission denied"]}`)); err != nil {
+							if _, err := w.Write(
+								[]byte(`{"errorMessages":["Permission denied"]}`),
+							); err != nil {
 								t.Errorf("failed to write response: %v", err)
 							}
 						} else {
@@ -350,7 +354,9 @@ func TestAddComments(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusInternalServerError)
-						if _, err := w.Write([]byte(`{"errorMessages":["Internal server error"]}`)); err != nil {
+						if _, err := w.Write(
+							[]byte(`{"errorMessages":["Internal server error"]}`),
+						); err != nil {
 							t.Errorf("failed to write response: %v", err)
 						}
 					}),

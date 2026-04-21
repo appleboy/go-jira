@@ -416,7 +416,7 @@ func TestRun(t *testing.T) {
 			}
 
 			// Run the function
-			err := run("")
+			err := run(nil)
 
 			// Check results
 			if tt.wantErr {
@@ -468,8 +468,12 @@ INPUT_REF=ABC-123
 		os.Unsetenv("INPUT_INSECURE")
 	}()
 
-	// Run with env file
-	err = run(tmpfile.Name())
+	// Run with env file via the --env-file flag on a fresh cobra command.
+	cmd := newRootCmd()
+	if err := cmd.ParseFlags([]string{"--env-file=" + tmpfile.Name()}); err != nil {
+		t.Fatalf("ParseFlags: %v", err)
+	}
+	err = run(cmd)
 	if err != nil {
 		t.Errorf("unexpected error with env file: %v", err)
 	}

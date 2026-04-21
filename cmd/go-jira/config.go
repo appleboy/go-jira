@@ -4,6 +4,8 @@ import (
 	"errors"
 
 	"github/appleboy/go-jira/pkg/util"
+
+	"github.com/spf13/cobra"
 )
 
 // Config holds the application configuration
@@ -23,22 +25,46 @@ type Config struct {
 	debug        bool
 }
 
-// loadConfig loads configuration from environment variables
-func loadConfig() Config {
+// loadConfig resolves configuration from CLI flags (when explicitly set)
+// falling back to environment variables via util.GetGlobalValue.
+//
+// The INPUT_<KEY> → <KEY> lookup order inside util.GetGlobalValue is preserved
+// verbatim, so GitHub Actions (which sets INPUT_*) and local .env usage both
+// keep working without any change.
+//
+// Passing cmd == nil is supported and makes every lookup go straight to the
+// environment — this keeps existing tests and any caller that doesn't construct
+// a cobra command working unchanged.
+func loadConfig(cmd *cobra.Command) Config {
+	getString := func(flagName, envKey string) string {
+		if cmd != nil && cmd.Flags().Changed(flagName) {
+			v, _ := cmd.Flags().GetString(flagName)
+			return v
+		}
+		return util.GetGlobalValue(envKey)
+	}
+	getBool := func(flagName, envKey string) bool {
+		if cmd != nil && cmd.Flags().Changed(flagName) {
+			v, _ := cmd.Flags().GetBool(flagName)
+			return v
+		}
+		return util.ToBool(util.GetGlobalValue(envKey))
+	}
+
 	return Config{
-		baseURL:      util.GetGlobalValue("base_url"),
-		insecure:     util.GetGlobalValue("insecure"),
-		username:     util.GetGlobalValue("username"),
-		password:     util.GetGlobalValue("password"),
-		token:        util.GetGlobalValue("token"),
-		ref:          util.GetGlobalValue("ref"),
-		issuePattern: util.GetGlobalValue("issue_format"),
-		toTransition: util.GetGlobalValue("transition"),
-		resolution:   util.GetGlobalValue("resolution"),
-		comment:      util.GetGlobalValue("comment"),
-		assignee:     util.GetGlobalValue("assignee"),
-		markdown:     util.ToBool(util.GetGlobalValue("markdown")),
-		debug:        util.ToBool(util.GetGlobalValue("debug")),
+		baseURL:      getString(flagBaseURL, "base_url"),
+		insecure:     getString(flagInsecure, "insecure"),
+		username:     getString(flagUsername, "username"),
+		password:     getString(flagPassword, "password"),
+		token:        getString(flagToken, "token"),
+		ref:          getString(flagRef, "ref"),
+		issuePattern: getString(flagIssueFormat, "issue_format"),
+		toTransition: getString(flagToTransition, "transition"),
+		resolution:   getString(flagResolution, "resolution"),
+		comment:      getString(flagComment, "comment"),
+		assignee:     getString(flagAssignee, "assignee"),
+		markdown:     getBool(flagMarkdown, "markdown"),
+		debug:        getBool(flagDebug, "debug"),
 	}
 }
 

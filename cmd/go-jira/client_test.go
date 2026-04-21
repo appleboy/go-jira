@@ -132,7 +132,9 @@ func TestGetSelf(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusUnauthorized)
-						if _, err := w.Write([]byte(`{"errorMessages":["Unauthorized"]}`)); err != nil {
+						if _, err := w.Write(
+							[]byte(`{"errorMessages":["Unauthorized"]}`),
+						); err != nil {
 							t.Errorf("failed to write response: %v", err)
 						}
 					}),
@@ -239,7 +241,9 @@ func TestGetUser(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusNotFound)
-						if _, err := w.Write([]byte(`{"errorMessages":["User not found"]}`)); err != nil {
+						if _, err := w.Write(
+							[]byte(`{"errorMessages":["User not found"]}`),
+						); err != nil {
 							t.Errorf("failed to write response: %v", err)
 						}
 					}),
@@ -381,7 +385,9 @@ func TestGetResolutionID(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusInternalServerError)
-						if _, err := w.Write([]byte(`{"errorMessages":["Internal error"]}`)); err != nil {
+						if _, err := w.Write(
+							[]byte(`{"errorMessages":["Internal error"]}`),
+						); err != nil {
 							t.Errorf("failed to write response: %v", err)
 						}
 					}),
