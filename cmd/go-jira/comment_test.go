@@ -13,7 +13,6 @@ import (
 	jira "github.com/andygrunwald/go-jira"
 )
 
-//nolint:gocyclo
 func TestAddComments(t *testing.T) {
 	tests := []struct {
 		name        string
