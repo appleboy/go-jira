@@ -114,7 +114,7 @@ func run(cmd *cobra.Command) error {
 			"toTransition": config.toTransition,
 			"resolution":   config.resolution,
 			"comment":      config.comment,
-			"assignee":     config.assignee,
+			flagAssignee:   config.assignee,
 		})
 	}
 
