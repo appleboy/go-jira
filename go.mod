@@ -1,6 +1,6 @@
 module github/appleboy/go-jira
 
-go 1.25.9
+go 1.25.10
 
 require (
 	github.com/andygrunwald/go-jira v1.16.0
