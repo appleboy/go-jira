@@ -127,7 +127,9 @@ func TestProcessAssignee(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusBadRequest)
-						if _, err := w.Write([]byte(`{"errorMessages":["User not found"]}`)); err != nil {
+						if _, err := w.Write(
+							[]byte(`{"errorMessages":["User not found"]}`),
+						); err != nil {
 							t.Errorf("failed to write response: %v", err)
 						}
 					}),
@@ -197,7 +199,9 @@ func TestProcessAssignee(t *testing.T) {
 						// Fail the second request
 						if count == 2 {
 							w.WriteHeader(http.StatusForbidden)
-							if _, err := w.Write([]byte(`{"errorMessages":["Permission denied"]}`)); err != nil {
+							if _, err := w.Write(
+								[]byte(`{"errorMessages":["Permission denied"]}`),
+							); err != nil {
 								t.Errorf("failed to write response: %v", err)
 							}
 						} else {
@@ -286,7 +290,9 @@ func TestProcessAssignee(t *testing.T) {
 				return httptest.NewServer(
 					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusInternalServerError)
-						if _, err := w.Write([]byte(`{"errorMessages":["Internal server error"]}`)); err != nil {
+						if _, err := w.Write(
+							[]byte(`{"errorMessages":["Internal server error"]}`),
+						); err != nil {
 							t.Errorf("failed to write response: %v", err)
 						}
 					}),
