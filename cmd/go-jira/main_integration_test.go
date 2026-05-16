@@ -478,3 +478,61 @@ INPUT_REF=ABC-123
 		t.Errorf("unexpected error with env file: %v", err)
 	}
 }
+
+// TestRunMissingExplicitEnvFile verifies that an explicitly-passed --env-file
+// that does not exist is a hard error rather than silently ignored — this is
+// the footgun that lets a misdirected path mask a credential misconfig.
+func TestRunMissingExplicitEnvFile(t *testing.T) {
+	cmd := newRootCmd()
+	missing := "/tmp/go-jira-does-not-exist-" + t.Name() + ".env"
+	if err := cmd.ParseFlags([]string{"--env-file=" + missing}); err != nil {
+		t.Fatalf("ParseFlags: %v", err)
+	}
+	err := run(cmd)
+	if err == nil {
+		t.Fatal("expected error for missing --env-file, got nil")
+	}
+	if !strings.Contains(err.Error(), "env file not found") {
+		t.Errorf("expected 'env file not found' in error, got: %v", err)
+	}
+}
+
+// TestRunDefaultEnvFileMissingIsSilent verifies the default .env path is still
+// silently ignored when absent — only explicit --env-file is fatal on miss.
+func TestRunDefaultEnvFileMissingIsSilent(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldWd) }()
+
+	server := setupTestServer(testServerOptions{})
+	defer server.Close()
+
+	envVars := map[string]string{
+		"INPUT_BASE_URL": server.URL,
+		"INPUT_INSECURE": "true",
+		"INPUT_TOKEN":    "testtoken",
+		"INPUT_REF":      "ABC-123",
+	}
+	for k, v := range envVars {
+		os.Setenv(k, v)
+	}
+	defer func() {
+		for k := range envVars {
+			os.Unsetenv(k)
+		}
+	}()
+
+	cmd := newRootCmd()
+	if err := cmd.ParseFlags(nil); err != nil {
+		t.Fatalf("ParseFlags: %v", err)
+	}
+	if err := run(cmd); err != nil {
+		t.Errorf("default .env absent should be silent, got: %v", err)
+	}
+}

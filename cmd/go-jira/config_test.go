@@ -1,9 +1,23 @@
 package main
 
 import (
+	"bytes"
+	"log/slog"
 	"os"
+	"strings"
 	"testing"
 )
+
+// captureSlog redirects the default slog logger to a buffer for the duration of
+// a test and returns the buffer. The previous default is restored on cleanup.
+func captureSlog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	return &buf
+}
 
 // clearInputEnv unsets every INPUT_* and bare env var that loadConfig reads
 // and returns a restore function. Tests use this to get a clean slate without
@@ -427,4 +441,47 @@ func TestLoadConfig_UnsetFlagFallsBackToEnv(t *testing.T) {
 	if got.ref != "ENV-1" {
 		t.Errorf("ref = %q, want env value", got.ref)
 	}
+}
+
+// TestLoadConfig_WarnsOnSecretFlags verifies that --password / --token via CLI
+// flag emit a warning, while the same values via env vars do not.
+func TestLoadConfig_WarnsOnSecretFlags(t *testing.T) {
+	t.Run("flag emits warning", func(t *testing.T) {
+		clearInputEnv(t)
+		buf := captureSlog(t)
+
+		cmd := newRootCmd()
+		if err := cmd.ParseFlags([]string{
+			"--password=hunter2",
+			"--token=t0k3n",
+		}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		_ = loadConfig(cmd)
+
+		out := buf.String()
+		if !strings.Contains(out, "--password") {
+			t.Errorf("expected warning for --password, got: %s", out)
+		}
+		if !strings.Contains(out, "--token") {
+			t.Errorf("expected warning for --token, got: %s", out)
+		}
+	})
+
+	t.Run("env vars do not warn", func(t *testing.T) {
+		clearInputEnv(t)
+		os.Setenv("INPUT_PASSWORD", "hunter2")
+		os.Setenv("INPUT_TOKEN", "t0k3n")
+		buf := captureSlog(t)
+
+		cmd := newRootCmd()
+		if err := cmd.ParseFlags([]string{}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		_ = loadConfig(cmd)
+
+		if strings.Contains(buf.String(), "unsafe") {
+			t.Errorf("expected no warning when secrets come from env, got: %s", buf.String())
+		}
+	})
 }

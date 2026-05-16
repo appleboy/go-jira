@@ -6,6 +6,7 @@ import (
 	"github/appleboy/go-jira/pkg/markdown"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	jira "github.com/andygrunwald/go-jira"
@@ -69,8 +70,10 @@ func newRootCmd() *cobra.Command {
 	cmd.Flags().
 		Bool(flagInsecure, false, "Skip TLS verification (env: INSECURE / INPUT_INSECURE)")
 	cmd.Flags().String(flagUsername, "", "Jira username (env: USERNAME / INPUT_USERNAME)")
-	cmd.Flags().String(flagPassword, "", "Jira password (env: PASSWORD / INPUT_PASSWORD)")
-	cmd.Flags().String(flagToken, "", "Jira API token (env: TOKEN / INPUT_TOKEN)")
+	cmd.Flags().
+		String(flagPassword, "", "Jira password — INSECURE on shared hosts, prefer env: PASSWORD / INPUT_PASSWORD")
+	cmd.Flags().
+		String(flagToken, "", "Jira API token — INSECURE on shared hosts, prefer env: TOKEN / INPUT_TOKEN")
 	cmd.Flags().
 		String(flagRef, "", "Commit message or text containing issue keys (env: REF / INPUT_REF)")
 	cmd.Flags().
@@ -90,12 +93,43 @@ func newRootCmd() *cobra.Command {
 	return cmd
 }
 
+// loadEnvFile resolves and loads an env file, logging the absolute path that was
+// loaded so the actual source of secrets is never invisible. When the user
+// explicitly passed --env-file but the file is missing or unreadable, fail
+// loudly rather than silently fall back — silent fallback is the footgun that
+// lets a misdirected --env-file or a missing file mask credential misconfigs.
+func loadEnvFile(envfile string, explicit bool) error {
+	if envfile == "" {
+		return nil
+	}
+	abs, err := filepath.Abs(envfile)
+	if err != nil {
+		return fmt.Errorf("resolve env file path: %w", err)
+	}
+	info, statErr := os.Stat(abs)
+	if statErr != nil || info.IsDir() {
+		if explicit {
+			return fmt.Errorf("env file not found: %s", abs)
+		}
+		return nil
+	}
+	if err := godotenv.Load(abs); err != nil {
+		return fmt.Errorf("load env file %s: %w", abs, err)
+	}
+	slog.Info("loaded env file", "path", abs)
+	return nil
+}
+
 func run(cmd *cobra.Command) error {
 	envfile := ".env"
+	explicit := false
 	if cmd != nil {
 		envfile, _ = cmd.Flags().GetString(flagEnvFile)
+		explicit = cmd.Flags().Changed(flagEnvFile)
 	}
-	_ = godotenv.Load(envfile)
+	if err := loadEnvFile(envfile, explicit); err != nil {
+		return err
+	}
 
 	config := loadConfig(cmd)
 	if err := validateConfig(config); err != nil {

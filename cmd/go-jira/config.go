@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github/appleboy/go-jira/pkg/util"
+	"log/slog"
 	"net/url"
 
 	"github.com/spf13/cobra"
@@ -51,7 +52,7 @@ func loadConfig(cmd *cobra.Command) Config {
 		return util.ToBool(util.GetGlobalValue(envKey))
 	}
 
-	return Config{
+	cfg := Config{
 		baseURL:      getString(flagBaseURL, "base_url"),
 		insecure:     getBool(flagInsecure, "insecure"),
 		username:     getString(flagUsername, "username"),
@@ -66,6 +67,19 @@ func loadConfig(cmd *cobra.Command) Config {
 		markdown:     getBool(flagMarkdown, "markdown"),
 		debug:        getBool(flagDebug, "debug"),
 	}
+
+	// Warn when secrets arrive via CLI flag — they leak into ps / /proc/<pid>/cmdline / shell history.
+	// Env vars and .env files don't have this exposure.
+	if cmd != nil {
+		for _, name := range []string{flagPassword, flagToken} {
+			if cmd.Flags().Changed(name) {
+				slog.Warn("passing secrets via CLI flag is unsafe on shared hosts; prefer env vars or .env",
+					"flag", "--"+name)
+			}
+		}
+	}
+
+	return cfg
 }
 
 // validateConfig validates the configuration
