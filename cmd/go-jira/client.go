@@ -11,21 +11,16 @@ import (
 	jira "github.com/andygrunwald/go-jira"
 )
 
-// createHTTPClient creates an HTTP client with optional TLS configuration and authentication
+// createHTTPClient creates an HTTP client with optional TLS configuration and authentication.
+// It clones http.DefaultTransport so all standard-library defaults (proxy, connection pool,
+// timeouts, HTTP/2) are preserved, and only overrides TLSClientConfig when --insecure is set.
 func createHTTPClient(config Config) *http.Client {
-	var httpTransport *http.Transport
+	httpTransport := http.DefaultTransport.(*http.Transport).Clone()
 
 	if config.insecure == "true" { //nolint:goconst // intentional string compare against the env-injected flag value
 		slog.Warn("Skipping SSL certificate verification is insecure and not recommended")
-		httpTransport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // #nosec G402 -- opt-in via flag
-			},
-			Proxy: http.ProxyFromEnvironment, // fix 1
-		}
-	} else {
-		httpTransport = &http.Transport{
-			Proxy: http.ProxyFromEnvironment, // fix 2 — no longer nil
+		httpTransport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, // #nosec G402 -- opt-in via flag
 		}
 	}
 
