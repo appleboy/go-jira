@@ -73,8 +73,11 @@ func loadConfig(cmd *cobra.Command) Config {
 	if cmd != nil {
 		for _, name := range []string{flagPassword, flagToken} {
 			if cmd.Flags().Changed(name) {
-				slog.Warn("passing secrets via CLI flag is unsafe on shared hosts; prefer env vars or .env",
-					"flag", "--"+name)
+				slog.Warn(
+					"passing secrets via CLI flag is unsafe on shared hosts; prefer env vars or .env",
+					"flag",
+					"--"+name,
+				)
 			}
 		}
 	}
