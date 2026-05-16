@@ -17,9 +17,10 @@ import (
 func createHTTPClient(config Config) *http.Client {
 	httpTransport := http.DefaultTransport.(*http.Transport).Clone()
 
-	if config.insecure == "true" { //nolint:goconst // intentional string compare against the env-injected flag value
+	if config.insecure {
 		slog.Warn("Skipping SSL certificate verification is insecure and not recommended")
 		httpTransport.TLSClientConfig = &tls.Config{
+			MinVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: true, // #nosec G402 -- opt-in via flag
 		}
 	}

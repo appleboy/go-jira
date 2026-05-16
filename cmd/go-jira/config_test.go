@@ -196,7 +196,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			expected: Config{
 				baseURL:      "https://jira.example.com",
-				insecure:     "true",
+				insecure:     true,
 				username:     "testuser",
 				password:     "testpass",
 				token:        "testtoken",
@@ -221,7 +221,7 @@ func TestLoadConfig(t *testing.T) {
 				baseURL:      "https://jira.example.com",
 				ref:          "ABC-123",
 				token:        "testtoken",
-				insecure:     "",
+				insecure:     false,
 				username:     "",
 				password:     "",
 				issuePattern: "",

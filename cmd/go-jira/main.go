@@ -65,14 +65,9 @@ func newRootCmd() *cobra.Command {
 	// Flags mirror the env-var driven config keys. Defaults are empty so that
 	// cmd.Flags().Changed(name) correctly distinguishes "user set explicitly"
 	// from "fall back to util.GetGlobalValue()".
-	//
-	// Note: --insecure is a String (not Bool) because the existing code path in
-	// client.go does a strict config.insecure == "true" check. Keeping String
-	// preserves exact behaviour (e.g. "1" does NOT enable insecure mode) for
-	// both the flag and the env var. Pass as --insecure=true to enable.
 	cmd.Flags().String(flagBaseURL, "", "Jira base URL (env: BASE_URL / INPUT_BASE_URL)")
 	cmd.Flags().
-		String(flagInsecure, "", "Skip TLS verification; pass \"true\" to enable (env: INSECURE / INPUT_INSECURE)")
+		Bool(flagInsecure, false, "Skip TLS verification (env: INSECURE / INPUT_INSECURE)")
 	cmd.Flags().String(flagUsername, "", "Jira username (env: USERNAME / INPUT_USERNAME)")
 	cmd.Flags().String(flagPassword, "", "Jira password (env: PASSWORD / INPUT_PASSWORD)")
 	cmd.Flags().String(flagToken, "", "Jira API token (env: TOKEN / INPUT_TOKEN)")

@@ -68,7 +68,7 @@ func TestCreateHTTPClient(t *testing.T) {
 			name: "client with insecure mode",
 			config: Config{
 				baseURL:  "https://jira.example.com",
-				insecure: "true",
+				insecure: true,
 				username: "testuser",
 				password: "testpass",
 			},

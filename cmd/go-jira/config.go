@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github/appleboy/go-jira/pkg/util"
+	"net/url"
 
 	"github.com/spf13/cobra"
 )
@@ -10,7 +11,6 @@ import (
 // Config holds the application configuration
 type Config struct {
 	baseURL      string
-	insecure     string
 	username     string
 	password     string
 	token        string
@@ -20,6 +20,7 @@ type Config struct {
 	resolution   string
 	comment      string
 	assignee     string
+	insecure     bool
 	markdown     bool
 	debug        bool
 }
@@ -52,7 +53,7 @@ func loadConfig(cmd *cobra.Command) Config {
 
 	return Config{
 		baseURL:      getString(flagBaseURL, "base_url"),
-		insecure:     getString(flagInsecure, "insecure"),
+		insecure:     getBool(flagInsecure, "insecure"),
 		username:     getString(flagUsername, "username"),
 		password:     getString(flagPassword, "password"),
 		token:        getString(flagToken, "token"),
@@ -71,6 +72,19 @@ func loadConfig(cmd *cobra.Command) Config {
 func validateConfig(config Config) error {
 	if config.baseURL == "" {
 		return errors.New("base_url is required")
+	}
+	u, err := url.Parse(config.baseURL)
+	if err != nil || u.Host == "" {
+		return errors.New("base_url must be a valid URL")
+	}
+	switch u.Scheme {
+	case "https":
+	case "http":
+		if !config.insecure {
+			return errors.New("base_url must use https; pass --insecure=true to allow http")
+		}
+	default:
+		return errors.New("base_url must use http or https scheme")
 	}
 	if config.ref == "" {
 		return errors.New("ref is required")
