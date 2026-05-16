@@ -18,8 +18,10 @@ func createHTTPClient(config Config) *http.Client {
 	if config.insecure == "true" { //nolint:goconst // intentional string compare against the env-injected flag value
 		slog.Warn("Skipping SSL certificate verification is insecure and not recommended")
 		httpTransport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			Proxy:           http.ProxyFromEnvironment, // fix 1
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // #nosec G402 -- opt-in via flag
+			},
+			Proxy: http.ProxyFromEnvironment, // fix 1
 		}
 	} else {
 		httpTransport = &http.Transport{
