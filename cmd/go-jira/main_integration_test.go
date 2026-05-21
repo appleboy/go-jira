@@ -245,7 +245,7 @@ func TestRun(t *testing.T) {
 			},
 			serverOptions: testServerOptions{},
 			wantErr:       true,
-			errContains:   "authentication credentials required",
+			errContains:   "no authentication configured",
 		},
 		{
 			name: "get self error",
@@ -469,7 +469,7 @@ INPUT_REF=ABC-123
 	}()
 
 	// Run with env file via the --env-file flag on a fresh cobra command.
-	cmd := newRootCmd()
+	cmd := newRunCmd()
 	if err := cmd.ParseFlags([]string{"--env-file=" + tmpfile.Name()}); err != nil {
 		t.Fatalf("ParseFlags: %v", err)
 	}
@@ -483,7 +483,7 @@ INPUT_REF=ABC-123
 // that does not exist is a hard error rather than silently ignored — this is
 // the footgun that lets a misdirected path mask a credential misconfig.
 func TestRunMissingExplicitEnvFile(t *testing.T) {
-	cmd := newRootCmd()
+	cmd := newRunCmd()
 	missing := "/tmp/go-jira-does-not-exist-" + t.Name() + ".env"
 	if err := cmd.ParseFlags([]string{"--env-file=" + missing}); err != nil {
 		t.Fatalf("ParseFlags: %v", err)
@@ -528,7 +528,7 @@ func TestRunDefaultEnvFileMissingIsSilent(t *testing.T) {
 		}
 	}()
 
-	cmd := newRootCmd()
+	cmd := newRunCmd()
 	if err := cmd.ParseFlags(nil); err != nil {
 		t.Fatalf("ParseFlags: %v", err)
 	}

@@ -96,13 +96,15 @@ func TestValidateConfig(t *testing.T) {
 			errMsg:  "ref is required",
 		},
 		{
-			name: "missing authentication credentials",
+			// As of v1.0 the "no credentials" case is no longer rejected by
+			// validateConfig: auth selection (incl. OAuth/storage) is delegated
+			// to auth.Resolve, which errors at run time if nothing is available.
+			name: "no credentials passes validateConfig",
 			config: Config{
 				baseURL: "https://jira.example.com",
 				ref:     "ABC-123",
 			},
-			wantErr: true,
-			errMsg:  "authentication credentials required (username/password or token)",
+			wantErr: false,
 		},
 		{
 			name: "username provided without password",
@@ -386,7 +388,7 @@ func TestLoadConfig_FlagOverridesEnv(t *testing.T) {
 	os.Setenv("INPUT_REF", "ENV-1")
 	os.Setenv("INPUT_MARKDOWN", "false")
 
-	cmd := newRootCmd()
+	cmd := newRunCmd()
 	if err := cmd.ParseFlags([]string{
 		"--base-url=https://from-flag.example.com",
 		"--token=flag-token",
@@ -424,7 +426,7 @@ func TestLoadConfig_UnsetFlagFallsBackToEnv(t *testing.T) {
 	os.Setenv("INPUT_TOKEN", "env-token")
 	os.Setenv("INPUT_REF", "ENV-1")
 
-	cmd := newRootCmd()
+	cmd := newRunCmd()
 	// Parse empty args — no flag is Changed().
 	if err := cmd.ParseFlags([]string{}); err != nil {
 		t.Fatalf("ParseFlags: %v", err)
@@ -450,7 +452,7 @@ func TestLoadConfig_WarnsOnSecretFlags(t *testing.T) {
 		clearInputEnv(t)
 		buf := captureSlog(t)
 
-		cmd := newRootCmd()
+		cmd := newRunCmd()
 		if err := cmd.ParseFlags([]string{
 			"--password=hunter2",
 			"--token=t0k3n",
@@ -474,7 +476,7 @@ func TestLoadConfig_WarnsOnSecretFlags(t *testing.T) {
 		os.Setenv("INPUT_TOKEN", "t0k3n")
 		buf := captureSlog(t)
 
-		cmd := newRootCmd()
+		cmd := newRunCmd()
 		if err := cmd.ParseFlags([]string{}); err != nil {
 			t.Fatalf("ParseFlags: %v", err)
 		}
