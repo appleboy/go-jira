@@ -7,6 +7,7 @@ import (
 	"html"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -26,30 +27,38 @@ func startCallbackServer(
 ) (<-chan callbackResult, func(context.Context) error, error) {
 	resultCh := make(chan callbackResult, 1)
 
+	// send delivers the first result and ignores any later callback hits
+	// (browser refresh, back button, multiple tabs). Without this the handler
+	// goroutine would block forever on the second send into the 1-slot channel.
+	var once sync.Once
+	send := func(res callbackResult) {
+		once.Do(func() { resultCh <- res })
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if errStr := q.Get("error"); errStr != "" {
 			desc := q.Get("error_description")
 			writeCallbackHTML(w, false, desc)
-			resultCh <- callbackResult{
+			send(callbackResult{
 				Err: fmt.Errorf("oauth: callback error: %s (%s)", errStr, desc),
-			}
+			})
 			return
 		}
 		if state := q.Get("state"); state != expectedState {
 			writeCallbackHTML(w, false, "state mismatch (possible CSRF)")
-			resultCh <- callbackResult{Err: errors.New("oauth: state mismatch")}
+			send(callbackResult{Err: errors.New("oauth: state mismatch")})
 			return
 		}
 		code := q.Get("code")
 		if code == "" {
 			writeCallbackHTML(w, false, "no code in callback")
-			resultCh <- callbackResult{Err: errors.New("oauth: no code in callback")}
+			send(callbackResult{Err: errors.New("oauth: no code in callback")})
 			return
 		}
 		writeCallbackHTML(w, true, "")
-		resultCh <- callbackResult{Code: code, State: q.Get("state")}
+		send(callbackResult{Code: code, State: q.Get("state")})
 	})
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)

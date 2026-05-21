@@ -18,8 +18,8 @@ func TestMakeKey(t *testing.T) {
 	k2 := MakeKey("https://jira.example.com", "client-b")
 	k3 := MakeKey("https://other.example.com", "client-a")
 
-	if len(k1) != 16 {
-		t.Errorf("key length = %d, want 16", len(k1))
+	if len(k1) != 64 {
+		t.Errorf("key length = %d, want 64", len(k1))
 	}
 	if k1 == k2 || k1 == k3 || k2 == k3 {
 		t.Error("keys for distinct (baseURL, clientID) pairs must differ")

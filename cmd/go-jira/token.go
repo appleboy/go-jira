@@ -100,7 +100,7 @@ func runTokenPrint(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	if !cmd.Flags().Changed(flagConfirm) {
+	if confirmed, _ := cmd.Flags().GetBool(flagConfirm); !confirmed {
 		return errors.New(
 			"this command prints a sensitive token; re-run with --confirm to acknowledge")
 	}

@@ -75,6 +75,12 @@ func loadConfig(cmd *cobra.Command) Config {
 		debug:        getBool(flagDebug, "debug"),
 	}
 
+	// Accept JIRA_BASE_URL as an alias when the flag and INPUT_BASE_URL/BASE_URL
+	// are unset, so the JIRA_-prefixed examples in the docs work as written.
+	if cfg.baseURL == "" {
+		cfg.baseURL = os.Getenv(envBaseURL)
+	}
+
 	// OAuth fields use fixed JIRA_-prefixed env vars (see main.go), not the
 	// INPUT_/bare scheme.
 	cfg.oauthClientID = resolveWithEnv(

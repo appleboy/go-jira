@@ -49,7 +49,7 @@ type Store interface {
 // OAuth client ID, so different sites/clients never share an entry.
 func MakeKey(baseURL, clientID string) string {
 	sum := sha256.Sum256([]byte(baseURL + ":" + clientID))
-	return hex.EncodeToString(sum[:])[:16]
+	return hex.EncodeToString(sum[:])
 }
 
 // NewStoredToken builds a StoredToken from a freshly issued or refreshed

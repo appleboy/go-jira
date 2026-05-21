@@ -59,6 +59,12 @@ const (
 	envOAuthRefreshToken       = "JIRA_OAUTH_REFRESH_TOKEN"        //nolint:gosec // env var name, not a secret
 	envOAuthRefreshTokenOutput = "JIRA_OAUTH_REFRESH_TOKEN_OUTPUT" //nolint:gosec // env var name, not a secret
 	envMasterPassword          = "JIRA_MASTER_PASSWORD"            //nolint:gosec // env var name, not a secret
+
+	// envBaseURL is a JIRA_-prefixed alias for the base URL, matching the OAuth
+	// env naming used throughout the docs. The action config still resolves
+	// base_url via the INPUT_BASE_URL/BASE_URL convention; this is an additional
+	// fallback so the documented JIRA_BASE_URL examples work as written.
+	envBaseURL = "JIRA_BASE_URL"
 )
 
 const (

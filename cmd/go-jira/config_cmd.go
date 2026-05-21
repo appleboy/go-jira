@@ -57,7 +57,9 @@ func runConfigShow(cmd *cobra.Command) error {
 	row("insecure", fmt.Sprintf("%t", config.insecure), flagInsecure, "insecure")
 	row("token", config.token, flagToken, "token")
 	row("username", config.username, flagUsername, "username")
-	row("oauth_client_id", config.oauthClientID, flagClientID, "")
+	fmt.Fprintf(w, "oauth_client_id\t%s\t%s\n",
+		redactIfSecret("oauth_client_id", config.oauthClientID),
+		oauthClientIDSource(cmd, config.oauthClientID))
 	row("scope", config.scope, flagScope, "")
 	fmt.Fprintf(w, "auth_mode\t%s\t%s\n", detectAuthMode(config), "resolved")
 
@@ -77,6 +79,24 @@ func storedTokenExists(config Config) bool {
 	}
 	_, err := store.Load(storage.MakeKey(config.baseURL, config.oauthClientID))
 	return err == nil
+}
+
+// oauthClientIDSource reports where the OAuth client ID came from. Unlike
+// configSource it knows the fixed JIRA_OAUTH_CLIENT_ID env var and the
+// build-time embedded default, so the SOURCE column never misreports an
+// env-supplied or embedded value as "default/unset".
+func oauthClientIDSource(cmd *cobra.Command, value string) string {
+	if cmd != nil && cmd.Flags().Lookup(flagClientID) != nil &&
+		cmd.Flags().Changed(flagClientID) {
+		return "flag"
+	}
+	if os.Getenv(envOAuthClientID) != "" {
+		return "env"
+	}
+	if value != "" && value == DefaultOAuthClientID {
+		return "embedded-default"
+	}
+	return "default/unset"
 }
 
 // configSource reports where a value came from: flag, env, or default/unset.
