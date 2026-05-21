@@ -17,20 +17,20 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// TestBareCommandRequiresSubcommand verifies the v1.0 breaking change: invoking
-// go-jira with no subcommand errors and points users at `go-jira run`.
-func TestBareCommandRequiresSubcommand(t *testing.T) {
+// TestBareCommandShowsHelp verifies that invoking go-jira with no subcommand
+// prints the help page (listing available commands) and exits without error.
+func TestBareCommandShowsHelp(t *testing.T) {
 	cmd := newRootCmd()
 	cmd.SetArgs([]string{})
-	cmd.SetOut(io.Discard)
+	var out strings.Builder
+	cmd.SetOut(&out)
 	cmd.SetErr(io.Discard)
 
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("expected error when no subcommand is given")
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error when no subcommand is given, got %v", err)
 	}
-	if !strings.Contains(err.Error(), "go-jira run") {
-		t.Errorf("error %q should direct users to `go-jira run`", err)
+	if !strings.Contains(out.String(), "Available Commands") {
+		t.Errorf("expected help output to list available commands, got:\n%s", out.String())
 	}
 }
 

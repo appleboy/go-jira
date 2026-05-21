@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -77,8 +76,9 @@ func main() {
 // newRootCmd builds the root command and registers every subcommand. A fresh
 // command is built on each call so tests get clean flag state.
 //
-// Running go-jira with no subcommand is an error as of v1.0 (breaking change):
-// the previous bare-command action behavior now lives under `go-jira run`.
+// Running go-jira with no subcommand prints the help page. As of v1.0 (breaking
+// change) the previous bare-command action behavior now lives under
+// `go-jira run`.
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "go-jira",
@@ -86,11 +86,8 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: false,
 		Version:       fmt.Sprintf("%s Commit: %s", Version, Commit),
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return errors.New(
-				"starting from v1.0, go-jira requires a subcommand.\n" +
-					"For the previous action behavior, use:  go-jira run\n" +
-					"See `go-jira --help` for available commands")
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return cmd.Help()
 		},
 	}
 	cmd.SetVersionTemplate("Version: {{.Version}}\n")
