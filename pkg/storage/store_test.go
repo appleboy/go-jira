@@ -27,4 +27,11 @@ func TestMakeKey(t *testing.T) {
 	if MakeKey("https://jira.example.com", "client-a") != k1 {
 		t.Error("MakeKey must be deterministic")
 	}
+	// Cosmetically different but equivalent base URLs must map to the same key.
+	if MakeKey("https://jira.example.com/", "client-a") != k1 {
+		t.Error("trailing slash in base URL must not change the key")
+	}
+	if MakeKey("  https://jira.example.com  ", "client-a") != k1 {
+		t.Error("surrounding whitespace in base URL must not change the key")
+	}
 }

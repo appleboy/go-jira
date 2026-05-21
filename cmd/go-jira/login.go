@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github/appleboy/go-jira/pkg/storage"
 	"os"
@@ -39,7 +38,7 @@ func runLogin(cmd *cobra.Command) error {
 	}
 
 	oc := oauthConfigFromConfig(config)
-	res, err := oauthLogin(context.Background(), oc, config.callbackPort, timeout)
+	res, err := oauthLogin(cmdContext(cmd), oc, config.callbackPort, timeout)
 	if err != nil {
 		return fmt.Errorf("login failed: %w", err)
 	}

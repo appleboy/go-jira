@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -48,7 +49,11 @@ type Store interface {
 // MakeKey derives a stable, opaque storage key from the Jira base URL and
 // OAuth client ID, so different sites/clients never share an entry.
 func MakeKey(baseURL, clientID string) string {
-	sum := sha256.Sum256([]byte(baseURL + ":" + clientID))
+	// Normalize the base URL so cosmetically different but equivalent inputs
+	// (e.g. a trailing slash, or surrounding whitespace) map to the same key and
+	// a stored token isn't seen as "missing" depending on how it was entered.
+	normBase := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	sum := sha256.Sum256([]byte(normBase + ":" + clientID))
 	return hex.EncodeToString(sum[:])
 }
 

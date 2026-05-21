@@ -27,8 +27,9 @@ func Resolve(opts ResolveOptions) (Store, error) {
 		return &KeyringStore{}, nil
 	}
 	if opts.Password == "" {
-		return nil, errors.New("storage: keyring unavailable and no master " +
-			"password provided; set JIRA_MASTER_PASSWORD or use the file backend")
+		return nil, errors.New("storage: the encrypted file backend (used when " +
+			"the OS keyring is unavailable or ForceFile is set) requires a master " +
+			"password; set JIRA_MASTER_PASSWORD")
 	}
 	path := opts.FilePath
 	if path == "" {

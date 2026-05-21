@@ -11,7 +11,7 @@ import (
 // share one file, which is decrypted, mutated, and re-encrypted on each write.
 type FileStore struct {
 	Path     string // e.g. ~/.config/go-jira/tokens.enc
-	Password []byte // master password (from term prompt or JIRA_MASTER_PASSWORD)
+	Password []byte // master password (from JIRA_MASTER_PASSWORD via ResolveOptions)
 }
 
 // fileContents is the decrypted JSON document: key -> token.
@@ -50,11 +50,32 @@ func (s *FileStore) save(fc *fileContents) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(s.Path), 0o700); err != nil {
+	dir := filepath.Dir(s.Path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("file mkdir: %w", err)
 	}
-	if err := os.WriteFile(s.Path, blob, 0o600); err != nil {
-		return fmt.Errorf("file write: %w", err)
+	// Write to a temp file in the same dir and rename into place, so a crash or
+	// interruption mid-write can't leave a truncated/corrupt tokens.enc that
+	// would break every future load.
+	tmp, err := os.CreateTemp(dir, ".tokens-*.tmp")
+	if err != nil {
+		return fmt.Errorf("file temp create: %w", err)
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName) // no-op once the rename succeeds
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("file temp chmod: %w", err)
+	}
+	if _, err := tmp.Write(blob); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("file temp write: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("file temp close: %w", err)
+	}
+	if err := os.Rename(tmpName, s.Path); err != nil {
+		return fmt.Errorf("file rename: %w", err)
 	}
 	return nil
 }
