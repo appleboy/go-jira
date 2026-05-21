@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github/appleboy/go-jira/pkg/auth"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -86,7 +87,14 @@ func TestCreateHTTPClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := createHTTPClient(tt.config)
+			// Mirror run()'s resolution: pick an authenticator from the
+			// config, falling back to nil when no credentials are present.
+			authenticator, _ := auth.Resolve(auth.Config{
+				Username: tt.config.username,
+				Password: tt.config.password,
+				Token:    tt.config.token,
+			})
+			client := createHTTPClient(tt.config, authenticator)
 			tt.verify(t, client)
 		})
 	}

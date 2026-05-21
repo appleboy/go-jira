@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github/appleboy/go-jira/pkg/auth"
 	"github/appleboy/go-jira/pkg/markdown"
 	"log/slog"
 	"os"
@@ -150,7 +151,19 @@ func run(cmd *cobra.Command) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	httpClient := createHTTPClient(config)
+	authenticator, err := auth.Resolve(auth.Config{
+		Username: config.username,
+		Password: config.password,
+		Token:    config.token,
+	})
+	if err != nil {
+		return fmt.Errorf("auth resolution: %w", err)
+	}
+	if err := authenticator.Validate(); err != nil {
+		return fmt.Errorf("auth validation: %w", err)
+	}
+
+	httpClient := createHTTPClient(config, authenticator)
 	jiraClient, err := jira.NewClient(httpClient, config.baseURL)
 	if err != nil {
 		return fmt.Errorf("error creating jira client: %w", err)
