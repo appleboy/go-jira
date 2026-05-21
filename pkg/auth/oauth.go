@@ -62,15 +62,22 @@ func (a *OAuthAuthenticator) Transport(base http.RoundTripper) http.RoundTripper
 // expiry. The caller must NOT hold a.mu.
 func (a *OAuthAuthenticator) ensureFresh(ctx context.Context) (string, error) {
 	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.cached == nil {
+		a.mu.Unlock()
 		return "", errors.New("oauth: no cached token")
 	}
 	if time.Until(a.cached.ExpiresAt) > refreshThreshold {
-		return a.cached.AccessToken, nil
+		tok := a.cached.AccessToken
+		a.mu.Unlock()
+		return tok, nil
 	}
-	return a.refreshLocked(ctx)
+	tok, rotated, err := a.refreshLocked(ctx)
+	a.mu.Unlock()
+	if err != nil {
+		return "", err
+	}
+	a.notifyRotation(rotated)
+	return tok, nil
 }
 
 // forceRefresh refreshes after a 401, unless another goroutine already rotated
@@ -78,25 +85,35 @@ func (a *OAuthAuthenticator) ensureFresh(ctx context.Context) (string, error) {
 // one — in which case the burst of concurrent 401s collapses to one refresh.
 func (a *OAuthAuthenticator) forceRefresh(ctx context.Context, usedToken string) (string, error) {
 	a.mu.Lock()
-	defer a.mu.Unlock()
 	if a.cached != nil && a.cached.AccessToken != usedToken {
-		return a.cached.AccessToken, nil
+		tok := a.cached.AccessToken
+		a.mu.Unlock()
+		return tok, nil
 	}
-	return a.refreshLocked(ctx)
+	tok, rotated, err := a.refreshLocked(ctx)
+	a.mu.Unlock()
+	if err != nil {
+		return "", err
+	}
+	a.notifyRotation(rotated)
+	return tok, nil
 }
 
-// refreshLocked performs the refresh, persists rotation, and updates the
-// cache. a.mu must be held.
-func (a *OAuthAuthenticator) refreshLocked(ctx context.Context) (string, error) {
+// refreshLocked performs the refresh, persists rotation to the Store, and
+// updates the cache. a.mu must be held. It returns the rotated token (non-nil
+// on success) so the caller can invoke OnRotate AFTER releasing the lock — the
+// hook may block on I/O (e.g. writing a CI output file) and must never stall
+// concurrent requests or risk re-entrant deadlock while the mutex is held.
+func (a *OAuthAuthenticator) refreshLocked(ctx context.Context) (string, *storage.StoredToken, error) {
 	tok, err := a.cfg.Refresh(ctx, a.cached.RefreshToken)
 	if err != nil {
 		if errors.Is(err, oauth.ErrInvalidGrant) {
-			return "", fmt.Errorf(
+			return "", nil, fmt.Errorf(
 				"oauth: refresh token expired or revoked; run `go-jira login` again: %w",
 				err,
 			)
 		}
-		return "", err
+		return "", nil, err
 	}
 
 	newTok := storage.NewStoredToken(
@@ -104,16 +121,22 @@ func (a *OAuthAuthenticator) refreshLocked(ctx context.Context) (string, error) 
 	)
 	if a.store != nil && a.storeKey != "" {
 		if err := a.store.Save(a.storeKey, newTok); err != nil {
-			return "", fmt.Errorf("oauth: persist rotated token: %w", err)
-		}
-	}
-	if a.OnRotate != nil {
-		if err := a.OnRotate(newTok); err != nil {
-			slog.Warn("oauth: OnRotate hook failed", "error", err)
+			return "", nil, fmt.Errorf("oauth: persist rotated token: %w", err)
 		}
 	}
 	a.cached = newTok
-	return newTok.AccessToken, nil
+	return newTok.AccessToken, newTok, nil
+}
+
+// notifyRotation invokes the OnRotate hook (if any) for a rotated token. It is
+// called outside a.mu; failures are logged, not fatal to the in-flight request.
+func (a *OAuthAuthenticator) notifyRotation(rotated *storage.StoredToken) {
+	if rotated == nil || a.OnRotate == nil {
+		return
+	}
+	if err := a.OnRotate(rotated); err != nil {
+		slog.Warn("oauth: OnRotate hook failed", "error", err)
+	}
 }
 
 // oauthRoundTripper injects the bearer token and retries once on a 401 after a

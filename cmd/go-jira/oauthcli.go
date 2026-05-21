@@ -84,6 +84,9 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("close temp file: %w", err)
 	}
+	// os.Rename replaces an existing destination on every supported platform
+	// (on Windows it maps to MoveFileEx with MOVEFILE_REPLACE_EXISTING), so a
+	// repeated rotation overwrites the previous token file atomically.
 	if err := os.Rename(tmpName, path); err != nil {
 		return fmt.Errorf("rename temp file: %w", err)
 	}

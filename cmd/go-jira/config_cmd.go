@@ -98,12 +98,16 @@ func storedTokenExists(config Config) bool {
 // it knows the fixed JIRA_OAUTH_* env vars and the build-time embedded default,
 // so the SOURCE column never misreports an env-supplied or embedded value as
 // "default/unset". embedded may be "" when there is no build-time default.
+//
+// The env check precedes the flag check to mirror resolveWithEnv's actual
+// precedence (env > flag > embedded): when both an env var and a flag are set,
+// the env var wins, so the reported source must say "env".
 func oauthValueSource(cmd *cobra.Command, flagName, envKey, value, embedded string) string {
+	if envKey != "" && os.Getenv(envKey) != "" {
+		return "env"
+	}
 	if flagChanged(cmd, flagName) {
 		return "flag"
-	}
-	if os.Getenv(envKey) != "" {
-		return "env"
 	}
 	if embedded != "" && value == embedded {
 		return "embedded-default"

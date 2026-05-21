@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github/appleboy/go-jira/pkg/oauth"
 	"github/appleboy/go-jira/pkg/storage"
-	"log/slog"
 )
 
 // Config carries everything Resolve needs to choose an Authenticator.
@@ -128,12 +127,16 @@ func resolveOAuthEnv(ctx context.Context, cfg Config) (Authenticator, error) {
 		cached:   cached,
 		OnRotate: cfg.OnRotate,
 	}
-	// The initial refresh already rotated the token; surface it now so the
-	// caller can persist it before the process exits.
+	// The initial refresh already rotated the token; persist it now. OnRotate is
+	// only set when a rotation-output path is configured, so a failure here means
+	// the injected refresh-token secret is already stale — fail fast so the CI
+	// pipeline surfaces the persistence problem instead of silently succeeding
+	// now and breaking on the next run with invalid_grant.
 	if cfg.OnRotate != nil {
 		if err := cfg.OnRotate(cached); err != nil {
-			slog.Warn("oauth-env: failed to persist initial rotated refresh token",
-				"error", err)
+			return nil, fmt.Errorf(
+				"oauth-env: failed to persist initial rotated refresh token "+
+					"(the injected secret is now stale): %w", err)
 		}
 	}
 	return a, nil
