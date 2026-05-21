@@ -115,7 +115,7 @@ func redactIfSecret(field, value string) string {
 		return "(unset)"
 	}
 	switch field {
-	case "token", "password", "client_secret":
+	case flagToken, flagPassword, "client_secret":
 		return "(set, redacted)"
 	default:
 		return value
