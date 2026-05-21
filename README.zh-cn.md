@@ -43,11 +43,25 @@
 
 ## 配置说明
 
+> **⚠️ v1.0 重大变更**：`go-jira` 现在需要子命令。原本的裸命令行为已移至
+> `go-jira run`。请参阅 [升级指南](docs/migration-v1.md)。
+
 ### 认证方式
 
-- **基本认证**：设置 `JIRA_USERNAME` 和 `JIRA_PASSWORD`
-- **Token 认证**：设置 `JIRA_TOKEN`
+go-jira 支持四种认证模式：
+
+| 模式             | 适用场景                  | 配置方式 |
+|------------------|---------------------------|----------|
+| **基本认证**     | 旧版 Jira 或开发/测试     | `JIRA_USERNAME` + `JIRA_PASSWORD` |
+| **Bearer / PAT** | 推荐的 CI/CD 默认         | `JIRA_TOKEN`（个人访问令牌） |
+| **OAuth（本地）**| 开发者交互式登录          | `go-jira login` |
+| **OAuth（CI/CD）**| 需要细粒度 scope 的自动化 | `JIRA_OAUTH_REFRESH_TOKEN` + 轮换处理 |
+
 - **跳过 SSL 验证**：设置 `JIRA_INSECURE=true`（生产环境不建议）
+
+> **OAuth 在 CI/CD 比 PAT 麻烦。** Jira DC 每次 refresh 都会轮换 refresh token，
+> CI 必须把新 token 写回 secret 存储。若无法自动化，建议改用 PAT（`JIRA_TOKEN`）。
+> 完整说明见 [docs/oauth-usage.md](docs/oauth-usage.md)。
 
 ### 环境变量
 
@@ -66,8 +80,15 @@
 | COMMENT           | 要添加到问题的评论内容（可选）                      |
 | MARKDOWN          | 设为 `true` 时将评论从 Markdown 转为 Jira 格式      |
 | DEBUG             | 设为 `true` 启用调试输出                            |
+| JIRA_OAUTH_CLIENT_ID | OAuth client ID（覆盖内嵌默认值）              |
+| JIRA_OAUTH_CLIENT_SECRET | OAuth client secret（覆盖内嵌默认值）       |
+| JIRA_OAUTH_REFRESH_TOKEN | 注入的 refresh token；触发 CI `oauth-env` 模式 |
+| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | 写入轮换后 refresh token 的文件路径    |
+| JIRA_MASTER_PASSWORD | 加密文件 token 存储的主密码（无 keyring 时）    |
 
 ### 使用示例
+
+> 自 v1.0 起，动作改在 `run` 子命令下执行。请将原本的裸 `go-jira` 改为 `go-jira run`。
 
 #### 转移问题状态并设置解决方案
 
@@ -77,7 +98,7 @@ export JIRA_TOKEN="your_api_token"
 export TRANSITION="Done"
 export RESOLUTION="Fixed"
 export REF="refs/tags/v1.0.0"
-go run cmd/go-jira/main.go
+go run ./cmd/go-jira run
 ```
 
 #### 分配处理人并添加 Markdown 评论
@@ -86,20 +107,37 @@ go run cmd/go-jira/main.go
 export ASSIGNEE="johndoe"
 export COMMENT="## 问题已修复\n* 新增测试用例\n* 优化性能"
 export MARKDOWN="true"
-go run cmd/go-jira/main.go
+go run ./cmd/go-jira run
+```
+
+#### 使用 OAuth 登录（本地开发）
+
+```bash
+export JIRA_BASE_URL="https://jira.example.com"
+go run ./cmd/go-jira login --client-id="$JIRA_OAUTH_CLIENT_ID"
+# 之后正常执行，会自动使用已存储的 token：
+go run ./cmd/go-jira run --ref="ABC-123" --to-transition=Done
 ```
 
 #### 显示版本
 
 ```bash
-go run cmd/go-jira/main.go -version
+go run ./cmd/go-jira --version
 ```
 
 #### 使用自定义环境文件
 
 ```bash
-go run cmd/go-jira/main.go -env-file=custom.env
+go run ./cmd/go-jira run --env-file=custom.env
 ```
+
+## OAuth 2.0
+
+go-jira 通过 Authorization Code + PKCE 流程支持 Jira Data Center 的 OAuth 2.0
+provider，支持本地交互式登录与 CI/CD refresh token 注入。子命令包括
+`login` / `logout` / `whoami` / `token` / `config show`。完整配置见
+**[docs/oauth-usage.md](docs/oauth-usage.md)**，升级说明见
+**[docs/migration-v1.md](docs/migration-v1.md)**。
 
 [5]: https://developer.atlassian.com/cloud/jira/platform/
 [6]: https://developer.atlassian.com/server/jira/platform/

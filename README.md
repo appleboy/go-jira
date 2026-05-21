@@ -30,8 +30,10 @@
     - [Usage](#usage)
       - [Transition issue status and set resolution](#transition-issue-status-and-set-resolution)
       - [Assign issue and add Markdown comment](#assign-issue-and-add-markdown-comment)
+      - [Log in with OAuth (local development)](#log-in-with-oauth-local-development)
       - [Show version](#show-version)
       - [Use custom environment file](#use-custom-environment-file)
+  - [OAuth 2.0](#oauth-20)
 
 ## Motivation
 
@@ -43,11 +45,28 @@ The goal of this project is to make it easy to integrate Jira with GitHub or Git
 
 ## Configuration
 
+> **⚠️ Breaking change in v1.0**: `go-jira` now requires a subcommand. The
+> previous bare-command behavior moved to `go-jira run`. See the
+> [migration guide](docs/migration-v1.md).
+
 ### Authentication
 
-- **Basic Auth**: Set `JIRA_USERNAME` and `JIRA_PASSWORD`
-- **Token Auth**: Set `JIRA_TOKEN`
+go-jira supports four authentication modes:
+
+| Mode             | Best for                          | How to configure |
+|------------------|-----------------------------------|------------------|
+| **Basic Auth**   | Legacy Jira or dev/test           | `JIRA_USERNAME` + `JIRA_PASSWORD` |
+| **Bearer / PAT** | Recommended CI/CD default         | `JIRA_TOKEN` (a Personal Access Token) |
+| **OAuth (local)**| Interactive developer login       | `go-jira login` |
+| **OAuth (CI/CD)**| Fine-grained scopes in automation | `JIRA_OAUTH_REFRESH_TOKEN` + rotation handling |
+
 - **Skip SSL Verification**: Set `JIRA_INSECURE=true` (not recommended for production)
+
+> **OAuth in CI/CD is more work than a PAT.** Jira DC rotates the refresh token
+> on every refresh, so a CI run must write the new token back to its secret
+> store. If you can't automate that, prefer a Personal Access Token
+> (`JIRA_TOKEN`). See [docs/oauth-usage.md](docs/oauth-usage.md) for the full
+> OAuth guide.
 
 ### Environment Variables
 
@@ -66,8 +85,16 @@ The goal of this project is to make it easy to integrate Jira with GitHub or Git
 | COMMENT          | Comment to add to the issue (optional)           |
 | MARKDOWN         | Set to `true` to convert comment from Markdown to Jira format |
 | DEBUG            | Set to `true` to enable debug output             |
+| JIRA_OAUTH_CLIENT_ID | OAuth client ID (overrides the embedded default) |
+| JIRA_OAUTH_CLIENT_SECRET | OAuth client secret (overrides the embedded default) |
+| JIRA_OAUTH_REFRESH_TOKEN | Injected refresh token; triggers CI `oauth-env` mode |
+| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | File path to write the rotated refresh token |
+| JIRA_MASTER_PASSWORD | Master password for the encrypted file token store (when no keyring) |
 
 ### Usage
+
+> As of v1.0 the action runs under the `run` subcommand. Replace any previous
+> bare `go-jira` invocation with `go-jira run`.
 
 #### Transition issue status and set resolution
 
@@ -77,7 +104,7 @@ export JIRA_TOKEN="your_api_token"
 export TRANSITION="Done"
 export RESOLUTION="Fixed"
 export REF="refs/tags/v1.0.0"
-go run cmd/go-jira/main.go
+go run ./cmd/go-jira run
 ```
 
 #### Assign issue and add Markdown comment
@@ -86,20 +113,47 @@ go run cmd/go-jira/main.go
 export ASSIGNEE="johndoe"
 export COMMENT="## Issue fixed\n* Added tests\n* Improved performance"
 export MARKDOWN="true"
-go run cmd/go-jira/main.go
+go run ./cmd/go-jira run
+```
+
+#### Log in with OAuth (local development)
+
+```bash
+export JIRA_BASE_URL="https://jira.example.com"
+go run ./cmd/go-jira login --client-id="$JIRA_OAUTH_CLIENT_ID"
+# then run normally — the stored token is used automatically:
+go run ./cmd/go-jira run --ref="ABC-123" --to-transition=Done
 ```
 
 #### Show version
 
 ```bash
-go run cmd/go-jira/main.go -version
+go run ./cmd/go-jira --version
 ```
 
 #### Use custom environment file
 
 ```bash
-go run cmd/go-jira/main.go -env-file=custom.env
+go run ./cmd/go-jira run --env-file=custom.env
 ```
+
+## OAuth 2.0
+
+go-jira supports the Jira Data Center OAuth 2.0 provider via the Authorization
+Code + PKCE flow for local use and refresh-token injection for CI/CD.
+
+Subcommands:
+
+- `go-jira login` — interactive browser login; stores the token in your OS
+  keyring (or an AES-256-GCM encrypted file when no keyring is available).
+- `go-jira logout` — remove the stored token for a site.
+- `go-jira whoami` — show the authenticated user and active auth mode.
+- `go-jira token status|refresh|print` — inspect or refresh the stored token.
+- `go-jira config show` — show resolved config and where each value came from.
+
+See **[docs/oauth-usage.md](docs/oauth-usage.md)** for setup (registering the
+client in Jira, scopes, storage backends) and
+**[docs/migration-v1.md](docs/migration-v1.md)** for upgrading from v0.x.
 
 [5]: https://developer.atlassian.com/cloud/jira/platform/
 [6]: https://developer.atlassian.com/server/jira/platform/
