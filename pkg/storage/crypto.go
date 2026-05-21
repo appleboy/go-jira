@@ -37,6 +37,12 @@ const (
 var iterations = 600_000
 
 // deriveKey stretches the password into a 32-byte AES key with the given salt.
+//
+// The password is carried as []byte (not string) on purpose: callers can zero
+// it after use, which an immutable string cannot. pbkdf2.Key requires a string,
+// so exactly one short-lived copy is made here per derive — unavoidable given
+// the stdlib signature, and far better for secret hygiene than holding the
+// master password as a string throughout the layer.
 func deriveKey(password, salt []byte) ([]byte, error) {
 	return pbkdf2.Key(sha256.New, string(password), salt, iterations, keyLen)
 }

@@ -76,7 +76,9 @@ func (a *OAuthAuthenticator) ensureFresh(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	a.notifyRotation(rotated)
+	if err := a.notifyRotation(rotated); err != nil {
+		return "", err
+	}
 	return tok, nil
 }
 
@@ -95,7 +97,9 @@ func (a *OAuthAuthenticator) forceRefresh(ctx context.Context, usedToken string)
 	if err != nil {
 		return "", err
 	}
-	a.notifyRotation(rotated)
+	if err := a.notifyRotation(rotated); err != nil {
+		return "", err
+	}
 	return tok, nil
 }
 
@@ -129,14 +133,26 @@ func (a *OAuthAuthenticator) refreshLocked(ctx context.Context) (string, *storag
 }
 
 // notifyRotation invokes the OnRotate hook (if any) for a rotated token. It is
-// called outside a.mu; failures are logged, not fatal to the in-flight request.
-func (a *OAuthAuthenticator) notifyRotation(rotated *storage.StoredToken) {
+// called outside a.mu.
+//
+// In oauth-env (CI) mode OnRotate is the ONLY persistence mechanism for the
+// rotated refresh token, so a failure means the injected secret is now stale
+// and the next run will fail with invalid_grant; the error is propagated so the
+// pipeline fails fast (mirroring resolveOAuthEnv's initial-rotation handling).
+// In oauth-storage mode the token was already saved to the Store under the
+// lock, so an OnRotate failure is supplementary and only logged.
+func (a *OAuthAuthenticator) notifyRotation(rotated *storage.StoredToken) error {
 	if rotated == nil || a.OnRotate == nil {
-		return
+		return nil
 	}
 	if err := a.OnRotate(rotated); err != nil {
+		if a.mode == ModeOAuthEnv {
+			return fmt.Errorf(
+				"oauth-env: persist rotated refresh token (secret is now stale): %w", err)
+		}
 		slog.Warn("oauth: OnRotate hook failed", "error", err)
 	}
+	return nil
 }
 
 // oauthRoundTripper injects the bearer token and retries once on a 401 after a

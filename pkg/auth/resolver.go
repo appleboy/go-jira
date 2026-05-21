@@ -60,7 +60,7 @@ func Resolve(ctx context.Context, cfg Config) (Authenticator, error) {
 	}
 	if cfg.Username != "" || cfg.Password != "" {
 		return nil, errors.New(
-			"basic auth requires both JIRA_USERNAME and JIRA_PASSWORD")
+			"basic auth requires both a username and a password")
 	}
 	return nil, errors.New("no authentication configured: run `go-jira login`, " +
 		"set JIRA_TOKEN, or set JIRA_USERNAME/JIRA_PASSWORD")

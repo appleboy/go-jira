@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github/appleboy/go-jira/pkg/oauth"
 	"github/appleboy/go-jira/pkg/storage"
@@ -133,6 +134,43 @@ func TestEnsureFreshRefreshesWhenExpired(t *testing.T) {
 	if srv.refreshes.Load() != 1 {
 		t.Errorf("refresh count = %d, want 1", srv.refreshes.Load())
 	}
+}
+
+// TestOnRotateFatalInOAuthEnv verifies that when persisting a rotated refresh
+// token fails, the error is fatal in oauth-env mode (OnRotate is the only
+// persistence) but non-fatal in oauth-storage mode (the Store already saved it).
+func TestOnRotateFatalInOAuthEnv(t *testing.T) {
+	t.Run("oauth-env propagates OnRotate error", func(t *testing.T) {
+		srv := newOAuthMockServer(t)
+		a := &OAuthAuthenticator{
+			cfg:    srv.config(),
+			mode:   ModeOAuthEnv,
+			cached: storedToken(srv.URL, "stale", "refresh-0", time.Now().Add(-time.Minute)),
+			OnRotate: func(*storage.StoredToken) error {
+				return errors.New("disk full")
+			},
+		}
+		if _, err := a.ensureFresh(context.Background()); err == nil {
+			t.Fatal("expected fatal error when OnRotate fails in oauth-env mode")
+		}
+	})
+
+	t.Run("oauth-storage tolerates OnRotate error", func(t *testing.T) {
+		srv := newOAuthMockServer(t)
+		store := newMemStore()
+		key := storage.MakeKey(srv.URL, "client-abc")
+		store.m[key] = storedToken(srv.URL, "stale", "refresh-0", time.Now().Add(-time.Minute))
+		a := &OAuthAuthenticator{
+			cfg: srv.config(), store: store, storeKey: key,
+			mode: ModeOAuthStorage, cached: store.m[key],
+			OnRotate: func(*storage.StoredToken) error {
+				return errors.New("ci output unavailable")
+			},
+		}
+		if _, err := a.ensureFresh(context.Background()); err != nil {
+			t.Fatalf("OnRotate failure must not be fatal in oauth-storage mode: %v", err)
+		}
+	})
 }
 
 func TestEnsureFreshSkipsWhenValid(t *testing.T) {
