@@ -33,8 +33,11 @@ type OAuthAuthenticator struct {
 	mu     sync.Mutex
 	cached *storage.StoredToken
 
-	// OnRotate, if set, is called whenever a refresh produces a new token.
-	// It must not block; failures are logged, not fatal to the request.
+	// OnRotate, if set, is called (outside a.mu) whenever a refresh produces a
+	// new token. In oauth-storage mode the token is already saved to the Store,
+	// so a hook failure is logged and non-fatal. In oauth-env mode the hook is
+	// the only persistence for the rotated refresh token, so a failure is fatal
+	// and propagated to the in-flight request (see notifyRotation).
 	OnRotate func(newToken *storage.StoredToken) error
 }
 

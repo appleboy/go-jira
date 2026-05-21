@@ -83,7 +83,10 @@ func runConfigShow(cmd *cobra.Command) error {
 // URL/client, used to mirror the resolver's oauth-storage decision without any
 // network I/O.
 func storedTokenExists(config Config) bool {
-	if config.oauthClientID == "" {
+	// Both the base URL and client ID form the storage key; without either there
+	// is nothing to look up, so skip the keyring/file access entirely and avoid
+	// misleading auth_mode output.
+	if config.oauthClientID == "" || config.baseURL == "" {
 		return false
 	}
 	store := resolveStoreQuiet()

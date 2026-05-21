@@ -40,13 +40,21 @@ func Resolve(opts ResolveOptions) (Store, error) {
 	return &FileStore{Path: path, Password: []byte(opts.Password)}, nil
 }
 
-// probeKeyring verifies the keyring can be written and deleted.
+// probeKeyring verifies the keyring can be written and deleted. The probe key
+// is unique per process so concurrent probes don't delete each other's entry,
+// and a not-found on Delete is treated as success (the entry may have been
+// removed by a racing probe) — only a genuine set/delete failure means the
+// keyring is unavailable and Resolve should fall back to the file backend.
 func probeKeyring() error {
-	const probeKey = "__probe__"
+	probeKey := fmt.Sprintf("__probe__%d", os.Getpid())
 	if err := keyring.Set(keyringService, probeKey, "1"); err != nil {
 		return err
 	}
-	return keyring.Delete(keyringService, probeKey)
+	if err := keyring.Delete(keyringService, probeKey); err != nil &&
+		!errors.Is(err, keyring.ErrNotFound) {
+		return err
+	}
+	return nil
 }
 
 // defaultFilePath returns ~/.config/go-jira/tokens.enc (or the OS equivalent).
