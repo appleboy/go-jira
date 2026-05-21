@@ -89,7 +89,7 @@ func TestCreateHTTPClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Mirror run()'s resolution: pick an authenticator from the
 			// config, falling back to nil when no credentials are present.
-			authenticator, _ := auth.Resolve(auth.Config{
+			authenticator, _ := auth.Resolve(context.Background(), auth.Config{
 				Username: tt.config.username,
 				Password: tt.config.password,
 				Token:    tt.config.token,

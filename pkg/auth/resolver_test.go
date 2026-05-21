@@ -1,6 +1,9 @@
 package auth
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestResolve(t *testing.T) {
 	tests := []struct {
@@ -42,7 +45,7 @@ func TestResolve(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a, err := Resolve(tt.cfg)
+			a, err := Resolve(context.Background(), tt.cfg)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
