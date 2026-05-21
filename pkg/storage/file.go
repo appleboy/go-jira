@@ -1,0 +1,99 @@
+package storage
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+// FileStore persists tokens in a single AES-256-GCM encrypted file. All keys
+// share one file, which is decrypted, mutated, and re-encrypted on each write.
+type FileStore struct {
+	Path     string // e.g. ~/.config/go-jira/tokens.enc
+	Password []byte // master password (from term prompt or JIRA_MASTER_PASSWORD)
+}
+
+// fileContents is the decrypted JSON document: key -> token.
+type fileContents struct {
+	Tokens map[string]*StoredToken `json:"tokens"`
+}
+
+func (s *FileStore) load() (*fileContents, error) {
+	raw, err := os.ReadFile(s.Path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &fileContents{Tokens: map[string]*StoredToken{}}, nil
+		}
+		return nil, fmt.Errorf("file read: %w", err)
+	}
+	pt, err := decrypt(raw, s.Password)
+	if err != nil {
+		return nil, err
+	}
+	var fc fileContents
+	if err := json.Unmarshal(pt, &fc); err != nil {
+		return nil, fmt.Errorf("file unmarshal: %w", err)
+	}
+	if fc.Tokens == nil {
+		fc.Tokens = map[string]*StoredToken{}
+	}
+	return &fc, nil
+}
+
+func (s *FileStore) save(fc *fileContents) error {
+	pt, err := json.Marshal(fc) // #nosec G117 -- persisting the token is the point
+	if err != nil {
+		return fmt.Errorf("file marshal: %w", err)
+	}
+	blob, err := encrypt(pt, s.Password)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(s.Path), 0o700); err != nil {
+		return fmt.Errorf("file mkdir: %w", err)
+	}
+	if err := os.WriteFile(s.Path, blob, 0o600); err != nil {
+		return fmt.Errorf("file write: %w", err)
+	}
+	return nil
+}
+
+// Save upserts the token for key, preserving all other entries.
+func (s *FileStore) Save(key string, token *StoredToken) error {
+	fc, err := s.load()
+	if err != nil {
+		return err
+	}
+	fc.Tokens[key] = token
+	return s.save(fc)
+}
+
+// Load returns the token for key, or ErrTokenNotFound.
+func (s *FileStore) Load(key string) (*StoredToken, error) {
+	fc, err := s.load()
+	if err != nil {
+		return nil, err
+	}
+	t, ok := fc.Tokens[key]
+	if !ok {
+		return nil, ErrTokenNotFound
+	}
+	return t, nil
+}
+
+// Delete removes the entry for key. A missing entry is not an error.
+func (s *FileStore) Delete(key string) error {
+	fc, err := s.load()
+	if err != nil {
+		return err
+	}
+	if _, ok := fc.Tokens[key]; !ok {
+		return nil
+	}
+	delete(fc.Tokens, key)
+	return s.save(fc)
+}
+
+// Backend reports "file".
+func (s *FileStore) Backend() string { return backendFile }
