@@ -12,6 +12,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 // ErrTokenNotFound is returned by Load when no token exists for the key.
@@ -48,4 +50,28 @@ type Store interface {
 func MakeKey(baseURL, clientID string) string {
 	sum := sha256.Sum256([]byte(baseURL + ":" + clientID))
 	return hex.EncodeToString(sum[:])[:16]
+}
+
+// NewStoredToken builds a StoredToken from a freshly issued or refreshed
+// oauth2 token. When the provider omits a new refresh token it carries
+// prevRefresh forward, so a rotated entry never loses the ability to refresh.
+func NewStoredToken(
+	baseURL, clientID string,
+	tok *oauth2.Token,
+	prevRefresh string,
+	scopes []string,
+) *StoredToken {
+	refresh := tok.RefreshToken
+	if refresh == "" {
+		refresh = prevRefresh
+	}
+	return &StoredToken{
+		BaseURL:      baseURL,
+		ClientID:     clientID,
+		AccessToken:  tok.AccessToken,
+		RefreshToken: refresh,
+		ExpiresAt:    tok.Expiry,
+		ObtainedAt:   time.Now().UTC(),
+		Scopes:       scopes,
+	}
 }

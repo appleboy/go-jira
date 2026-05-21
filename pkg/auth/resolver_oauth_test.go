@@ -3,41 +3,38 @@ package auth
 import (
 	"context"
 	"github/appleboy/go-jira/pkg/storage"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 )
 
 func TestResolveOAuthEnv(t *testing.T) {
 	srv := newOAuthMockServer(t)
-	out := filepath.Join(t.TempDir(), "rotated.txt")
 
+	var rotated string
 	a, err := Resolve(context.Background(), Config{
-		OAuthRefreshToken:       "injected-refresh",
-		OAuthRefreshTokenOutput: out,
-		OAuthClientID:           "client-abc",
-		OAuthClientSecret:       "secret-xyz",
-		OAuthBaseURL:            srv.URL,
-		OAuthScopes:             []string{"WRITE"},
+		OAuthRefreshToken: "injected-refresh",
+		OAuthClientID:     "client-abc",
+		OAuthClientSecret: "secret-xyz",
+		OAuthBaseURL:      srv.URL,
+		OAuthScopes:       []string{"WRITE"},
+		OnRotate: func(tok *storage.StoredToken) error {
+			rotated = tok.RefreshToken
+			return nil
+		},
 	})
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
-	if a.Mode() != "oauth-env" {
-		t.Errorf("Mode() = %q, want oauth-env", a.Mode())
+	if a.Mode() != ModeOAuthEnv {
+		t.Errorf("Mode() = %q, want %q", a.Mode(), ModeOAuthEnv)
 	}
 	if err := a.Validate(); err != nil {
 		t.Errorf("Validate: %v", err)
 	}
 
-	// The initial refresh rotates the token; the new one must be written out.
-	got, err := os.ReadFile(out)
-	if err != nil {
-		t.Fatalf("read rotation output: %v", err)
-	}
-	if string(got) != "refresh-1" {
-		t.Errorf("rotation output = %q, want refresh-1", got)
+	// The initial refresh rotates the token; OnRotate must surface the new one.
+	if rotated != "refresh-1" {
+		t.Errorf("rotated refresh token = %q, want refresh-1", rotated)
 	}
 }
 

@@ -1,16 +1,61 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github/appleboy/go-jira/pkg/oauth"
 	"github/appleboy/go-jira/pkg/storage"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 // oauthLogin indirects oauth.Login so tests can stub the interactive flow.
 var oauthLogin = oauth.Login
+
+// requireBaseURL validates the base URL for non-run commands (which, unlike
+// run, do not need a ref).
+func requireBaseURL(config Config) error {
+	if config.baseURL == "" {
+		return errors.New("base_url is required")
+	}
+	return nil
+}
+
+// loadOAuthConfig runs the common preamble for OAuth subcommands: load the env
+// file, resolve config, and require a base URL and an OAuth client ID.
+func loadOAuthConfig(cmd *cobra.Command) (Config, error) {
+	if err := loadEnvFromCmd(cmd); err != nil {
+		return Config{}, err
+	}
+	config := loadConfig(cmd)
+	if err := requireBaseURL(config); err != nil {
+		return Config{}, err
+	}
+	if config.oauthClientID == "" {
+		return Config{}, errors.New("OAuth client ID required: set " +
+			envOAuthClientID + " or pass --client-id")
+	}
+	return config, nil
+}
+
+// rotationWriter returns an auth.OnRotate callback that writes the rotated
+// refresh token to path (oauth-env / CI mode). When path is empty it warns
+// that the rotated token will be lost — the CI secret then goes stale and the
+// next run fails with invalid_grant — and returns nil (no callback).
+func rotationWriter(path string) func(*storage.StoredToken) error {
+	if path == "" {
+		slog.Warn("oauth-env: " + envOAuthRefreshTokenOutput + " not set; the rotated " +
+			"refresh token will be lost on exit and subsequent runs will fail until " +
+			"you re-login locally and update the secret")
+		return nil
+	}
+	return func(t *storage.StoredToken) error {
+		return os.WriteFile(path, []byte(t.RefreshToken), 0o600)
+	}
+}
 
 // resolveStoreQuiet resolves a token Store best-effort, returning nil (and
 // logging at debug level) when no backend is available. Callers that merely

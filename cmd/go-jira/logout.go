@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"github/appleboy/go-jira/pkg/storage"
 	"os"
@@ -26,16 +25,9 @@ func newLogoutCmd() *cobra.Command {
 }
 
 func runLogout(cmd *cobra.Command) error {
-	if err := loadEnvFromCmd(cmd); err != nil {
+	config, err := loadOAuthConfig(cmd)
+	if err != nil {
 		return err
-	}
-	config := loadConfig(cmd)
-	if err := requireBaseURL(config); err != nil {
-		return err
-	}
-	if config.oauthClientID == "" {
-		return errors.New("OAuth client ID required: set " + envOAuthClientID +
-			" or pass --client-id")
 	}
 
 	store, err := resolveStore()

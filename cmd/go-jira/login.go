@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github/appleboy/go-jira/pkg/storage"
 	"os"
@@ -29,16 +28,9 @@ func newLoginCmd() *cobra.Command {
 }
 
 func runLogin(cmd *cobra.Command) error {
-	if err := loadEnvFromCmd(cmd); err != nil {
+	config, err := loadOAuthConfig(cmd)
+	if err != nil {
 		return err
-	}
-	config := loadConfig(cmd)
-	if err := requireBaseURL(config); err != nil {
-		return err
-	}
-	if config.oauthClientID == "" {
-		return errors.New("OAuth client ID required: set " + envOAuthClientID +
-			" or pass --client-id")
 	}
 
 	timeout := 5 * time.Minute
@@ -57,15 +49,9 @@ func runLogin(cmd *cobra.Command) error {
 		return err
 	}
 	key := storage.MakeKey(config.baseURL, config.oauthClientID)
-	stored := &storage.StoredToken{
-		BaseURL:      config.baseURL,
-		ClientID:     config.oauthClientID,
-		AccessToken:  res.Token.AccessToken,
-		RefreshToken: res.Token.RefreshToken,
-		ExpiresAt:    res.Token.Expiry,
-		ObtainedAt:   time.Now().UTC(),
-		Scopes:       res.Scopes,
-	}
+	stored := storage.NewStoredToken(
+		config.baseURL, config.oauthClientID, res.Token, "", res.Scopes,
+	)
 	if err := store.Save(key, stored); err != nil {
 		return fmt.Errorf("save token: %w", err)
 	}
@@ -81,13 +67,4 @@ func printLoginSummary(config Config, tok *storage.StoredToken, backend string) 
 	fmt.Fprintf(os.Stderr, "   Scopes:     %v\n", tok.Scopes)
 	fmt.Fprintf(os.Stderr, "   Expires at: %s\n", tok.ExpiresAt.Format(time.RFC3339))
 	fmt.Fprintf(os.Stderr, "   Storage:    %s\n", backend)
-}
-
-// requireBaseURL validates the base URL for non-run commands (which do not
-// need a ref).
-func requireBaseURL(config Config) error {
-	if config.baseURL == "" {
-		return errors.New("base_url is required")
-	}
-	return nil
 }

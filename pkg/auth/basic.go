@@ -37,4 +37,4 @@ func (a *BasicAuth) Validate() error {
 }
 
 // Mode reports the stable identifier "basic".
-func (a *BasicAuth) Mode() string { return "basic" }
+func (a *BasicAuth) Mode() string { return ModeBasic }

@@ -32,4 +32,4 @@ func (a *BearerAuth) Validate() error {
 }
 
 // Mode reports the stable identifier "bearer".
-func (a *BearerAuth) Mode() string { return "bearer" }
+func (a *BearerAuth) Mode() string { return ModeBearer }

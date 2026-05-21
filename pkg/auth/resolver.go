@@ -7,8 +7,6 @@ import (
 	"github/appleboy/go-jira/pkg/oauth"
 	"github/appleboy/go-jira/pkg/storage"
 	"log/slog"
-	"os"
-	"time"
 )
 
 // Config carries everything Resolve needs to choose an Authenticator.
@@ -19,8 +17,7 @@ type Config struct {
 	Token    string
 
 	// OAuth env-injection mode (CI/CD)
-	OAuthRefreshToken       string
-	OAuthRefreshTokenOutput string // file path to write rotated refresh tokens
+	OAuthRefreshToken string
 
 	// OAuth common
 	OAuthClientID     string
@@ -31,6 +28,10 @@ type Config struct {
 
 	// Storage backend for the local (oauth-storage) flow; nil disables it.
 	Store storage.Store
+
+	// OnRotate, if set, is invoked with each rotated token (the persistence
+	// policy — e.g. writing a CI output file — belongs to the caller, not here).
+	OnRotate func(*storage.StoredToken) error
 }
 
 // Resolve picks the right Authenticator based on cfg, in priority order:
@@ -89,8 +90,9 @@ func tryResolveOAuthStorage(cfg Config) (Authenticator, bool, error) {
 		cfg:      oauthConfig(cfg),
 		store:    cfg.Store,
 		storeKey: key,
-		mode:     "oauth-storage",
+		mode:     ModeOAuthStorage,
 		cached:   tok,
+		OnRotate: cfg.OnRotate,
 	}
 	return a, true, nil
 }
@@ -113,40 +115,22 @@ func resolveOAuthEnv(ctx context.Context, cfg Config) (Authenticator, error) {
 		return nil, fmt.Errorf("oauth-env: initial refresh failed: %w", err)
 	}
 
-	refreshToken := tok.RefreshToken
-	if refreshToken == "" {
-		refreshToken = cfg.OAuthRefreshToken
-	}
-	cached := &storage.StoredToken{
-		BaseURL:      cfg.OAuthBaseURL,
-		ClientID:     cfg.OAuthClientID,
-		AccessToken:  tok.AccessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    tok.Expiry,
-		ObtainedAt:   time.Now().UTC(),
-		Scopes:       cfg.OAuthScopes,
-	}
-
+	cached := storage.NewStoredToken(
+		cfg.OAuthBaseURL, cfg.OAuthClientID, tok, cfg.OAuthRefreshToken, cfg.OAuthScopes,
+	)
 	a := &OAuthAuthenticator{
-		cfg:    oc,
-		mode:   "oauth-env",
-		cached: cached,
+		cfg:      oc,
+		mode:     ModeOAuthEnv,
+		cached:   cached,
+		OnRotate: cfg.OnRotate,
 	}
-
-	if cfg.OAuthRefreshTokenOutput != "" {
-		out := cfg.OAuthRefreshTokenOutput
-		a.OnRotate = func(t *storage.StoredToken) error {
-			return os.WriteFile(out, []byte(t.RefreshToken), 0o600)
-		}
-		// The initial refresh already rotated the token — persist it now.
-		if err := a.OnRotate(cached); err != nil {
-			slog.Warn("oauth-env: failed to write initial rotated refresh token",
+	// The initial refresh already rotated the token; surface it now so the
+	// caller can persist it before the process exits.
+	if cfg.OnRotate != nil {
+		if err := cfg.OnRotate(cached); err != nil {
+			slog.Warn("oauth-env: failed to persist initial rotated refresh token",
 				"error", err)
 		}
-	} else {
-		slog.Warn("oauth-env: JIRA_OAUTH_REFRESH_TOKEN_OUTPUT not set; the rotated " +
-			"refresh token will be lost on exit and subsequent runs will fail until " +
-			"you re-login locally and update the secret")
 	}
 	return a, nil
 }

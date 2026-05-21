@@ -9,6 +9,15 @@ package auth
 
 import "net/http"
 
+// Auth mode identifiers returned by Authenticator.Mode and used for logging,
+// resolution priority, and `config show`.
+const (
+	ModeBasic        = "basic"
+	ModeBearer       = "bearer"
+	ModeOAuthStorage = "oauth-storage"
+	ModeOAuthEnv     = "oauth-env"
+)
+
 // Authenticator wraps an http.RoundTripper to inject auth credentials.
 type Authenticator interface {
 	// Transport returns a RoundTripper that adds auth on top of base.
@@ -19,8 +28,7 @@ type Authenticator interface {
 	// configured. It is called before any network request.
 	Validate() error
 
-	// Mode returns a stable identifier:
-	// "basic" | "bearer" | "oauth-storage" | "oauth-env".
+	// Mode returns a stable identifier (one of the Mode* constants).
 	// It is used for logging and `config show`.
 	Mode() string
 }

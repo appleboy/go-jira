@@ -8,9 +8,9 @@
 // the Jira DC endpoints, a local callback server and browser launch, mapping
 // of well-known errors to sentinels, and refresh-token rotation write-back.
 //
-// Jira DC quirk to remember (Section 5.6 of the integration plan): a successful
-// refresh invalidates BOTH the old access and refresh tokens and returns a new
-// refresh_token, so the caller must persist the rotated token immediately.
+// Jira DC quirk: a successful refresh invalidates BOTH the old access and
+// refresh tokens and returns a new refresh_token, so the caller must persist
+// the rotated token immediately.
 package oauth
 
 import (

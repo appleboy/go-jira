@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github/appleboy/go-jira/pkg/auth"
+	"github/appleboy/go-jira/pkg/storage"
 	"github/appleboy/go-jira/pkg/util"
 	"os"
 	"text/tabwriter"
@@ -62,6 +64,21 @@ func runConfigShow(cmd *cobra.Command) error {
 	return w.Flush()
 }
 
+// storedTokenExists reports whether an OAuth token is persisted for this base
+// URL/client, used to mirror the resolver's oauth-storage decision without any
+// network I/O.
+func storedTokenExists(config Config) bool {
+	if config.oauthClientID == "" {
+		return false
+	}
+	store := resolveStoreQuiet()
+	if store == nil {
+		return false
+	}
+	_, err := store.Load(storage.MakeKey(config.baseURL, config.oauthClientID))
+	return err == nil
+}
+
 // configSource reports where a value came from: flag, env, or default/unset.
 func configSource(cmd *cobra.Command, flagName, envKey string) string {
 	if cmd != nil && flagName != "" && cmd.Flags().Lookup(flagName) != nil &&
@@ -74,18 +91,19 @@ func configSource(cmd *cobra.Command, flagName, envKey string) string {
 	return "default/unset"
 }
 
-// detectAuthMode reports which auth mode run would select, without performing
-// any network or storage I/O.
+// detectAuthMode reports which auth mode run would select, mirroring
+// auth.Resolve's priority (oauth-env > oauth-storage > bearer > basic). It does
+// a read-only storage lookup but no network I/O.
 func detectAuthMode(config Config) string {
 	switch {
 	case config.oauthRefreshToken != "":
-		return "oauth-env"
+		return auth.ModeOAuthEnv
+	case storedTokenExists(config):
+		return auth.ModeOAuthStorage
 	case config.token != "":
-		return "bearer"
+		return auth.ModeBearer
 	case config.username != "" && config.password != "":
-		return "basic"
-	case config.oauthClientID != "":
-		return "oauth-storage (if a token is stored)"
+		return auth.ModeBasic
 	default:
 		return "none"
 	}

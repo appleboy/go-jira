@@ -161,21 +161,25 @@ func run(cmd *cobra.Command) error {
 	return nil
 }
 
-// authConfigFromRun maps the run Config into an auth.Config, attaching a token
-// Store only when OAuth is actually possible (a client ID is configured) so a
-// pure token/basic run never probes the keyring.
+// authConfigFromRun maps the run Config into an auth.Config. A token Store is
+// attached whenever OAuth storage is possible (a client ID is configured and no
+// refresh token was injected), preserving the oauth-storage > bearer > basic
+// priority; a pure token/basic run with no client ID never touches the keyring.
+// In oauth-env mode it wires the rotation write-back callback.
 func authConfigFromRun(config Config) auth.Config {
 	cfg := auth.Config{
-		Username:                config.username,
-		Password:                config.password,
-		Token:                   config.token,
-		OAuthRefreshToken:       config.oauthRefreshToken,
-		OAuthRefreshTokenOutput: config.oauthRefreshTokenOutput,
-		OAuthClientID:           config.oauthClientID,
-		OAuthClientSecret:       config.oauthClientSecret,
-		OAuthBaseURL:            config.baseURL,
-		OAuthRedirectURI:        config.redirectURI(),
-		OAuthScopes:             []string{config.scope},
+		Username:          config.username,
+		Password:          config.password,
+		Token:             config.token,
+		OAuthRefreshToken: config.oauthRefreshToken,
+		OAuthClientID:     config.oauthClientID,
+		OAuthClientSecret: config.oauthClientSecret,
+		OAuthBaseURL:      config.baseURL,
+		OAuthRedirectURI:  config.redirectURI(),
+		OAuthScopes:       []string{config.scope},
+	}
+	if config.oauthRefreshToken != "" {
+		cfg.OnRotate = rotationWriter(config.oauthRefreshTokenOutput)
 	}
 	if config.oauthClientID != "" && config.oauthRefreshToken == "" {
 		cfg.Store = resolveStoreQuiet()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github/appleboy/go-jira/pkg/auth"
 	"github/appleboy/go-jira/pkg/storage"
 	"os"
 	"time"
@@ -66,37 +67,36 @@ func newTokenRefreshCmd() *cobra.Command {
 	return cmd
 }
 
-// loadStoredToken loads the token for the configured base URL and client,
-// returning the store so callers can write back.
-func loadStoredToken(cmd *cobra.Command) (Config, storage.Store, *storage.StoredToken, error) {
-	if err := loadEnvFromCmd(cmd); err != nil {
-		return Config{}, nil, nil, err
-	}
-	config := loadConfig(cmd)
-	if err := requireBaseURL(config); err != nil {
-		return Config{}, nil, nil, err
-	}
-	if config.oauthClientID == "" {
-		return Config{}, nil, nil, errors.New("OAuth client ID required: set " +
-			envOAuthClientID + " or pass --client-id")
+// loadedToken bundles a stored token with the config and store it came from.
+type loadedToken struct {
+	config Config
+	store  storage.Store
+	token  *storage.StoredToken
+}
+
+// loadStoredToken loads the token for the configured base URL and client.
+func loadStoredToken(cmd *cobra.Command) (*loadedToken, error) {
+	config, err := loadOAuthConfig(cmd)
+	if err != nil {
+		return nil, err
 	}
 	store, err := resolveStore()
 	if err != nil {
-		return Config{}, nil, nil, err
+		return nil, err
 	}
 	key := storage.MakeKey(config.baseURL, config.oauthClientID)
 	tok, err := store.Load(key)
 	if err != nil {
 		if errors.Is(err, storage.ErrTokenNotFound) {
-			return Config{}, nil, nil, errors.New("no stored token; run `go-jira login` first")
+			return nil, errors.New("no stored token; run `go-jira login` first")
 		}
-		return Config{}, nil, nil, fmt.Errorf("load token: %w", err)
+		return nil, fmt.Errorf("load token: %w", err)
 	}
-	return config, store, tok, nil
+	return &loadedToken{config: config, store: store, token: tok}, nil
 }
 
 func runTokenPrint(cmd *cobra.Command) error {
-	_, _, tok, err := loadStoredToken(cmd)
+	loaded, err := loadStoredToken(cmd)
 	if err != nil {
 		return err
 	}
@@ -104,50 +104,42 @@ func runTokenPrint(cmd *cobra.Command) error {
 		return errors.New(
 			"this command prints a sensitive token; re-run with --confirm to acknowledge")
 	}
-	fmt.Println(tok.AccessToken)
+	fmt.Println(loaded.token.AccessToken)
 	return nil
 }
 
 func runTokenStatus(cmd *cobra.Command) error {
-	_, store, tok, err := loadStoredToken(cmd)
+	loaded, err := loadStoredToken(cmd)
 	if err != nil {
 		return err
 	}
+	tok := loaded.token
 	remaining := time.Until(tok.ExpiresAt).Round(time.Second)
-	fmt.Fprintf(os.Stderr, "Mode:      oauth-storage\n")
+	fmt.Fprintf(os.Stderr, "Mode:      %s\n", auth.ModeOAuthStorage)
 	fmt.Fprintf(os.Stderr, "Expires:   %s (in %s)\n", tok.ExpiresAt.Format(time.RFC3339), remaining)
 	fmt.Fprintf(os.Stderr, "Scopes:    %v\n", tok.Scopes)
-	fmt.Fprintf(os.Stderr, "Storage:   %s\n", store.Backend())
+	fmt.Fprintf(os.Stderr, "Storage:   %s\n", loaded.store.Backend())
 	return nil
 }
 
 func runTokenRefresh(cmd *cobra.Command) error {
-	config, store, tok, err := loadStoredToken(cmd)
+	loaded, err := loadStoredToken(cmd)
 	if err != nil {
 		return err
 	}
 
-	oc := oauthConfigFromConfig(config)
-	newTok, err := oc.Refresh(context.Background(), tok.RefreshToken)
+	oc := oauthConfigFromConfig(loaded.config)
+	newTok, err := oc.Refresh(context.Background(), loaded.token.RefreshToken)
 	if err != nil {
 		return fmt.Errorf("refresh failed: %w", err)
 	}
 
-	refreshToken := newTok.RefreshToken
-	if refreshToken == "" {
-		refreshToken = tok.RefreshToken
-	}
-	updated := &storage.StoredToken{
-		BaseURL:      tok.BaseURL,
-		ClientID:     tok.ClientID,
-		AccessToken:  newTok.AccessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    newTok.Expiry,
-		ObtainedAt:   time.Now().UTC(),
-		Scopes:       tok.Scopes,
-	}
-	key := storage.MakeKey(config.baseURL, config.oauthClientID)
-	if err := store.Save(key, updated); err != nil {
+	updated := storage.NewStoredToken(
+		loaded.token.BaseURL, loaded.token.ClientID, newTok,
+		loaded.token.RefreshToken, loaded.token.Scopes,
+	)
+	key := storage.MakeKey(loaded.config.baseURL, loaded.config.oauthClientID)
+	if err := loaded.store.Save(key, updated); err != nil {
 		return fmt.Errorf("save refreshed token: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Refreshed. New expiry: %s\n", updated.ExpiresAt.Format(time.RFC3339))

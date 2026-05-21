@@ -73,10 +73,15 @@ func (a *OAuthAuthenticator) ensureFresh(ctx context.Context) (string, error) {
 	return a.refreshLocked(ctx)
 }
 
-// forceRefresh refreshes regardless of expiry; used after a 401 response.
-func (a *OAuthAuthenticator) forceRefresh(ctx context.Context) (string, error) {
+// forceRefresh refreshes after a 401, unless another goroutine already rotated
+// the token — i.e. the access token that hit the 401 is no longer the cached
+// one — in which case the burst of concurrent 401s collapses to one refresh.
+func (a *OAuthAuthenticator) forceRefresh(ctx context.Context, usedToken string) (string, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	if a.cached != nil && a.cached.AccessToken != usedToken {
+		return a.cached.AccessToken, nil
+	}
 	return a.refreshLocked(ctx)
 }
 
@@ -94,21 +99,9 @@ func (a *OAuthAuthenticator) refreshLocked(ctx context.Context) (string, error) 
 		return "", err
 	}
 
-	refreshToken := tok.RefreshToken
-	if refreshToken == "" {
-		// Defensive: if the provider omits a new refresh token, keep the old.
-		refreshToken = a.cached.RefreshToken
-	}
-	newTok := &storage.StoredToken{
-		BaseURL:      a.cached.BaseURL,
-		ClientID:     a.cached.ClientID,
-		AccessToken:  tok.AccessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    tok.Expiry,
-		ObtainedAt:   time.Now().UTC(),
-		Scopes:       a.cached.Scopes,
-	}
-
+	newTok := storage.NewStoredToken(
+		a.cached.BaseURL, a.cached.ClientID, tok, a.cached.RefreshToken, a.cached.Scopes,
+	)
 	if a.store != nil && a.storeKey != "" {
 		if err := a.store.Save(a.storeKey, newTok); err != nil {
 			return "", fmt.Errorf("oauth: persist rotated token: %w", err)
@@ -119,7 +112,6 @@ func (a *OAuthAuthenticator) refreshLocked(ctx context.Context) (string, error) 
 			slog.Warn("oauth: OnRotate hook failed", "error", err)
 		}
 	}
-
 	a.cached = newTok
 	return newTok.AccessToken, nil
 }
@@ -152,11 +144,25 @@ func (rt *oauthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 	_, _ = io.Copy(io.Discard, resp.Body)
 	_ = resp.Body.Close()
 
-	newToken, err := rt.auth.forceRefresh(req.Context())
+	newToken, err := rt.auth.forceRefresh(req.Context(), accessToken)
 	if err != nil {
 		return nil, fmt.Errorf("oauth: forced refresh after 401: %w", err)
 	}
+
 	req3 := req.Clone(req.Context())
+	// The first attempt consumed req.Body; rewind it for the retry, or bail if
+	// it cannot be replayed (otherwise the retry would send an empty payload).
+	if req.Body != nil {
+		if req.GetBody == nil {
+			return nil, errors.New(
+				"oauth: got 401 but request body cannot be rewound to retry")
+		}
+		body, err := req.GetBody()
+		if err != nil {
+			return nil, fmt.Errorf("oauth: rewind request body for retry: %w", err)
+		}
+		req3.Body = body
+	}
 	req3.Header.Set("Authorization", "Bearer "+newToken)
 	return rt.base.RoundTrip(req3)
 }

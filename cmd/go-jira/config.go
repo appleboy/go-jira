@@ -77,8 +77,12 @@ func loadConfig(cmd *cobra.Command) Config {
 
 	// OAuth fields use fixed JIRA_-prefixed env vars (see main.go), not the
 	// INPUT_/bare scheme.
-	cfg.oauthClientID = resolveOAuthClientID(flagStringValue(cmd, flagClientID))
-	cfg.oauthClientSecret = resolveOAuthClientSecret(flagStringValue(cmd, flagClientSecret))
+	cfg.oauthClientID = resolveWithEnv(
+		envOAuthClientID, flagStringValue(cmd, flagClientID), DefaultOAuthClientID,
+	)
+	cfg.oauthClientSecret = resolveWithEnv(
+		envOAuthClientSecret, flagStringValue(cmd, flagClientSecret), DefaultOAuthClientSecret,
+	)
 	cfg.oauthRefreshToken = os.Getenv(envOAuthRefreshToken)
 	cfg.oauthRefreshTokenOutput = os.Getenv(envOAuthRefreshTokenOutput)
 	cfg.scope = defaultScope
@@ -130,27 +134,16 @@ func flagIntValue(cmd *cobra.Command, name string) int {
 	return v
 }
 
-// resolveOAuthClientID resolves the client ID with precedence env > flag >
-// embedded default (decision 3.2).
-func resolveOAuthClientID(flagVal string) string {
-	if v := os.Getenv(envOAuthClientID); v != "" {
+// resolveWithEnv applies the env > flag > embedded-default precedence used for
+// the OAuth client ID and secret.
+func resolveWithEnv(envKey, flagVal, embedded string) string {
+	if v := os.Getenv(envKey); v != "" {
 		return v
 	}
 	if flagVal != "" {
 		return flagVal
 	}
-	return DefaultOAuthClientID
-}
-
-// resolveOAuthClientSecret mirrors resolveOAuthClientID for the client secret.
-func resolveOAuthClientSecret(flagVal string) string {
-	if v := os.Getenv(envOAuthClientSecret); v != "" {
-		return v
-	}
-	if flagVal != "" {
-		return flagVal
-	}
-	return DefaultOAuthClientSecret
+	return embedded
 }
 
 // redirectURI builds the loopback callback URL for the configured port.

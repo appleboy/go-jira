@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github/appleboy/go-jira/pkg/oauth"
 	"github/appleboy/go-jira/pkg/storage"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -230,6 +231,64 @@ func TestRoundTripRetriesOn401(t *testing.T) {
 	}
 	if refreshes.Load() != 1 {
 		t.Errorf("refresh count = %d, want 1", refreshes.Load())
+	}
+}
+
+// TestRoundTripRetryPreservesBody guards against the bug where the 401 retry
+// replays a request whose body was already consumed by the first attempt,
+// sending an empty payload on the (write) retry.
+func TestRoundTripRetryPreservesBody(t *testing.T) {
+	var gotBody atomic.Value // string seen on the successful (retried) request
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/rest/oauth2/latest/token", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"access_token": "new-access", "token_type": "bearer",
+			"expires_in": 7200, "refresh_token": "new-refresh",
+		})
+	})
+	mux.HandleFunc("/rest/api/2/issue/ABC-1/comment", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer new-access" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		gotBody.Store(string(body))
+		w.WriteHeader(http.StatusCreated)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	cfg := &oauth.Config{
+		BaseURL: srv.URL, ClientID: "client-abc", ClientSecret: "secret-xyz",
+		RedirectURI: "http://127.0.0.1:8765/callback", Scopes: []string{"WRITE"},
+	}
+	a := &OAuthAuthenticator{
+		cfg: cfg, store: newMemStore(), storeKey: storage.MakeKey(srv.URL, "client-abc"),
+		mode:   ModeOAuthStorage,
+		cached: storedToken(srv.URL, "old-access", "old-refresh", time.Now().Add(time.Hour)),
+	}
+
+	const payload = `{"body":"a comment"}`
+	client := &http.Client{Transport: a.Transport(http.DefaultTransport)}
+	req, _ := http.NewRequestWithContext(
+		context.Background(),
+		http.MethodPost,
+		srv.URL+"/rest/api/2/issue/ABC-1/comment",
+		strings.NewReader(payload),
+	)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, want 201", resp.StatusCode)
+	}
+	if got := gotBody.Load(); got != payload {
+		t.Errorf("retried request body = %q, want %q (body was not rewound)", got, payload)
 	}
 }
 
