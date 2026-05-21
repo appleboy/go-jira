@@ -2,15 +2,17 @@ package auth
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
 func TestResolve(t *testing.T) {
 	tests := []struct {
-		name     string
-		cfg      Config
-		wantMode string
-		wantErr  bool
+		name        string
+		cfg         Config
+		wantMode    string
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name:     "token wins over basic",
@@ -28,19 +30,22 @@ func TestResolve(t *testing.T) {
 			wantMode: "basic",
 		},
 		{
-			name:    "username without password errors",
-			cfg:     Config{Username: "u"},
-			wantErr: true,
+			name:        "username without password errors",
+			cfg:         Config{Username: "u"},
+			wantErr:     true,
+			errContains: "basic auth requires both",
 		},
 		{
-			name:    "password without username errors",
-			cfg:     Config{Password: "p"},
-			wantErr: true,
+			name:        "password without username errors",
+			cfg:         Config{Password: "p"},
+			wantErr:     true,
+			errContains: "basic auth requires both",
 		},
 		{
-			name:    "nothing configured errors",
-			cfg:     Config{},
-			wantErr: true,
+			name:        "nothing configured errors",
+			cfg:         Config{},
+			wantErr:     true,
+			errContains: "no authentication configured",
 		},
 	}
 	for _, tt := range tests {
@@ -49,6 +54,9 @@ func TestResolve(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
+				}
+				if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.errContains)
 				}
 				return
 			}

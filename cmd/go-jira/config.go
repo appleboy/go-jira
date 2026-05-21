@@ -177,10 +177,12 @@ func (c Config) redirectURI() string {
 	return fmt.Sprintf("http://127.0.0.1:%d/callback", c.callbackPort)
 }
 
-// validateConfig validates the run-action configuration. Authentication
-// selection (including OAuth) is handled by auth.Resolve; this only enforces
-// the base URL, ref, and the basic-auth pairing rule.
-func validateConfig(config Config) error {
+// validateBaseURL enforces the base URL rules shared by every subcommand: it
+// must be present, parse as a URL with a host, and use https (or http only
+// when --insecure is set). Extracted so non-run commands (login/logout/whoami/
+// token/config show) reject invalid or insecure URLs up front with the same
+// actionable errors as run.
+func validateBaseURL(config Config) error {
 	if config.baseURL == "" {
 		return errors.New("base_url is required")
 	}
@@ -196,6 +198,16 @@ func validateConfig(config Config) error {
 		}
 	default:
 		return errors.New("base_url must use http or https scheme")
+	}
+	return nil
+}
+
+// validateConfig validates the run-action configuration. Authentication
+// selection (including OAuth) is handled by auth.Resolve; this only enforces
+// the base URL, ref, and the basic-auth pairing rule.
+func validateConfig(config Config) error {
+	if err := validateBaseURL(config); err != nil {
+		return err
 	}
 	if config.ref == "" {
 		return errors.New("ref is required")

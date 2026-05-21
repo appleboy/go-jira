@@ -122,6 +122,7 @@ func TestWhoamiBearer(t *testing.T) {
 
 	t.Setenv("INPUT_BASE_URL", srv.URL)
 	t.Setenv("INPUT_TOKEN", "pat-123")
+	t.Setenv("INPUT_INSECURE", "true") // httptest serves http://
 
 	cmd := newWhoamiCmd()
 	if err := cmd.ParseFlags(nil); err != nil {

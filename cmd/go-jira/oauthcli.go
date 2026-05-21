@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -16,12 +17,11 @@ import (
 var oauthLogin = oauth.Login
 
 // requireBaseURL validates the base URL for non-run commands (which, unlike
-// run, do not need a ref).
+// run, do not need a ref). It applies the same parse + scheme/--insecure rules
+// as run via the shared validateBaseURL, so every subcommand rejects invalid
+// or insecure URLs consistently.
 func requireBaseURL(config Config) error {
-	if config.baseURL == "" {
-		return errors.New("base_url is required")
-	}
-	return nil
+	return validateBaseURL(config)
 }
 
 // loadOAuthConfig runs the common preamble for OAuth subcommands: load the env
@@ -53,8 +53,41 @@ func rotationWriter(path string) func(*storage.StoredToken) error {
 		return nil
 	}
 	return func(t *storage.StoredToken) error {
-		return os.WriteFile(path, []byte(t.RefreshToken), 0o600)
+		return atomicWriteFile(path, []byte(t.RefreshToken), 0o600)
 	}
+}
+
+// atomicWriteFile writes data to path durably: it ensures the parent directory
+// exists, writes to a temp file in the same directory, then renames it into
+// place. This prevents a missing-directory failure or an interrupted write from
+// silently losing the rotated refresh token (which would fail the next CI run
+// with invalid_grant).
+func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("create dir %s: %w", dir, err)
+	}
+	tmp, err := os.CreateTemp(dir, ".rotate-*")
+	if err != nil {
+		return fmt.Errorf("create temp file: %w", err)
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName) // no-op once the rename succeeds
+	if err := tmp.Chmod(perm); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("chmod temp file: %w", err)
+	}
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("write temp file: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("close temp file: %w", err)
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return fmt.Errorf("rename temp file: %w", err)
+	}
+	return nil
 }
 
 // resolveStoreQuiet resolves a token Store best-effort, returning nil (and

@@ -57,10 +57,23 @@ func runConfigShow(cmd *cobra.Command) error {
 	row("insecure", fmt.Sprintf("%t", config.insecure), flagInsecure, "insecure", envInsecure)
 	row("token", config.token, flagToken, "token", envToken)
 	row("username", config.username, flagUsername, "username", envUsername)
+	row("password", config.password, flagPassword, "password", envPassword)
 	fmt.Fprintf(w, "oauth_client_id\t%s\t%s\n",
 		redactIfSecret("oauth_client_id", config.oauthClientID),
-		oauthClientIDSource(cmd, config.oauthClientID))
+		oauthValueSource(cmd, flagClientID, envOAuthClientID, config.oauthClientID,
+			DefaultOAuthClientID))
+	fmt.Fprintf(w, "oauth_client_secret\t%s\t%s\n",
+		redactIfSecret("oauth_client_secret", config.oauthClientSecret),
+		oauthValueSource(cmd, flagClientSecret, envOAuthClientSecret,
+			config.oauthClientSecret, DefaultOAuthClientSecret))
 	row("scope", config.scope, flagScope, "", "")
+	// oauth-env (CI) inputs: show presence/source without leaking the token.
+	fmt.Fprintf(w, "oauth_refresh_token\t%s\t%s\n",
+		redactIfSecret("oauth_refresh_token", config.oauthRefreshToken),
+		configSource(cmd, "", "", envOAuthRefreshToken))
+	fmt.Fprintf(w, "oauth_refresh_token_output\t%s\t%s\n",
+		redactIfSecret("oauth_refresh_token_output", config.oauthRefreshTokenOutput),
+		configSource(cmd, "", "", envOAuthRefreshTokenOutput))
 	fmt.Fprintf(w, "auth_mode\t%s\t%s\n", detectAuthMode(config), "resolved")
 
 	return w.Flush()
@@ -81,19 +94,18 @@ func storedTokenExists(config Config) bool {
 	return err == nil
 }
 
-// oauthClientIDSource reports where the OAuth client ID came from. Unlike
-// configSource it knows the fixed JIRA_OAUTH_CLIENT_ID env var and the
-// build-time embedded default, so the SOURCE column never misreports an
-// env-supplied or embedded value as "default/unset".
-func oauthClientIDSource(cmd *cobra.Command, value string) string {
-	if cmd != nil && cmd.Flags().Lookup(flagClientID) != nil &&
-		cmd.Flags().Changed(flagClientID) {
+// oauthValueSource reports where an OAuth value came from. Unlike configSource
+// it knows the fixed JIRA_OAUTH_* env vars and the build-time embedded default,
+// so the SOURCE column never misreports an env-supplied or embedded value as
+// "default/unset". embedded may be "" when there is no build-time default.
+func oauthValueSource(cmd *cobra.Command, flagName, envKey, value, embedded string) string {
+	if flagChanged(cmd, flagName) {
 		return "flag"
 	}
-	if os.Getenv(envOAuthClientID) != "" {
+	if os.Getenv(envKey) != "" {
 		return "env"
 	}
-	if value != "" && value == DefaultOAuthClientID {
+	if embedded != "" && value == embedded {
 		return "embedded-default"
 	}
 	return "default/unset"
@@ -141,7 +153,8 @@ func redactIfSecret(field, value string) string {
 		return "(unset)"
 	}
 	switch field {
-	case flagToken, flagPassword, "client_secret":
+	case flagToken, flagPassword, "client_secret",
+		"oauth_client_secret", "oauth_refresh_token":
 		return "(set, redacted)"
 	default:
 		return value
