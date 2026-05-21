@@ -48,19 +48,19 @@ func runConfigShow(cmd *cobra.Command) error {
 	w := tabwriter.NewWriter(os.Stderr, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(w, "FIELD\tVALUE\tSOURCE")
 
-	row := func(field, value, flagName, envKey string) {
+	row := func(field, value, flagName, envKey, aliasEnv string) {
 		fmt.Fprintf(w, "%s\t%s\t%s\n", field, redactIfSecret(field, value),
-			configSource(cmd, flagName, envKey))
+			configSource(cmd, flagName, envKey, aliasEnv))
 	}
 
-	row("base_url", config.baseURL, flagBaseURL, "base_url")
-	row("insecure", fmt.Sprintf("%t", config.insecure), flagInsecure, "insecure")
-	row("token", config.token, flagToken, "token")
-	row("username", config.username, flagUsername, "username")
+	row("base_url", config.baseURL, flagBaseURL, "base_url", envBaseURL)
+	row("insecure", fmt.Sprintf("%t", config.insecure), flagInsecure, "insecure", envInsecure)
+	row("token", config.token, flagToken, "token", envToken)
+	row("username", config.username, flagUsername, "username", envUsername)
 	fmt.Fprintf(w, "oauth_client_id\t%s\t%s\n",
 		redactIfSecret("oauth_client_id", config.oauthClientID),
 		oauthClientIDSource(cmd, config.oauthClientID))
-	row("scope", config.scope, flagScope, "")
+	row("scope", config.scope, flagScope, "", "")
 	fmt.Fprintf(w, "auth_mode\t%s\t%s\n", detectAuthMode(config), "resolved")
 
 	return w.Flush()
@@ -100,12 +100,18 @@ func oauthClientIDSource(cmd *cobra.Command, value string) string {
 }
 
 // configSource reports where a value came from: flag, env, or default/unset.
-func configSource(cmd *cobra.Command, flagName, envKey string) string {
+// aliasEnv, when non-empty, is a JIRA_-prefixed alias (e.g. JIRA_BASE_URL)
+// checked alongside the INPUT_<KEY>/<KEY> convention so the reported source
+// matches loadConfig's resolution.
+func configSource(cmd *cobra.Command, flagName, envKey, aliasEnv string) string {
 	if cmd != nil && flagName != "" && cmd.Flags().Lookup(flagName) != nil &&
 		cmd.Flags().Changed(flagName) {
 		return "flag"
 	}
 	if envKey != "" && util.GetGlobalValue(envKey) != "" {
+		return "env"
+	}
+	if aliasEnv != "" && os.Getenv(aliasEnv) != "" {
 		return "env"
 	}
 	return "default/unset"

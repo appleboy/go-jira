@@ -60,11 +60,16 @@ const (
 	envOAuthRefreshTokenOutput = "JIRA_OAUTH_REFRESH_TOKEN_OUTPUT" //nolint:gosec // env var name, not a secret
 	envMasterPassword          = "JIRA_MASTER_PASSWORD"            //nolint:gosec // env var name, not a secret
 
-	// envBaseURL is a JIRA_-prefixed alias for the base URL, matching the OAuth
-	// env naming used throughout the docs. The action config still resolves
-	// base_url via the INPUT_BASE_URL/BASE_URL convention; this is an additional
-	// fallback so the documented JIRA_BASE_URL examples work as written.
-	envBaseURL = "JIRA_BASE_URL"
+	// JIRA_-prefixed aliases for the core auth/config fields, matching the env
+	// naming used throughout the docs and the auth-resolver error message. The
+	// action config still resolves these via the INPUT_<KEY>/<KEY> convention;
+	// these are additional fallbacks (lowest precedence) so the documented
+	// JIRA_* examples work as written.
+	envBaseURL  = "JIRA_BASE_URL"
+	envUsername = "JIRA_USERNAME"
+	envPassword = "JIRA_PASSWORD" //nolint:gosec // env var name, not a secret
+	envToken    = "JIRA_TOKEN"    //nolint:gosec // env var name, not a secret
+	envInsecure = "JIRA_INSECURE"
 )
 
 const (

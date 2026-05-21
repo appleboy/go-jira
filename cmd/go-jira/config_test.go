@@ -32,6 +32,8 @@ func clearInputEnv(t *testing.T) {
 		"BASE_URL", "INSECURE", "USERNAME", "PASSWORD",
 		"TOKEN", "REF", "ISSUE_FORMAT", "TRANSITION",
 		"RESOLUTION", "COMMENT", "ASSIGNEE", "MARKDOWN", "DEBUG",
+		"JIRA_BASE_URL", "JIRA_USERNAME", "JIRA_PASSWORD",
+		"JIRA_TOKEN", "JIRA_INSECURE",
 	}
 	saved := make(map[string]string, len(keys))
 	for _, k := range keys {
@@ -374,6 +376,57 @@ func TestLoadConfig_BareEnvStillWorks(t *testing.T) {
 	}
 	if got.ref != "ABC-2" {
 		t.Errorf("ref = %q, want REF value", got.ref)
+	}
+}
+
+// TestLoadConfig_JiraAliasesWork verifies the JIRA_-prefixed env aliases
+// (matching the docs and the auth-resolver error message) resolve when the
+// flag and INPUT_<KEY>/<KEY> vars are unset.
+func TestLoadConfig_JiraAliasesWork(t *testing.T) {
+	clearInputEnv(t)
+
+	os.Setenv("JIRA_BASE_URL", "https://jira-alias.example.com")
+	os.Setenv("JIRA_USERNAME", "alias-user")
+	os.Setenv("JIRA_PASSWORD", "alias-pass")
+	os.Setenv("JIRA_TOKEN", "alias-token")
+	os.Setenv("JIRA_INSECURE", "true")
+
+	got := loadConfig(nil)
+
+	if got.baseURL != "https://jira-alias.example.com" {
+		t.Errorf("baseURL = %q, want JIRA_BASE_URL value", got.baseURL)
+	}
+	if got.username != "alias-user" {
+		t.Errorf("username = %q, want JIRA_USERNAME value", got.username)
+	}
+	if got.password != "alias-pass" {
+		t.Errorf("password = %q, want JIRA_PASSWORD value", got.password)
+	}
+	if got.token != "alias-token" {
+		t.Errorf("token = %q, want JIRA_TOKEN value", got.token)
+	}
+	if !got.insecure {
+		t.Errorf("insecure = false, want true (JIRA_INSECURE)")
+	}
+}
+
+// TestLoadConfig_BareEnvBeatsJiraAlias verifies precedence: the existing
+// INPUT_<KEY>/<KEY> convention wins over the JIRA_ alias when both are set.
+func TestLoadConfig_BareEnvBeatsJiraAlias(t *testing.T) {
+	clearInputEnv(t)
+
+	os.Setenv("BASE_URL", "https://from-bare.example.com")
+	os.Setenv("JIRA_BASE_URL", "https://from-jira.example.com")
+	os.Setenv("TOKEN", "bare-token")
+	os.Setenv("JIRA_TOKEN", "jira-token")
+
+	got := loadConfig(nil)
+
+	if got.baseURL != "https://from-bare.example.com" {
+		t.Errorf("baseURL = %q, want BASE_URL to win over JIRA_BASE_URL", got.baseURL)
+	}
+	if got.token != "bare-token" {
+		t.Errorf("token = %q, want TOKEN to win over JIRA_TOKEN", got.token)
 	}
 }
 

@@ -75,10 +75,24 @@ func loadConfig(cmd *cobra.Command) Config {
 		debug:        getBool(flagDebug, "debug"),
 	}
 
-	// Accept JIRA_BASE_URL as an alias when the flag and INPUT_BASE_URL/BASE_URL
-	// are unset, so the JIRA_-prefixed examples in the docs work as written.
+	// Accept the JIRA_-prefixed env vars as aliases (lowest precedence: flag >
+	// INPUT_<KEY>/<KEY> > JIRA_<KEY>), so the JIRA_* examples in the docs and
+	// the auth-resolver error message work as written.
 	if cfg.baseURL == "" {
 		cfg.baseURL = os.Getenv(envBaseURL)
+	}
+	if cfg.username == "" {
+		cfg.username = os.Getenv(envUsername)
+	}
+	if cfg.password == "" {
+		cfg.password = os.Getenv(envPassword)
+	}
+	if cfg.token == "" {
+		cfg.token = os.Getenv(envToken)
+	}
+	if !cfg.insecure && !flagChanged(cmd, flagInsecure) &&
+		util.GetGlobalValue("insecure") == "" {
+		cfg.insecure = util.ToBool(os.Getenv(envInsecure))
 	}
 
 	// OAuth fields use fixed JIRA_-prefixed env vars (see main.go), not the
@@ -118,6 +132,12 @@ func warnOnSecretFlags(cmd *cobra.Command) {
 			)
 		}
 	}
+}
+
+// flagChanged reports whether the command defines the flag and the user
+// explicitly set it.
+func flagChanged(cmd *cobra.Command, name string) bool {
+	return cmd != nil && cmd.Flags().Lookup(name) != nil && cmd.Flags().Changed(name)
 }
 
 // flagStringValue returns a string flag's value when the command defines it and
