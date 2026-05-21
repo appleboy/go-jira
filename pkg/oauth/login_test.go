@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -83,5 +84,20 @@ func TestLoginInvalidConfig(t *testing.T) {
 	_, err := Login(context.Background(), &Config{}, 8765, time.Second)
 	if err == nil {
 		t.Fatal("expected validation error for empty config")
+	}
+}
+
+// TestLoginRedirectPortMismatch verifies Login fails fast (rather than hanging
+// until timeout) when the callback port disagrees with the RedirectURI port.
+func TestLoginRedirectPortMismatch(t *testing.T) {
+	cfg := testConfig("https://jira.example.com")
+	cfg.RedirectURI = "http://127.0.0.1:9999/callback"
+
+	_, err := Login(context.Background(), cfg, 8765, time.Second)
+	if err == nil {
+		t.Fatal("expected error when redirect URI port does not match callback port")
+	}
+	if !strings.Contains(err.Error(), "does not match callback port") {
+		t.Errorf("error = %q, want a port-mismatch message", err.Error())
 	}
 }

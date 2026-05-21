@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -31,6 +33,18 @@ func Login(
 ) (*LoginResult, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
+	}
+	// The browser is redirected to cfg.RedirectURI, but the listener binds to
+	// port. If they disagree the redirect hits nothing and Login hangs until
+	// timeout — fail fast with a clear error instead.
+	redirect, err := url.Parse(cfg.RedirectURI)
+	if err != nil {
+		return nil, fmt.Errorf("oauth login: invalid redirect URI %q: %w", cfg.RedirectURI, err)
+	}
+	if redirect.Port() != strconv.Itoa(port) {
+		return nil, fmt.Errorf(
+			"oauth login: redirect URI %q port does not match callback port %d",
+			cfg.RedirectURI, port)
 	}
 
 	state, err := NewState()

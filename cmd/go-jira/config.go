@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github/appleboy/go-jira/pkg/util"
@@ -138,6 +139,19 @@ func warnOnSecretFlags(cmd *cobra.Command) {
 // explicitly set it.
 func flagChanged(cmd *cobra.Command, name string) bool {
 	return cmd != nil && cmd.Flags().Lookup(name) != nil && cmd.Flags().Changed(name)
+}
+
+// cmdContext returns the command's context so cancellation/deadlines (Ctrl-C,
+// parent context) propagate to outbound calls, falling back to a fresh
+// background context for the cmd == nil test path (or a command that has not
+// been executed and so has no context set).
+func cmdContext(cmd *cobra.Command) context.Context {
+	if cmd != nil {
+		if ctx := cmd.Context(); ctx != nil {
+			return ctx
+		}
+	}
+	return context.Background()
 }
 
 // flagStringValue returns a string flag's value when the command defines it and

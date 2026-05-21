@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"github/appleboy/go-jira/pkg/storage"
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,6 +47,20 @@ func TestResolveOAuthEnvRequiresClientSecret(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error when client secret missing in oauth-env mode")
+	}
+}
+
+func TestResolveOAuthEnvRequiresBaseURL(t *testing.T) {
+	_, err := Resolve(context.Background(), Config{
+		OAuthRefreshToken: "x",
+		OAuthClientID:     "client-abc",
+		OAuthClientSecret: "secret",
+	})
+	if err == nil {
+		t.Fatal("expected error when base URL missing in oauth-env mode")
+	}
+	if !strings.Contains(err.Error(), "base URL is required") {
+		t.Errorf("error = %q, want it to mention base URL", err.Error())
 	}
 }
 

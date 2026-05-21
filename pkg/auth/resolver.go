@@ -111,6 +111,12 @@ func resolveOAuthEnv(ctx context.Context, cfg Config) (Authenticator, error) {
 	if cfg.OAuthClientSecret == "" {
 		return nil, errors.New("oauth-env: JIRA_OAUTH_CLIENT_SECRET is required")
 	}
+	if cfg.OAuthBaseURL == "" {
+		// Without a base URL the token endpoint URL is empty and oc.Refresh would
+		// fail with a low-signal "unsupported protocol scheme" error; surface an
+		// actionable config error instead.
+		return nil, errors.New("oauth-env: base URL is required")
+	}
 
 	oc := oauthConfig(cfg)
 	tok, err := oc.Refresh(ctx, cfg.OAuthRefreshToken)
