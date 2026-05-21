@@ -56,10 +56,10 @@ const (
 // use fixed JIRA_-prefixed names matching the documented CI/CD contract.
 const (
 	envOAuthClientID           = "JIRA_OAUTH_CLIENT_ID"
-	envOAuthClientSecret       = "JIRA_OAUTH_CLIENT_SECRET"     //nolint:gosec // env var name, not a secret
-	envOAuthRefreshToken       = "JIRA_OAUTH_REFRESH_TOKEN"     //nolint:gosec // env var name, not a secret
-	envOAuthRefreshTokenOutput = "JIRA_OAUTH_REFRESH_TOKEN_OUT" //nolint:gosec // env var name, not a secret
-	envMasterPassword          = "JIRA_MASTER_PASSWORD"         //nolint:gosec // env var name, not a secret
+	envOAuthClientSecret       = "JIRA_OAUTH_CLIENT_SECRET"        //nolint:gosec // env var name, not a secret
+	envOAuthRefreshToken       = "JIRA_OAUTH_REFRESH_TOKEN"        //nolint:gosec // env var name, not a secret
+	envOAuthRefreshTokenOutput = "JIRA_OAUTH_REFRESH_TOKEN_OUTPUT" //nolint:gosec // env var name, not a secret
+	envMasterPassword          = "JIRA_MASTER_PASSWORD"            //nolint:gosec // env var name, not a secret
 )
 
 const (
