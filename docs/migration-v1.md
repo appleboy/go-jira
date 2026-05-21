@@ -5,13 +5,9 @@ requires a subcommand.
 
 ## The breaking change: use `go-jira run`
 
-The bare `go-jira` command no longer performs the action. Running it now prints:
-
-```
-Error: starting from v1.0, go-jira requires a subcommand.
-For the previous action behavior, use:  go-jira run
-See `go-jira --help` for available commands
-```
+The bare `go-jira` command no longer performs the action. Running it with no
+subcommand now prints the help page listing the available commands (the same as
+`go-jira --help`).
 
 **Everything the bare command used to do now lives under `go-jira run`.** All
 action flags and the GitHub Actions `INPUT_*` environment variables behave
@@ -69,13 +65,13 @@ and OAuth only engages when you opt in.
 
 ## New subcommands
 
-| Command | Purpose |
-|---------|---------|
-| `go-jira run` | The former bare-command action |
-| `go-jira login` | Interactive OAuth login (stores a token) |
-| `go-jira logout` | Remove the stored token for a site |
-| `go-jira whoami` | Show the authenticated user and auth mode |
-| `go-jira token status\|refresh\|print` | Inspect/manage the stored token |
-| `go-jira config show` | Show resolved config and value sources |
+| Command                                | Purpose                                   |
+| -------------------------------------- | ----------------------------------------- |
+| `go-jira run`                          | The former bare-command action            |
+| `go-jira login`                        | Interactive OAuth login (stores a token)  |
+| `go-jira logout`                       | Remove the stored token for a site        |
+| `go-jira whoami`                       | Show the authenticated user and auth mode |
+| `go-jira token status\|refresh\|print` | Inspect/manage the stored token           |
+| `go-jira config show`                  | Show resolved config and value sources    |
 
 See [docs/oauth-usage.md](oauth-usage.md) for the OAuth setup guide.

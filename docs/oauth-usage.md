@@ -30,12 +30,12 @@ Resolution order is **env var > flag > embedded default**.
 
 ## 2. Scopes
 
-| Scope          | Grants                                            |
-|----------------|---------------------------------------------------|
-| `READ`         | View projects/issues/profile                      |
+| Scope          | Grants                                              |
+| -------------- | --------------------------------------------------- |
+| `READ`         | View projects/issues/profile                        |
 | `WRITE`        | Create/update issues, comments, transitions (+READ) |
-| `ADMIN`        | Admin operations (+READ, WRITE)                   |
-| `SYSTEM_ADMIN` | Full system administration (+ADMIN)               |
+| `ADMIN`        | Admin operations (+READ, WRITE)                     |
+| `SYSTEM_ADMIN` | Full system administration (+ADMIN)                 |
 
 go-jira requests `WRITE` by default (enough for transition / comment /
 assignee). Change it with `--scope`. Effective permissions are still bounded by
@@ -71,10 +71,10 @@ go-jira logout                 # delete the stored token for this site
 
 ## 4. Token storage
 
-| Backend  | When used                              | Notes |
-|----------|----------------------------------------|-------|
-| keyring  | default, when an OS keyring is available | macOS Keychain, Secret Service, Windows Credential Manager |
-| file     | fallback (e.g. headless Linux without D-Bus) | AES-256-GCM, key derived with PBKDF2-HMAC-SHA256 (600k iterations) |
+| Backend | When used                                    | Notes                                                              |
+| ------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| keyring | default, when an OS keyring is available     | macOS Keychain, Secret Service, Windows Credential Manager         |
+| file    | fallback (e.g. headless Linux without D-Bus) | AES-256-GCM, key derived with PBKDF2-HMAC-SHA256 (600k iterations) |
 
 The file backend requires a master password via `JIRA_MASTER_PASSWORD`. Tokens
 are keyed by `sha256(baseURL:clientID)`, so multiple Jira sites and clients
@@ -85,11 +85,11 @@ coexist without clobbering each other. Switch sites with `--base-url`.
 Set `JIRA_OAUTH_REFRESH_TOKEN` to enter `oauth-env` mode. go-jira exchanges the
 refresh token for an access token at startup.
 
-| Env var | Required | Purpose |
-|---------|----------|---------|
-| `JIRA_OAUTH_CLIENT_ID` | yes | OAuth client ID |
-| `JIRA_OAUTH_CLIENT_SECRET` | yes | OAuth client secret |
-| `JIRA_OAUTH_REFRESH_TOKEN` | yes | Triggers `oauth-env` mode |
+| Env var                           | Required             | Purpose                                 |
+| --------------------------------- | -------------------- | --------------------------------------- |
+| `JIRA_OAUTH_CLIENT_ID`            | yes                  | OAuth client ID                         |
+| `JIRA_OAUTH_CLIENT_SECRET`        | yes                  | OAuth client secret                     |
+| `JIRA_OAUTH_REFRESH_TOKEN`        | yes                  | Triggers `oauth-env` mode               |
 | `JIRA_OAUTH_REFRESH_TOKEN_OUTPUT` | strongly recommended | File to write the rotated refresh token |
 
 > **⚠️ Rotation is the hard part.** Jira DC invalidates **both** the old access
