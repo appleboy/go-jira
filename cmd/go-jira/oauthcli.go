@@ -9,12 +9,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
 // oauthLogin indirects oauth.Login so tests can stub the interactive flow.
 var oauthLogin = oauth.Login
+
+// oauthRequestTimeout bounds OAuth token/refresh requests made through the
+// insecure HTTP client, matching pkg/oauth's default for the nil-client case.
+const oauthRequestTimeout = 30 * time.Second
 
 // requireBaseURL validates the base URL for non-run commands (which, unlike
 // run, do not need a ref). It applies the same parse + scheme/--insecure rules
@@ -139,5 +144,10 @@ func oauthHTTPClient(config Config) *http.Client {
 	if !config.insecure {
 		return nil
 	}
-	return createHTTPClient(config, nil)
+	client := createHTTPClient(config, nil)
+	// createHTTPClient leaves Timeout unset (the main Jira client relies on the
+	// command context). Injecting it into oauth.Config would otherwise bypass
+	// pkg/oauth's default token-request timeout, so set the same 30s here.
+	client.Timeout = oauthRequestTimeout
+	return client
 }
