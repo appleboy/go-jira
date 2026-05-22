@@ -75,9 +75,11 @@ func (s *FileStore) save(fc *fileContents) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("file mkdir: %w", err)
 	}
-	// Write to a temp file in the same dir and rename into place, so a crash or
-	// interruption mid-write can't leave a truncated/corrupt tokens.enc that
-	// would break every future load.
+	// Write to a temp file in the same dir, fsync it, and rename into place, so a
+	// crash or interruption mid-write can't leave a truncated/corrupt tokens.enc
+	// that would break every future load. The Sync flushes the bytes before the
+	// rename; the directory entry is not fsynced, so this is an atomic,
+	// data-flushed replace rather than a full power-loss guarantee.
 	tmp, err := os.CreateTemp(dir, ".tokens-*.tmp")
 	if err != nil {
 		return fmt.Errorf("file temp create: %w", err)
@@ -91,6 +93,10 @@ func (s *FileStore) save(fc *fileContents) error {
 	if _, err := tmp.Write(blob); err != nil {
 		_ = tmp.Close()
 		return fmt.Errorf("file temp write: %w", err)
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("file temp sync: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("file temp close: %w", err)

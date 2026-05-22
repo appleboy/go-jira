@@ -62,11 +62,13 @@ func rotationWriter(path string) func(*storage.StoredToken) error {
 	}
 }
 
-// atomicWriteFile writes data to path durably: it ensures the parent directory
-// exists, writes to a temp file in the same directory, then renames it into
-// place. This prevents a missing-directory failure or an interrupted write from
-// silently losing the rotated refresh token (which would fail the next CI run
-// with invalid_grant).
+// atomicWriteFile writes data to path: it ensures the parent directory exists,
+// writes to a temp file in the same directory, flushes it to disk (Sync), then
+// renames it into place. The temp+rename is atomic (no torn write) and the Sync
+// flushes the bytes before the rename, so an interrupted write can't leave a
+// truncated/empty rotated refresh token (which would fail the next CI run with
+// invalid_grant). The parent directory entry is not itself fsynced, so this is
+// an atomic, data-flushed replace rather than a full power-loss guarantee.
 func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -85,6 +87,10 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	if _, err := tmp.Write(data); err != nil {
 		_ = tmp.Close()
 		return fmt.Errorf("write temp file: %w", err)
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("sync temp file: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("close temp file: %w", err)
