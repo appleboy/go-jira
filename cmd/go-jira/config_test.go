@@ -100,6 +100,8 @@ func TestResolveCallbackHTTPS(t *testing.T) {
 		{"env 1 is truthy", "1", nil, true},
 		{"env false beats unset flag", "false", nil, false},
 		{"env true beats unset flag", "true", nil, true},
+		{"env false beats set flag", "false", []string{"--callback-https"}, false},
+		{"env true with set flag", "true", []string{"--callback-https"}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
