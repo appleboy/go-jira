@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -26,12 +27,17 @@ func TestAtomicWriteFile_CreatesParentDir(t *testing.T) {
 		t.Errorf("content = %q, want %q", got, "rotated-token")
 	}
 
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatalf("Stat: %v", err)
-	}
-	if perm := info.Mode().Perm(); perm != 0o600 {
-		t.Errorf("perm = %o, want 600", perm)
+	// Permission bits are only meaningful on Unix; Windows models just the
+	// read-only bit, so Perm() would not equal 0o600 there even on a correct
+	// write. Keep the content/atomicity assertions cross-platform.
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("Stat: %v", err)
+		}
+		if perm := info.Mode().Perm(); perm != 0o600 {
+			t.Errorf("perm = %o, want 600", perm)
+		}
 	}
 
 	// No stray temp files left behind in the target directory.
