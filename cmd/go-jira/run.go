@@ -161,11 +161,9 @@ func run(cmd *cobra.Command) error {
 	return nil
 }
 
-// authConfigFromRun maps the run Config into an auth.Config. A token Store is
-// attached whenever OAuth storage is possible (a client ID is configured and no
-// refresh token was injected), preserving the oauth-storage > bearer > basic
-// priority; a pure token/basic run with no client ID never touches the keyring.
-// In oauth-env mode it wires the rotation write-back callback.
+// authConfigFromRun maps the run Config into an auth.Config. In oauth-env mode
+// it wires the rotation write-back callback. A token Store is attached only when
+// OAuth storage could actually be the chosen method — see hasExplicitCred below.
 func authConfigFromRun(config Config) auth.Config {
 	cfg := auth.Config{
 		Username:          config.username,
@@ -182,7 +180,14 @@ func authConfigFromRun(config Config) auth.Config {
 	if config.oauthRefreshToken != "" {
 		cfg.OnRotate = rotationWriter(config.oauthRefreshTokenOutput)
 	}
-	if config.oauthClientID != "" && config.oauthRefreshToken == "" {
+	// Resolving a Store probes the OS keyring (a write+delete that can trigger a
+	// keychain permission prompt), so only do it when OAuth storage could win:
+	// no injected refresh token, a client ID is configured, and the user has not
+	// supplied an explicit bearer/basic credential. The OAuth client ID has a
+	// build-time embedded default, so without the credential guard a pure
+	// token/basic run would probe the keyring on every invocation.
+	hasExplicitCred := config.token != "" || (config.username != "" && config.password != "")
+	if config.oauthClientID != "" && config.oauthRefreshToken == "" && !hasExplicitCred {
 		cfg.Store = resolveStoreQuiet()
 	}
 	return cfg

@@ -45,6 +45,33 @@ func oauthEnvServer(t *testing.T, refreshErr string) *httptest.Server {
 	return srv
 }
 
+// TestAuthConfigFromRunSkipsStoreWithExplicitCreds verifies that an explicit
+// bearer or basic credential prevents Store resolution, so a token/basic run
+// never probes the OS keyring even though the OAuth client ID has an embedded
+// default.
+func TestAuthConfigFromRunSkipsStoreWithExplicitCreds(t *testing.T) {
+	cases := []struct {
+		name   string
+		config Config
+	}{
+		{"bearer token", Config{oauthClientID: "client-abc", baseURL: "https://j", token: "pat"}},
+		{
+			"basic auth",
+			Config{oauthClientID: "client-abc", baseURL: "https://j", username: "u", password: "p"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := authConfigFromRun(tc.config); got.Store != nil {
+				t.Errorf(
+					"Store = %v, want nil (explicit credential should skip keyring probe)",
+					got.Store,
+				)
+			}
+		})
+	}
+}
+
 func TestRunOAuthEnvMode(t *testing.T) {
 	srv := oauthEnvServer(t, "")
 	out := filepath.Join(t.TempDir(), "rotated.txt")
