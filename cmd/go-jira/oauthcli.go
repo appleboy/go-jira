@@ -58,7 +58,7 @@ func rotationWriter(path string) func(*storage.StoredToken) error {
 		return nil
 	}
 	return func(t *storage.StoredToken) error {
-		return atomicWriteFile(path, []byte(t.RefreshToken), 0o600)
+		return atomicWriteFile(path, []byte(t.RefreshToken))
 	}
 }
 
@@ -69,7 +69,10 @@ func rotationWriter(path string) func(*storage.StoredToken) error {
 // truncated/empty rotated refresh token (which would fail the next CI run with
 // invalid_grant). The parent directory entry is not itself fsynced, so this is
 // an atomic, data-flushed replace rather than a full power-loss guarantee.
-func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
+//
+// The file is created 0o600 since it always holds a secret (the rotated OAuth
+// refresh token).
+func atomicWriteFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("create dir %s: %w", dir, err)
@@ -80,7 +83,7 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	}
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName) // no-op once the rename succeeds
-	if err := tmp.Chmod(perm); err != nil {
+	if err := tmp.Chmod(0o600); err != nil {
 		_ = tmp.Close()
 		return fmt.Errorf("chmod temp file: %w", err)
 	}

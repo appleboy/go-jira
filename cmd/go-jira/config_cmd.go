@@ -11,6 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// sourceEnv is the SOURCE column value reported when a config value was
+// resolved from an environment variable.
+const sourceEnv = "env"
+
 // newConfigCmd builds the `config` command group.
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -107,7 +111,7 @@ func storedTokenExists(config Config) bool {
 // the env var wins, so the reported source must say "env".
 func oauthValueSource(cmd *cobra.Command, flagName, envKey, value, embedded string) string {
 	if envKey != "" && os.Getenv(envKey) != "" {
-		return "env"
+		return sourceEnv
 	}
 	if flagChanged(cmd, flagName) {
 		return "flag"
@@ -128,10 +132,10 @@ func configSource(cmd *cobra.Command, flagName, envKey, aliasEnv string) string 
 		return "flag"
 	}
 	if envKey != "" && util.GetGlobalValue(envKey) != "" {
-		return "env"
+		return sourceEnv
 	}
 	if aliasEnv != "" && os.Getenv(aliasEnv) != "" {
-		return "env"
+		return sourceEnv
 	}
 	return "default/unset"
 }

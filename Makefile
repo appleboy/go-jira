@@ -58,6 +58,11 @@ vendor:
 bench:
 	@$(GO) test -bench=. -benchmem -run=^#  ./...
 
+## lint: run golangci-lint
+.PHONY: lint
+lint:
+	@golangci-lint run ./...
+
 ## help: print this help message
 .PHONY: help
 help:

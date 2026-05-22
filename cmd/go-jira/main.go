@@ -67,8 +67,8 @@ const (
 	// JIRA_* examples work as written.
 	envBaseURL  = "JIRA_BASE_URL"
 	envUsername = "JIRA_USERNAME"
-	envPassword = "JIRA_PASSWORD" //nolint:gosec // env var name, not a secret
-	envToken    = "JIRA_TOKEN"    //nolint:gosec // env var name, not a secret
+	envPassword = "JIRA_PASSWORD"
+	envToken    = "JIRA_TOKEN"
 	envInsecure = "JIRA_INSECURE"
 )
 

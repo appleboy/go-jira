@@ -15,7 +15,7 @@ func TestAtomicWriteFile_CreatesParentDir(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "nested", "deeper", "refresh.token")
 
-	if err := atomicWriteFile(path, []byte("rotated-token"), 0o600); err != nil {
+	if err := atomicWriteFile(path, []byte("rotated-token")); err != nil {
 		t.Fatalf("atomicWriteFile: %v", err)
 	}
 
@@ -55,10 +55,10 @@ func TestAtomicWriteFile_CreatesParentDir(t *testing.T) {
 func TestAtomicWriteFile_Overwrites(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "refresh.token")
 
-	if err := atomicWriteFile(path, []byte("first"), 0o600); err != nil {
+	if err := atomicWriteFile(path, []byte("first")); err != nil {
 		t.Fatalf("first write: %v", err)
 	}
-	if err := atomicWriteFile(path, []byte("second"), 0o600); err != nil {
+	if err := atomicWriteFile(path, []byte("second")); err != nil {
 		t.Fatalf("second write: %v", err)
 	}
 
