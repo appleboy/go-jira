@@ -49,12 +49,20 @@ type Config struct {
 	TLSCertFile string
 	TLSKeyFile  string
 
+	// GenerateTLSCert, when true, makes the callback server serve HTTPS using a
+	// self-signed loopback certificate minted in memory at login time (see
+	// GenerateLoopbackCert), so an https callback works with no pre-provisioned
+	// cert/key files. The browser shows a one-time security warning to accept.
+	// Explicit TLSCertFile/TLSKeyFile take precedence when both are also set.
+	GenerateTLSCert bool
+
 	HTTPClient *http.Client // optional; defaults to a 30s-timeout client
 }
 
-// useTLS reports whether the callback server should serve HTTPS.
+// useTLS reports whether the callback server should serve HTTPS — either from a
+// supplied key pair or a generated in-memory loopback cert.
 func (c *Config) useTLS() bool {
-	return c.TLSCertFile != "" && c.TLSKeyFile != ""
+	return c.GenerateTLSCert || (c.TLSCertFile != "" && c.TLSKeyFile != "")
 }
 
 // Validate checks that the fields required to start a flow are present.

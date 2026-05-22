@@ -85,7 +85,15 @@ func Login(
 	}
 	verifier := NewVerifier()
 
-	resultCh, shutdown, err := startCallbackServer(port, state, cfg.TLSCertFile, cfg.TLSKeyFile)
+	// Resolve the callback certificate before binding the listener so a bad/
+	// missing cert (or a key-generation failure) fails fast here rather than
+	// being swallowed by the Serve goroutine and surfacing as a hung redirect.
+	cert, err := cfg.resolveCallbackCert()
+	if err != nil {
+		return nil, fmt.Errorf("oauth login: %w", err)
+	}
+
+	resultCh, shutdown, err := startCallbackServer(port, state, cert)
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: start callback server: %w", err)
 	}

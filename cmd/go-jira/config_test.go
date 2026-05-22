@@ -72,11 +72,48 @@ func TestRedirectURI(t *testing.T) {
 			Config{callbackPort: 8765, callbackCert: "c.pem"},
 			"http://127.0.0.1:8765/callback",
 		},
+		{
+			"https when callbackHTTPS set (generated cert)",
+			Config{callbackPort: 8765, callbackHTTPS: true},
+			"https://127.0.0.1:8765/callback",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.cfg.redirectURI(); got != tt.want {
 				t.Errorf("redirectURI() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveCallbackHTTPS(t *testing.T) {
+	tests := []struct {
+		name string
+		env  string // "" means unset
+		args []string
+		want bool
+	}{
+		{"default off", "", nil, false},
+		{"flag only", "", []string{"--callback-https"}, true},
+		{"env only", "true", nil, true},
+		{"env 1 is truthy", "1", nil, true},
+		{"env false beats unset flag", "false", nil, false},
+		{"env true beats unset flag", "true", nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.env == "" {
+				os.Unsetenv(envOAuthCallbackHTTPS)
+			} else {
+				t.Setenv(envOAuthCallbackHTTPS, tt.env)
+			}
+			cmd := newLoginCmd()
+			if err := cmd.ParseFlags(tt.args); err != nil {
+				t.Fatalf("ParseFlags: %v", err)
+			}
+			if got := resolveCallbackHTTPS(cmd); got != tt.want {
+				t.Errorf("resolveCallbackHTTPS() = %v, want %v", got, tt.want)
 			}
 		})
 	}

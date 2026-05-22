@@ -24,17 +24,40 @@ type callbackResult struct {
 	Err   error
 }
 
+// resolveCallbackCert returns the certificate the callback server should serve,
+// or nil for plain HTTP. An explicit cert/key file pair takes precedence over
+// GenerateTLSCert. Loading/generation happens here, before the listener starts,
+// so a bad or missing cert fails Login synchronously instead of being swallowed
+// by the Serve goroutine and surfacing only as a hung redirect.
+func (c *Config) resolveCallbackCert() (*tls.Certificate, error) {
+	switch {
+	case c.TLSCertFile != "" && c.TLSKeyFile != "":
+		cert, err := tls.LoadX509KeyPair(c.TLSCertFile, c.TLSKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("oauth: load TLS key pair: %w", err)
+		}
+		return &cert, nil
+	case c.GenerateTLSCert:
+		cert, err := GenerateLoopbackCert()
+		if err != nil {
+			return nil, err
+		}
+		return &cert, nil
+	default:
+		return nil, nil
+	}
+}
+
 // startCallbackServer starts a server on 127.0.0.1:port that listens for the
 // OAuth redirect. It returns a channel that receives exactly one result, and a
 // shutdown function the caller MUST call (typically via defer).
 //
-// When certFile and keyFile are both non-empty the server serves HTTPS using
-// that key pair (for Jira DC, which requires an https redirect URI); otherwise
-// it serves plain HTTP.
+// When cert is non-nil the server serves HTTPS with it (for Jira DC, which
+// requires an https redirect URI); otherwise it serves plain HTTP.
 func startCallbackServer(
 	port int,
 	expectedState string,
-	certFile, keyFile string,
+	cert *tls.Certificate,
 ) (<-chan callbackResult, func(context.Context) error, error) {
 	resultCh := make(chan callbackResult, 1)
 
@@ -84,18 +107,9 @@ func startCallbackServer(
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	if certFile != "" || keyFile != "" {
-		// Load the key pair before serving so a bad/missing cert fails Login
-		// synchronously here, instead of being swallowed by the Serve goroutine
-		// and surfacing only as a connection-refused redirect that hangs until
-		// timeout. Config.Validate already rejects a half-set pair.
-		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-		if err != nil {
-			_ = ln.Close()
-			return nil, nil, fmt.Errorf("oauth: load TLS key pair: %w", err)
-		}
+	if cert != nil {
 		srv.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
+			Certificates: []tls.Certificate{*cert},
 			MinVersion:   tls.VersionTLS12,
 		}
 		// Certs are already loaded into TLSConfig, so the file args are empty.

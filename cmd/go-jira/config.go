@@ -47,6 +47,7 @@ type Config struct {
 	callbackPort            int
 	callbackCert            string
 	callbackKey             string
+	callbackHTTPS           bool
 }
 
 // loadConfig resolves configuration from CLI flags (when explicitly set)
@@ -148,6 +149,7 @@ func loadConfig(cmd *cobra.Command) Config {
 	cfg.callbackKey = resolveWithEnv(
 		envOAuthCallbackKey, flagStringValue(cmd, flagCallbackKey), "",
 	)
+	cfg.callbackHTTPS = resolveCallbackHTTPS(cmd)
 
 	warnOnSecretFlags(cmd)
 	return cfg
@@ -231,6 +233,27 @@ func resolveCallbackPort(cmd *cobra.Command) int {
 	return defaultCallbackPort
 }
 
+// flagBoolValue returns a bool flag's value when the command defines it and the
+// user changed it, otherwise false.
+func flagBoolValue(cmd *cobra.Command, name string) bool {
+	if cmd == nil || cmd.Flags().Lookup(name) == nil || !cmd.Flags().Changed(name) {
+		return false
+	}
+	v, _ := cmd.Flags().GetBool(name)
+	return v
+}
+
+// resolveCallbackHTTPS applies env > flag precedence for the "generate an
+// in-memory https callback cert" toggle, matching the callback cert/key
+// resolution. A set env var (any value) decides via util.ToBool; otherwise the
+// flag is consulted.
+func resolveCallbackHTTPS(cmd *cobra.Command) bool {
+	if v := os.Getenv(envOAuthCallbackHTTPS); v != "" {
+		return util.ToBool(v)
+	}
+	return flagBoolValue(cmd, flagCallbackHTTPS)
+}
+
 // resolveWithEnv applies the env > flag > embedded-default precedence used for
 // the OAuth client ID and secret.
 func resolveWithEnv(envKey, flagVal, embedded string) string {
@@ -244,11 +267,12 @@ func resolveWithEnv(envKey, flagVal, embedded string) string {
 }
 
 // redirectURI builds the loopback callback URL for the configured port. It uses
-// the https scheme when a callback TLS cert+key pair is configured (required by
-// Jira DC, which rejects an http redirect URI), and http otherwise.
+// the https scheme when an https callback is requested — either via a supplied
+// TLS cert+key pair or the auto-generated cert (--callback-https), both of which
+// Jira DC needs since it rejects an http redirect URI — and http otherwise.
 func (c Config) redirectURI() string {
 	scheme := "http"
-	if c.callbackCert != "" && c.callbackKey != "" {
+	if c.callbackHTTPS || (c.callbackCert != "" && c.callbackKey != "") {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://127.0.0.1:%d/callback", scheme, c.callbackPort)
