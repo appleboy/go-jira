@@ -62,7 +62,7 @@ func runLink(cmd *cobra.Command) error {
 		return fmt.Errorf("error linking %s -> %s: %w", from, to, err)
 	}
 
-	result := map[string]string{"status": "linked", "from": from, "to": to}
+	result := map[string]string{statusKey: "linked", "from": from, "to": to}
 	return emitResult(config, result, func() {
 		fmt.Fprintf(os.Stdout, "linked %s -> %s (%s)\n", from, to, linkType)
 	})

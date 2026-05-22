@@ -111,6 +111,11 @@ const (
 	defaultSprintField = "customfield_10100"
 )
 
+// statusKey is the structured-log / JSON field name reused across status
+// messages and command results. Kept as a constant so the repeated literal
+// satisfies goconst.
+const statusKey = "status"
+
 func main() {
 	if err := newRootCmd().Execute(); err != nil {
 		slog.Error("execution failed", "error", err)

@@ -218,9 +218,8 @@ func resolveCallbackPort(cmd *cobra.Command) int {
 		if err == nil {
 			return port
 		}
-		// G706: v is the user's own env var echoed back to their stderr as a
+		// v is the user's own env var echoed back to their stderr as a
 		// structured field — diagnostics, not untrusted log injection.
-		//nolint:gosec // G706 false positive on a self-supplied env value
 		slog.Warn("ignoring invalid callback-port env var; falling back to flag/default",
 			"env", envOAuthCallbackPort, "value", v, "error", err)
 	}

@@ -65,7 +65,7 @@ func runUpdate(cmd *cobra.Command) error {
 		return fmt.Errorf("error updating issue %s: %w", key, err)
 	}
 
-	result := map[string]string{"status": "updated", "key": key}
+	result := map[string]string{statusKey: "updated", flagKey: key}
 	return emitResult(config, result, func() {
 		fmt.Fprintf(os.Stdout, "updated %s\n", key)
 	})

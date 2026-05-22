@@ -41,7 +41,7 @@ func processAssignee(
 			}
 			if resp.StatusCode != http.StatusNoContent {
 				err := fmt.Errorf("unexpected status: %s", resp.Status)
-				slog.Error("error updating assignee", "issue", iss.Key, "status", resp.Status)
+				slog.Error("error updating assignee", "issue", iss.Key, statusKey, resp.Status)
 				errChan <- err
 				return
 			}

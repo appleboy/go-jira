@@ -15,7 +15,7 @@ import (
 // selection. The configurable epic and sprint custom fields are appended at
 // runtime in searchFields so --epic-field / --sprint-field overrides apply.
 var defaultSearchBaseFields = []string{
-	"summary", "status", "assignee", "labels", "components",
+	"summary", statusKey, flagAssignee, "labels", "components",
 }
 
 // newSearchCmd builds the `search` subcommand: run a JQL query and print the
