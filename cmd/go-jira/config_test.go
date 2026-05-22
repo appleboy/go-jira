@@ -103,11 +103,10 @@ func TestResolveCallbackHTTPS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.env == "" {
-				os.Unsetenv(envOAuthCallbackHTTPS)
-			} else {
-				t.Setenv(envOAuthCallbackHTTPS, tt.env)
-			}
+			// t.Setenv("") behaves as unset for the code under test and, unlike
+			// os.Unsetenv, restores the prior value after the test so state never
+			// leaks into other tests.
+			t.Setenv(envOAuthCallbackHTTPS, tt.env)
 			cmd := newLoginCmd()
 			if err := cmd.ParseFlags(tt.args); err != nil {
 				t.Fatalf("ParseFlags: %v", err)

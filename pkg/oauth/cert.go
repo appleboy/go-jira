@@ -16,9 +16,14 @@ import (
 // loopbackCertTTL bounds the validity of a generated callback certificate. A
 // fresh cert is minted on every login, so the window only needs to comfortably
 // outlast one interactive authorization; it is kept short to limit the lifetime
-// of the throwaway key. NotBefore is also backdated by the same margin so a
-// modest client/server clock skew cannot reject an otherwise-valid cert.
+// of the throwaway key.
 const loopbackCertTTL = 24 * time.Hour
+
+// loopbackClockSkew backdates NotBefore by a small margin so a modest
+// client/server clock skew cannot reject an otherwise-valid cert. It is kept
+// far smaller than loopbackCertTTL so the effective validity window stays close
+// to loopbackCertTTL rather than doubling it.
+const loopbackClockSkew = 5 * time.Minute
 
 // GenerateLoopbackCert mints a self-signed certificate (with its private key)
 // for the loopback callback server, entirely in memory — nothing is written to
@@ -43,17 +48,20 @@ func GenerateLoopbackCert() (tls.Certificate, error) {
 	// A random 128-bit serial (rather than a fixed value) matches mkcert and the
 	// CA/Browser Forum guidance, so two concurrently generated certs never share
 	// a serial.
+	// rand.Int returns a value in [0, max); X.509 serials must be positive, so
+	// sample from [1, max) by adding one to a [0, max-1) draw.
 	serialMax := new(big.Int).Lsh(big.NewInt(1), 128)
-	serial, err := rand.Int(rand.Reader, serialMax)
+	serial, err := rand.Int(rand.Reader, new(big.Int).Sub(serialMax, big.NewInt(1)))
 	if err != nil {
 		return tls.Certificate{}, fmt.Errorf("oauth: generate serial: %w", err)
 	}
+	serial.Add(serial, big.NewInt(1))
 
 	now := time.Now()
 	tmpl := x509.Certificate{
 		SerialNumber: serial,
 		Subject:      pkix.Name{CommonName: "127.0.0.1"},
-		NotBefore:    now.Add(-loopbackCertTTL),
+		NotBefore:    now.Add(-loopbackClockSkew),
 		NotAfter:     now.Add(loopbackCertTTL),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
@@ -68,9 +76,17 @@ func GenerateLoopbackCert() (tls.Certificate, error) {
 		return tls.Certificate{}, fmt.Errorf("oauth: create loopback certificate: %w", err)
 	}
 
+	// Parse the DER we just produced so Leaf is a real parsed certificate (with
+	// Raw and friends populated), not the template struct — the latter would
+	// mislead any code that later inspects cert.Leaf.
+	leaf, err := x509.ParseCertificate(der)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("oauth: parse loopback certificate: %w", err)
+	}
+
 	return tls.Certificate{
 		Certificate: [][]byte{der},
 		PrivateKey:  key,
-		Leaf:        &tmpl,
+		Leaf:        leaf,
 	}, nil
 }
