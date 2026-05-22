@@ -51,7 +51,8 @@ func Login(
 	if redirect.Hostname() != "127.0.0.1" {
 		return nil, fmt.Errorf(
 			"oauth login: redirect URI %q host must be 127.0.0.1 (the callback server binds loopback)",
-			cfg.RedirectURI)
+			cfg.RedirectURI,
+		)
 	}
 	if redirect.Port() != strconv.Itoa(port) {
 		return nil, fmt.Errorf(

@@ -111,7 +111,9 @@ func (a *OAuthAuthenticator) forceRefresh(ctx context.Context, usedToken string)
 // on success) so the caller can invoke OnRotate AFTER releasing the lock — the
 // hook may block on I/O (e.g. writing a CI output file) and must never stall
 // concurrent requests or risk re-entrant deadlock while the mutex is held.
-func (a *OAuthAuthenticator) refreshLocked(ctx context.Context) (string, *storage.StoredToken, error) {
+func (a *OAuthAuthenticator) refreshLocked(
+	ctx context.Context,
+) (string, *storage.StoredToken, error) {
 	tok, err := a.cfg.Refresh(ctx, a.cached.RefreshToken)
 	if err != nil {
 		if errors.Is(err, oauth.ErrInvalidGrant) {

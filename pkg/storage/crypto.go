@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+
 	// crypto/pbkdf2 is a standard-library package as of Go 1.24; its Key
 	// returns ([]byte, error). This module targets Go 1.25 (see go.mod), so no
 	// golang.org/x/crypto dependency is needed.
