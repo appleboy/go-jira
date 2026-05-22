@@ -103,10 +103,10 @@ const (
 	defaultCallbackPort = 8765
 	defaultScope        = "WRITE"
 
-	// Default custom field IDs for the create subcommand. These match the
-	// documented Jira Server/DC layout (Epic Link / Sprint) and can be
-	// overridden per instance via --epic-field / --sprint-field or the
-	// EPIC_FIELD / SPRINT_FIELD env vars.
+	// Default custom field IDs used by the data subcommands that reference
+	// epic/sprint (create, update, and search). These match the documented Jira
+	// Server/DC layout (Epic Link / Sprint) and can be overridden per instance
+	// via --epic-field / --sprint-field or the EPIC_FIELD / SPRINT_FIELD env vars.
 	defaultEpicField   = "customfield_10101"
 	defaultSprintField = "customfield_10100"
 )

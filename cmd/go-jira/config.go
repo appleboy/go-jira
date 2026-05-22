@@ -31,8 +31,10 @@ type Config struct {
 
 	// Output format for the data subcommands: "json" (default) or "text".
 	output string
-	// Custom field IDs for the create subcommand. They vary per Jira instance,
-	// so they are configurable; defaults match the documented Server/DC layout.
+	// Custom field IDs used by the data subcommands that reference epic/sprint:
+	// create and update (to set the fields) and search (to append them to the
+	// default field selection). They vary per Jira instance, so they are
+	// configurable; defaults match the documented Server/DC layout.
 	epicField   string
 	sprintField string
 

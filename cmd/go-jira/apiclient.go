@@ -23,7 +23,8 @@ func loadDataConfig(cmd *cobra.Command) (Config, error) {
 	}
 	if config.output != outputJSON && config.output != outputText {
 		return Config{}, fmt.Errorf(
-			"invalid --output %q: must be %q or %q", config.output, outputJSON, outputText,
+			"invalid output format %q (from --output or OUTPUT/INPUT_OUTPUT): must be %q or %q",
+			config.output, outputJSON, outputText,
 		)
 	}
 	return config, nil

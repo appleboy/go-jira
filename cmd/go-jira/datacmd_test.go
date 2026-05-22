@@ -51,7 +51,17 @@ func runDataCmd(
 	extraArgs ...string,
 ) (string, error) {
 	t.Helper()
-	t.Setenv("JIRA_OAUTH_REFRESH_TOKEN", "")
+	// Neutralize every env var these commands resolve via util.GetGlobalValue
+	// (INPUT_<KEY> then <KEY>) plus the OAuth refresh token, so a developer's
+	// local environment can't change auth mode, output shape, or field IDs.
+	for _, k := range []string{
+		"JIRA_OAUTH_REFRESH_TOKEN",
+		"OUTPUT", "INPUT_OUTPUT",
+		"EPIC_FIELD", "INPUT_EPIC_FIELD",
+		"SPRINT_FIELD", "INPUT_SPRINT_FIELD",
+	} {
+		t.Setenv(k, "")
+	}
 	args := append([]string{
 		"--env-file", "",
 		"--base-url", serverURL,
@@ -176,8 +186,8 @@ func TestSearchCmdServerError(t *testing.T) {
 func TestInvalidOutputRejected(t *testing.T) {
 	_, err := runDataCmd(t, newGetCmd(), "https://example.invalid",
 		"--key", "GAIA-1", "--output", "jsno")
-	if err == nil || !strings.Contains(err.Error(), "invalid --output") {
-		t.Fatalf("expected invalid --output error, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "invalid output format") {
+		t.Fatalf("expected invalid output format error, got %v", err)
 	}
 }
 
