@@ -69,6 +69,9 @@ func TestConfigValidate(t *testing.T) {
 		{"nil client id", func(c *Config) { c.ClientID = "" }, true},
 		{"nil redirect", func(c *Config) { c.RedirectURI = "" }, true},
 		{"no scopes", func(c *Config) { c.Scopes = nil }, true},
+		{"tls pair", func(c *Config) { c.TLSCertFile = "c.pem"; c.TLSKeyFile = "k.pem" }, false},
+		{"tls cert only", func(c *Config) { c.TLSCertFile = "c.pem" }, true},
+		{"tls key only", func(c *Config) { c.TLSKeyFile = "k.pem" }, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

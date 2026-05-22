@@ -143,6 +143,8 @@ func oauthConfigFromConfig(config Config) *oauth.Config {
 		ClientSecret: config.oauthClientSecret,
 		RedirectURI:  config.redirectURI(),
 		Scopes:       []string{config.scope},
+		TLSCertFile:  config.callbackCert,
+		TLSKeyFile:   config.callbackKey,
 		HTTPClient:   oauthHTTPClient(config),
 	}
 }

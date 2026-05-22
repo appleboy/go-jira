@@ -53,12 +53,12 @@ The goal of this project is to make it easy to integrate Jira with GitHub or Git
 
 go-jira supports four authentication modes:
 
-| Mode             | Best for                          | How to configure |
-|------------------|-----------------------------------|------------------|
-| **Basic Auth**   | Legacy Jira or dev/test           | `JIRA_USERNAME` + `JIRA_PASSWORD` |
-| **Bearer / PAT** | Recommended CI/CD default         | `JIRA_TOKEN` (a Personal Access Token) |
-| **OAuth (local)**| Interactive developer login       | `go-jira login` |
-| **OAuth (CI/CD)**| Fine-grained scopes in automation | `JIRA_OAUTH_REFRESH_TOKEN` + rotation handling |
+| Mode              | Best for                          | How to configure                               |
+| ----------------- | --------------------------------- | ---------------------------------------------- |
+| **Basic Auth**    | Legacy Jira or dev/test           | `JIRA_USERNAME` + `JIRA_PASSWORD`              |
+| **Bearer / PAT**  | Recommended CI/CD default         | `JIRA_TOKEN` (a Personal Access Token)         |
+| **OAuth (local)** | Interactive developer login       | `go-jira login`                                |
+| **OAuth (CI/CD)** | Fine-grained scopes in automation | `JIRA_OAUTH_REFRESH_TOKEN` + rotation handling |
 
 - **Skip SSL Verification**: Set `JIRA_INSECURE=true` (not recommended for production)
 
@@ -70,26 +70,29 @@ go-jira supports four authentication modes:
 
 ### Environment Variables
 
-| Variable         | Description                                      |
-|------------------|--------------------------------------------------|
-| JIRA_BASE_URL    | Jira instance base URL (e.g. `https://jira.example.com`) |
-| JIRA_USERNAME    | Jira username (for basic auth)                   |
-| JIRA_PASSWORD    | Jira password (for basic auth)                   |
-| JIRA_TOKEN       | Jira API token (for token auth)                  |
-| JIRA_INSECURE    | Set to `true` to skip SSL certificate verification |
-| REF              | Reference string (e.g. git ref/tag/commit message) |
-| ISSUE_FORMAT     | Custom regex for issue key matching (optional)   |
-| TRANSITION       | Target status name for issue transition          |
-| RESOLUTION       | Resolution name (e.g. `Fixed`, optional)         |
-| ASSIGNEE         | Username to assign the issue to (optional)       |
-| COMMENT          | Comment to add to the issue (optional)           |
-| MARKDOWN         | Set to `true` to convert comment from Markdown to Jira format |
-| DEBUG            | Set to `true` to enable debug output             |
-| JIRA_OAUTH_CLIENT_ID | OAuth client ID (overrides the embedded default) |
-| JIRA_OAUTH_CLIENT_SECRET | OAuth client secret (overrides the embedded default) |
-| JIRA_OAUTH_REFRESH_TOKEN | Injected refresh token; triggers CI `oauth-env` mode |
-| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | File path to write the rotated refresh token |
-| JIRA_MASTER_PASSWORD | Master password for the encrypted file token store (when no keyring) |
+| Variable                        | Description                                                                |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| JIRA_BASE_URL                   | Jira instance base URL (e.g. `https://jira.example.com`)                   |
+| JIRA_USERNAME                   | Jira username (for basic auth)                                             |
+| JIRA_PASSWORD                   | Jira password (for basic auth)                                             |
+| JIRA_TOKEN                      | Jira API token (for token auth)                                            |
+| JIRA_INSECURE                   | Set to `true` to skip SSL certificate verification                         |
+| REF                             | Reference string (e.g. git ref/tag/commit message)                         |
+| ISSUE_FORMAT                    | Custom regex for issue key matching (optional)                             |
+| TRANSITION                      | Target status name for issue transition                                    |
+| RESOLUTION                      | Resolution name (e.g. `Fixed`, optional)                                   |
+| ASSIGNEE                        | Username to assign the issue to (optional)                                 |
+| COMMENT                         | Comment to add to the issue (optional)                                     |
+| MARKDOWN                        | Set to `true` to convert comment from Markdown to Jira format              |
+| DEBUG                           | Set to `true` to enable debug output                                       |
+| JIRA_OAUTH_CLIENT_ID            | OAuth client ID (overrides the embedded default)                           |
+| JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret (overrides the embedded default)                       |
+| JIRA_OAUTH_REFRESH_TOKEN        | Injected refresh token; triggers CI `oauth-env` mode                       |
+| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | File path to write the rotated refresh token                               |
+| JIRA_OAUTH_CALLBACK_PORT        | Local OAuth callback port (default `8765`)                                 |
+| JIRA_OAUTH_CALLBACK_CERT        | TLS cert file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_KEY`) |
+| JIRA_OAUTH_CALLBACK_KEY         | TLS key file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_CERT`) |
+| JIRA_MASTER_PASSWORD            | Master password for the encrypted file token store (when no keyring)       |
 
 ### Usage
 

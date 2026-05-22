@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"html"
@@ -23,12 +24,17 @@ type callbackResult struct {
 	Err   error
 }
 
-// startCallbackServer starts an HTTP server on 127.0.0.1:port that listens for
-// the OAuth redirect. It returns a channel that receives exactly one result,
-// and a shutdown function the caller MUST call (typically via defer).
+// startCallbackServer starts a server on 127.0.0.1:port that listens for the
+// OAuth redirect. It returns a channel that receives exactly one result, and a
+// shutdown function the caller MUST call (typically via defer).
+//
+// When certFile and keyFile are both non-empty the server serves HTTPS using
+// that key pair (for Jira DC, which requires an https redirect URI); otherwise
+// it serves plain HTTP.
 func startCallbackServer(
 	port int,
 	expectedState string,
+	certFile, keyFile string,
 ) (<-chan callbackResult, func(context.Context) error, error) {
 	resultCh := make(chan callbackResult, 1)
 
@@ -77,8 +83,27 @@ func startCallbackServer(
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	go func() { _ = srv.Serve(ln) }()
 
+	if certFile != "" || keyFile != "" {
+		// Load the key pair before serving so a bad/missing cert fails Login
+		// synchronously here, instead of being swallowed by the Serve goroutine
+		// and surfacing only as a connection-refused redirect that hangs until
+		// timeout. Config.Validate already rejects a half-set pair.
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			_ = ln.Close()
+			return nil, nil, fmt.Errorf("oauth: load TLS key pair: %w", err)
+		}
+		srv.TLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS12,
+		}
+		// Certs are already loaded into TLSConfig, so the file args are empty.
+		go func() { _ = srv.ServeTLS(ln, "", "") }()
+		return resultCh, srv.Shutdown, nil
+	}
+
+	go func() { _ = srv.Serve(ln) }()
 	return resultCh, srv.Shutdown, nil
 }
 

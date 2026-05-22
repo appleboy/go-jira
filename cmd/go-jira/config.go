@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -35,6 +36,8 @@ type Config struct {
 	oauthRefreshTokenOutput string
 	scope                   string
 	callbackPort            int
+	callbackCert            string
+	callbackKey             string
 }
 
 // loadConfig resolves configuration from CLI flags (when explicitly set)
@@ -110,13 +113,16 @@ func loadConfig(cmd *cobra.Command) Config {
 	if v := flagStringValue(cmd, flagScope); v != "" {
 		cfg.scope = v
 	}
-	// Gate on whether the flag was changed (not on a non-zero value) so an
-	// explicit --callback-port=0 is preserved and later rejected by oauth.Login
-	// rather than being silently replaced with the default.
-	cfg.callbackPort = defaultCallbackPort
-	if flagChanged(cmd, flagCallbackPort) {
-		cfg.callbackPort = flagIntValue(cmd, flagCallbackPort)
-	}
+	cfg.callbackPort = resolveCallbackPort(cmd)
+	// Callback TLS cert/key are public file paths, so the flag is fine; resolve
+	// env > flag (matching the client-id/secret precedence) with no embedded
+	// default — empty means a plain-HTTP callback.
+	cfg.callbackCert = resolveWithEnv(
+		envOAuthCallbackCert, flagStringValue(cmd, flagCallbackCert), "",
+	)
+	cfg.callbackKey = resolveWithEnv(
+		envOAuthCallbackKey, flagStringValue(cmd, flagCallbackKey), "",
+	)
 
 	warnOnSecretFlags(cmd)
 	return cfg
@@ -177,6 +183,30 @@ func flagIntValue(cmd *cobra.Command, name string) int {
 	return v
 }
 
+// resolveCallbackPort applies env > flag > default for the loopback callback
+// port, matching the precedence used for the OAuth client credentials. A value
+// of 0 or out of range is passed through unchanged so oauth.Login rejects it
+// with a clear error instead of it being silently replaced by the default. An
+// unparseable env value is ignored (warned) so a typo can't masquerade as a
+// valid port; resolution then falls back to the flag or default.
+func resolveCallbackPort(cmd *cobra.Command) int {
+	if v := os.Getenv(envOAuthCallbackPort); v != "" {
+		port, err := strconv.Atoi(v)
+		if err == nil {
+			return port
+		}
+		// G706: v is the user's own env var echoed back to their stderr as a
+		// structured field — diagnostics, not untrusted log injection.
+		//nolint:gosec // G706 false positive on a self-supplied env value
+		slog.Warn("ignoring invalid callback-port env var; falling back to flag/default",
+			"env", envOAuthCallbackPort, "value", v, "error", err)
+	}
+	if flagChanged(cmd, flagCallbackPort) {
+		return flagIntValue(cmd, flagCallbackPort)
+	}
+	return defaultCallbackPort
+}
+
 // resolveWithEnv applies the env > flag > embedded-default precedence used for
 // the OAuth client ID and secret.
 func resolveWithEnv(envKey, flagVal, embedded string) string {
@@ -189,9 +219,15 @@ func resolveWithEnv(envKey, flagVal, embedded string) string {
 	return embedded
 }
 
-// redirectURI builds the loopback callback URL for the configured port.
+// redirectURI builds the loopback callback URL for the configured port. It uses
+// the https scheme when a callback TLS cert+key pair is configured (required by
+// Jira DC, which rejects an http redirect URI), and http otherwise.
 func (c Config) redirectURI() string {
-	return fmt.Sprintf("http://127.0.0.1:%d/callback", c.callbackPort)
+	scheme := "http"
+	if c.callbackCert != "" && c.callbackKey != "" {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://127.0.0.1:%d/callback", scheme, c.callbackPort)
 }
 
 // validateBaseURL enforces the base URL rules shared by every subcommand: it

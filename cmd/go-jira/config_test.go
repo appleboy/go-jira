@@ -51,6 +51,70 @@ func clearInputEnv(t *testing.T) {
 	})
 }
 
+func TestRedirectURI(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want string
+	}{
+		{
+			"http by default",
+			Config{callbackPort: 8765},
+			"http://127.0.0.1:8765/callback",
+		},
+		{
+			"https when cert and key set",
+			Config{callbackPort: 9000, callbackCert: "c.pem", callbackKey: "k.pem"},
+			"https://127.0.0.1:9000/callback",
+		},
+		{
+			"http when only cert set",
+			Config{callbackPort: 8765, callbackCert: "c.pem"},
+			"http://127.0.0.1:8765/callback",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.redirectURI(); got != tt.want {
+				t.Errorf("redirectURI() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveCallbackPort(t *testing.T) {
+	tests := []struct {
+		name string
+		env  string // "" means unset
+		args []string
+		want int
+	}{
+		{"default", "", nil, defaultCallbackPort},
+		{"flag only", "", []string{"--callback-port=9000"}, 9000},
+		{"env only", "9443", nil, 9443},
+		{"env beats flag", "9443", []string{"--callback-port=9000"}, 9443},
+		{"explicit zero env passes through", "0", nil, 0},
+		{"invalid env falls back to flag", "abc", []string{"--callback-port=9000"}, 9000},
+		{"invalid env falls back to default", "abc", nil, defaultCallbackPort},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.env == "" {
+				os.Unsetenv(envOAuthCallbackPort)
+			} else {
+				t.Setenv(envOAuthCallbackPort, tt.env)
+			}
+			cmd := newLoginCmd()
+			if err := cmd.ParseFlags(tt.args); err != nil {
+				t.Fatalf("ParseFlags: %v", err)
+			}
+			if got := resolveCallbackPort(cmd); got != tt.want {
+				t.Errorf("resolveCallbackPort() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -45,6 +45,8 @@ const (
 	flagClientID     = "client-id"
 	flagClientSecret = "client-secret"
 	flagCallbackPort = "callback-port"
+	flagCallbackCert = "callback-cert"
+	flagCallbackKey  = "callback-key"
 	flagScope        = "scope"
 	flagTimeout      = "timeout"
 	flagConfirm      = "confirm"
@@ -58,7 +60,10 @@ const (
 	envOAuthClientSecret       = "JIRA_OAUTH_CLIENT_SECRET"        //nolint:gosec // env var name, not a secret
 	envOAuthRefreshToken       = "JIRA_OAUTH_REFRESH_TOKEN"        //nolint:gosec // env var name, not a secret
 	envOAuthRefreshTokenOutput = "JIRA_OAUTH_REFRESH_TOKEN_OUTPUT" //nolint:gosec // env var name, not a secret
-	envMasterPassword          = "JIRA_MASTER_PASSWORD"            //nolint:gosec // env var name, not a secret
+	envOAuthCallbackPort       = "JIRA_OAUTH_CALLBACK_PORT"
+	envOAuthCallbackCert       = "JIRA_OAUTH_CALLBACK_CERT"
+	envOAuthCallbackKey        = "JIRA_OAUTH_CALLBACK_KEY"
+	envMasterPassword          = "JIRA_MASTER_PASSWORD"
 
 	// JIRA_-prefixed aliases for the core auth/config fields, matching the env
 	// naming used throughout the docs and the auth-resolver error message. The
@@ -128,7 +133,14 @@ func addOAuthFlags(cmd *cobra.Command) {
 	cmd.Flags().String(flagClientID, "", "OAuth client ID (env: "+envOAuthClientID+")")
 	cmd.Flags().
 		String(flagClientSecret, "", "OAuth client secret (env: "+envOAuthClientSecret+")")
-	cmd.Flags().Int(flagCallbackPort, defaultCallbackPort, "Local OAuth callback port")
+	cmd.Flags().
+		Int(flagCallbackPort, defaultCallbackPort, "Local OAuth callback port (env: "+envOAuthCallbackPort+")")
+	cmd.Flags().String(flagCallbackCert, "",
+		"TLS cert file for an https callback server (env: "+envOAuthCallbackCert+
+			"); requires --"+flagCallbackKey)
+	cmd.Flags().String(flagCallbackKey, "",
+		"TLS key file for an https callback server (env: "+envOAuthCallbackKey+
+			"); requires --"+flagCallbackCert)
 	cmd.Flags().String(flagScope, defaultScope, "OAuth scope to request")
 }
 

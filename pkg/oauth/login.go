@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -48,10 +49,17 @@ func Login(
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: invalid redirect URI %q: %w", cfg.RedirectURI, err)
 	}
-	if redirect.Scheme != "http" {
+	// The callback server serves plain HTTP by default and HTTPS only when a TLS
+	// key pair is configured; the redirect URI's scheme must match what it
+	// actually speaks, or the browser redirect fails to connect.
+	wantScheme := "http"
+	if cfg.useTLS() {
+		wantScheme = "https"
+	}
+	if redirect.Scheme != wantScheme {
 		return nil, fmt.Errorf(
-			"oauth login: redirect URI %q scheme must be http (the callback server serves plain HTTP)",
-			cfg.RedirectURI,
+			"oauth login: redirect URI %q scheme must be %s (the callback server serves %s)",
+			cfg.RedirectURI, wantScheme, strings.ToUpper(wantScheme),
 		)
 	}
 	if redirect.Hostname() != "127.0.0.1" {
@@ -77,7 +85,7 @@ func Login(
 	}
 	verifier := NewVerifier()
 
-	resultCh, shutdown, err := startCallbackServer(port, state)
+	resultCh, shutdown, err := startCallbackServer(port, state, cfg.TLSCertFile, cfg.TLSKeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: start callback server: %w", err)
 	}

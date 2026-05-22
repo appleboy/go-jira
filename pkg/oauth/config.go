@@ -34,12 +34,27 @@ const defaultHTTPTimeout = 30 * time.Second
 
 // Config holds the settings needed to talk to a Jira DC OAuth provider.
 type Config struct {
-	BaseURL      string       // e.g. "https://jira.example.com"
-	ClientID     string       //
-	ClientSecret string       //
-	RedirectURI  string       // e.g. "http://127.0.0.1:8765/callback"
-	Scopes       []string     // e.g. ["WRITE"]
-	HTTPClient   *http.Client // optional; defaults to a 30s-timeout client
+	BaseURL      string   // e.g. "https://jira.example.com"
+	ClientID     string   //
+	ClientSecret string   //
+	RedirectURI  string   // e.g. "http://127.0.0.1:8765/callback"
+	Scopes       []string // e.g. ["WRITE"]
+
+	// TLSCertFile and TLSKeyFile, when both set, make the local callback server
+	// serve HTTPS instead of plain HTTP. Jira DC matches the registered
+	// redirect URI exactly and commonly rejects an http scheme, so an https
+	// loopback callback (e.g. an mkcert-signed cert covering 127.0.0.1) is
+	// needed there. Either both or neither must be set; RedirectURI must then
+	// use the https scheme.
+	TLSCertFile string
+	TLSKeyFile  string
+
+	HTTPClient *http.Client // optional; defaults to a 30s-timeout client
+}
+
+// useTLS reports whether the callback server should serve HTTPS.
+func (c *Config) useTLS() bool {
+	return c.TLSCertFile != "" && c.TLSKeyFile != ""
 }
 
 // Validate checks that the fields required to start a flow are present.
@@ -58,6 +73,11 @@ func (c *Config) Validate() error {
 	}
 	if len(c.Scopes) == 0 {
 		return errors.New("oauth: at least one scope is required")
+	}
+	// A half-configured TLS pair can never serve: ServeTLS needs both files.
+	// Reject it up front rather than failing obscurely once the server starts.
+	if (c.TLSCertFile == "") != (c.TLSKeyFile == "") {
+		return errors.New("oauth: both TLS cert and key files are required for an https callback")
 	}
 	return nil
 }

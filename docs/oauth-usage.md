@@ -13,12 +13,34 @@ Two flows are available:
 A Jira administrator registers an *Application link* / OAuth 2.0 client and
 configures a redirect URI. go-jira defaults to:
 
-```
+```txt
 http://127.0.0.1:8765/callback
 ```
 
-Override the port with `--callback-port` (the redirect URI is derived from it).
+Override the port with `--callback-port` (or `JIRA_OAUTH_CALLBACK_PORT`); the
+redirect URI is derived from it, so the value registered in Jira must match.
 Only one redirect URI needs to be registered.
+
+### HTTPS callback (when Jira rejects an `http` redirect URI)
+
+Jira DC matches the redirect URI exactly and many instances reject the `http`
+scheme, returning `invalid redirect_uri`. In that case make the local callback
+server serve HTTPS by pointing it at a TLS cert + key for the loopback address:
+
+```bash
+# e.g. a cert covering 127.0.0.1 generated with mkcert
+mkcert localhost 127.0.0.1
+
+go-jira login \
+  --callback-cert=./localhost+1.pem \
+  --callback-key=./localhost+1-key.pem
+```
+
+When both are set the redirect URI becomes `https://127.0.0.1:<port>/callback`
+(register that exact value in Jira). The cert must cover `127.0.0.1`; `mkcert`
+installs a local CA so the browser redirect is trusted without a warning. The
+equivalent env vars are `JIRA_OAUTH_CALLBACK_CERT` / `JIRA_OAUTH_CALLBACK_KEY`.
+Both must be set together, or neither.
 
 You then have a **client ID** and **client secret**. These can be:
 
