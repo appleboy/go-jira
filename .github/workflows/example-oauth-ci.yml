@@ -18,15 +18,9 @@ jobs:
   update-jira:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: stable
-
-      - name: Install go-jira
-        run: go install github/appleboy/go-jira/cmd/go-jira@v1
-
+      # go-jira ships as a published container image; run it directly. The
+      # runner.temp dir is mounted so the rotated refresh token written by
+      # JIRA_OAUTH_REFRESH_TOKEN_OUTPUT is visible to the persist step below.
       - name: Update Jira issues
         env:
           JIRA_BASE_URL: https://jira.example.com
@@ -35,10 +29,14 @@ jobs:
           JIRA_OAUTH_REFRESH_TOKEN: ${{ secrets.JIRA_OAUTH_REFRESH_TOKEN }}
           JIRA_OAUTH_REFRESH_TOKEN_OUTPUT: ${{ runner.temp }}/new-refresh-token
         run: |
-          go-jira run \
-            --ref="${{ github.event.head_commit.message }}" \
-            --to-transition=Done \
-            --resolution=Fixed
+          docker run --rm \
+            -e JIRA_BASE_URL -e JIRA_OAUTH_CLIENT_ID -e JIRA_OAUTH_CLIENT_SECRET \
+            -e JIRA_OAUTH_REFRESH_TOKEN -e JIRA_OAUTH_REFRESH_TOKEN_OUTPUT \
+            -v "${{ runner.temp }}:${{ runner.temp }}" \
+            ghcr.io/appleboy/go-jira:latest run \
+              --ref="${{ github.event.head_commit.message }}" \
+              --to-transition=Done \
+              --resolution=Fixed
 
       - name: Persist rotated refresh token
         if: always() && hashFiles(format('{0}/new-refresh-token', runner.temp)) != ''
