@@ -11,11 +11,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// defaultSearchBaseFields is the static part of the Python CLI's default field
-// selection. The configurable epic and sprint custom fields are appended at
-// runtime in searchFields so --epic-field / --sprint-field overrides apply.
+// defaultSearchBaseFields is the static part of the default field selection.
+// These are Jira REST field names, kept as literals and intentionally
+// independent of the CLI flag / log-key constants that happen to share the same
+// text — renaming a flag must not silently change the fields requested from
+// Jira. The configurable epic and sprint custom fields are appended at runtime
+// in searchFields so --epic-field / --sprint-field overrides apply.
 var defaultSearchBaseFields = []string{
-	"summary", statusKey, flagAssignee, "labels", "components",
+	"summary",
+	"status",   //nolint:goconst // Jira REST field name, not the statusKey log constant
+	"assignee", //nolint:goconst // Jira REST field name, not the flagAssignee constant
+	"labels",
+	"components",
 }
 
 // newSearchCmd builds the `search` subcommand: run a JQL query and print the
