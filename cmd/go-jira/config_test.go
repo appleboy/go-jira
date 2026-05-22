@@ -32,6 +32,8 @@ func clearInputEnv(t *testing.T) {
 		"BASE_URL", "INSECURE", "USERNAME", "PASSWORD",
 		"TOKEN", "REF", "ISSUE_FORMAT", "TRANSITION",
 		"RESOLUTION", "COMMENT", "ASSIGNEE", "MARKDOWN", "DEBUG",
+		"JIRA_BASE_URL", "JIRA_USERNAME", "JIRA_PASSWORD",
+		"JIRA_TOKEN", "JIRA_INSECURE",
 	}
 	saved := make(map[string]string, len(keys))
 	for _, k := range keys {
@@ -96,13 +98,15 @@ func TestValidateConfig(t *testing.T) {
 			errMsg:  "ref is required",
 		},
 		{
-			name: "missing authentication credentials",
+			// As of v1.0 the "no credentials" case is no longer rejected by
+			// validateConfig: auth selection (incl. OAuth/storage) is delegated
+			// to auth.Resolve, which errors at run time if nothing is available.
+			name: "no credentials passes validateConfig",
 			config: Config{
 				baseURL: "https://jira.example.com",
 				ref:     "ABC-123",
 			},
-			wantErr: true,
-			errMsg:  "authentication credentials required (username/password or token)",
+			wantErr: false,
 		},
 		{
 			name: "username provided without password",
@@ -375,6 +379,57 @@ func TestLoadConfig_BareEnvStillWorks(t *testing.T) {
 	}
 }
 
+// TestLoadConfig_JiraAliasesWork verifies the JIRA_-prefixed env aliases
+// (matching the docs and the auth-resolver error message) resolve when the
+// flag and INPUT_<KEY>/<KEY> vars are unset.
+func TestLoadConfig_JiraAliasesWork(t *testing.T) {
+	clearInputEnv(t)
+
+	os.Setenv("JIRA_BASE_URL", "https://jira-alias.example.com")
+	os.Setenv("JIRA_USERNAME", "alias-user")
+	os.Setenv("JIRA_PASSWORD", "alias-pass")
+	os.Setenv("JIRA_TOKEN", "alias-token")
+	os.Setenv("JIRA_INSECURE", "true")
+
+	got := loadConfig(nil)
+
+	if got.baseURL != "https://jira-alias.example.com" {
+		t.Errorf("baseURL = %q, want JIRA_BASE_URL value", got.baseURL)
+	}
+	if got.username != "alias-user" {
+		t.Errorf("username = %q, want JIRA_USERNAME value", got.username)
+	}
+	if got.password != "alias-pass" {
+		t.Errorf("password = %q, want JIRA_PASSWORD value", got.password)
+	}
+	if got.token != "alias-token" {
+		t.Errorf("token = %q, want JIRA_TOKEN value", got.token)
+	}
+	if !got.insecure {
+		t.Errorf("insecure = false, want true (JIRA_INSECURE)")
+	}
+}
+
+// TestLoadConfig_BareEnvBeatsJiraAlias verifies precedence: the existing
+// INPUT_<KEY>/<KEY> convention wins over the JIRA_ alias when both are set.
+func TestLoadConfig_BareEnvBeatsJiraAlias(t *testing.T) {
+	clearInputEnv(t)
+
+	os.Setenv("BASE_URL", "https://from-bare.example.com")
+	os.Setenv("JIRA_BASE_URL", "https://from-jira.example.com")
+	os.Setenv("TOKEN", "bare-token")
+	os.Setenv("JIRA_TOKEN", "jira-token")
+
+	got := loadConfig(nil)
+
+	if got.baseURL != "https://from-bare.example.com" {
+		t.Errorf("baseURL = %q, want BASE_URL to win over JIRA_BASE_URL", got.baseURL)
+	}
+	if got.token != "bare-token" {
+		t.Errorf("token = %q, want TOKEN to win over JIRA_TOKEN", got.token)
+	}
+}
+
 // TestLoadConfig_FlagOverridesEnv verifies the flag-wins precedence: when a
 // user explicitly passes a flag, its value trumps both INPUT_* and bare env
 // vars. The CI path (no flags) is unaffected.
@@ -386,7 +441,7 @@ func TestLoadConfig_FlagOverridesEnv(t *testing.T) {
 	os.Setenv("INPUT_REF", "ENV-1")
 	os.Setenv("INPUT_MARKDOWN", "false")
 
-	cmd := newRootCmd()
+	cmd := newRunCmd()
 	if err := cmd.ParseFlags([]string{
 		"--base-url=https://from-flag.example.com",
 		"--token=flag-token",
@@ -424,7 +479,7 @@ func TestLoadConfig_UnsetFlagFallsBackToEnv(t *testing.T) {
 	os.Setenv("INPUT_TOKEN", "env-token")
 	os.Setenv("INPUT_REF", "ENV-1")
 
-	cmd := newRootCmd()
+	cmd := newRunCmd()
 	// Parse empty args — no flag is Changed().
 	if err := cmd.ParseFlags([]string{}); err != nil {
 		t.Fatalf("ParseFlags: %v", err)
@@ -450,7 +505,7 @@ func TestLoadConfig_WarnsOnSecretFlags(t *testing.T) {
 		clearInputEnv(t)
 		buf := captureSlog(t)
 
-		cmd := newRootCmd()
+		cmd := newRunCmd()
 		if err := cmd.ParseFlags([]string{
 			"--password=hunter2",
 			"--token=t0k3n",
@@ -474,7 +529,7 @@ func TestLoadConfig_WarnsOnSecretFlags(t *testing.T) {
 		os.Setenv("INPUT_TOKEN", "t0k3n")
 		buf := captureSlog(t)
 
-		cmd := newRootCmd()
+		cmd := newRunCmd()
 		if err := cmd.ParseFlags([]string{}); err != nil {
 			t.Fatalf("ParseFlags: %v", err)
 		}

@@ -4,6 +4,13 @@ GOFILES := $(shell find . -type f -name "*.go")
 TAGS ?=
 LDFLAGS ?= -X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT)'
 
+# Optional build-time OAuth client injection (decision 3.2). Leave unset for
+# local/dev builds; OAuth login then requires --client-id / JIRA_OAUTH_CLIENT_ID.
+JIRA_OAUTH_CLIENT_ID ?=
+JIRA_OAUTH_CLIENT_SECRET ?=
+LDFLAGS += -X 'main.DefaultOAuthClientID=$(JIRA_OAUTH_CLIENT_ID)'
+LDFLAGS += -X 'main.DefaultOAuthClientSecret=$(JIRA_OAUTH_CLIENT_SECRET)'
+
 ifneq ($(shell uname), Darwin)
 	EXTLDFLAGS = -extldflags "-static" $(null)
 else
@@ -50,6 +57,11 @@ vendor:
 .PHONY: bench
 bench:
 	@$(GO) test -bench=. -benchmem -run=^#  ./...
+
+## lint: run golangci-lint
+.PHONY: lint
+lint:
+	@golangci-lint run ./...
 
 ## help: print this help message
 .PHONY: help

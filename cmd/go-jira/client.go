@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github/appleboy/go-jira/pkg/auth"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,10 +12,12 @@ import (
 	jira "github.com/andygrunwald/go-jira"
 )
 
-// createHTTPClient creates an HTTP client with optional TLS configuration and authentication.
-// It clones http.DefaultTransport so all standard-library defaults (proxy, connection pool,
-// timeouts, HTTP/2) are preserved, and only overrides TLSClientConfig when --insecure is set.
-func createHTTPClient(config Config) *http.Client {
+// createHTTPClient creates an HTTP client with optional TLS configuration and
+// authentication. It clones http.DefaultTransport so all standard-library
+// defaults (proxy, connection pool, timeouts, HTTP/2) are preserved, only
+// overriding TLSClientConfig when --insecure is set, and layers the
+// authenticator's credentials on top via its RoundTripper.
+func createHTTPClient(config Config, authenticator auth.Authenticator) *http.Client {
 	httpTransport := http.DefaultTransport.(*http.Transport).Clone()
 
 	if config.insecure {
@@ -25,24 +28,10 @@ func createHTTPClient(config Config) *http.Client {
 		}
 	}
 
-	if config.username != "" && config.password != "" {
-		auth := jira.BasicAuthTransport{
-			Username:  config.username,
-			Password:  config.password,
-			Transport: httpTransport,
-		}
-		return auth.Client()
+	if authenticator == nil {
+		return &http.Client{Transport: httpTransport}
 	}
-
-	if config.token != "" {
-		auth := jira.BearerAuthTransport{
-			Token:     config.token,
-			Transport: httpTransport,
-		}
-		return auth.Client()
-	}
-
-	return &http.Client{Transport: httpTransport}
+	return &http.Client{Transport: authenticator.Transport(httpTransport)}
 }
 
 // getSelf retrieves the current authenticated user

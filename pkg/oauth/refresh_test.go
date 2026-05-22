@@ -1,0 +1,50 @@
+package oauth
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"testing"
+
+	"golang.org/x/oauth2"
+)
+
+func TestRefreshSuccessRotatesToken(t *testing.T) {
+	var gotForm map[string][]string
+	srv := tokenServer(t, func(_ *testing.T, w http.ResponseWriter, form map[string][]string) {
+		gotForm = form
+		// Jira DC rotates the refresh token on every refresh.
+		writeToken(w, oauth2.Token{AccessToken: "access-2"}, "refresh-2-rotated")
+	})
+	defer srv.Close()
+
+	tok, err := testConfig(srv.URL).Refresh(context.Background(), "refresh-1-old")
+	if err != nil {
+		t.Fatalf("Refresh: %v", err)
+	}
+	if tok.AccessToken != "access-2" {
+		t.Errorf("access token = %q, want access-2", tok.AccessToken)
+	}
+	if tok.RefreshToken != "refresh-2-rotated" {
+		t.Errorf("rotated refresh token = %q, want refresh-2-rotated", tok.RefreshToken)
+	}
+
+	if got := gotForm["grant_type"]; len(got) != 1 || got[0] != "refresh_token" {
+		t.Errorf("grant_type = %v, want [refresh_token]", got)
+	}
+	if got := gotForm["refresh_token"]; len(got) != 1 || got[0] != "refresh-1-old" {
+		t.Errorf("refresh_token = %v, want [refresh-1-old]", got)
+	}
+}
+
+func TestRefreshInvalidGrant(t *testing.T) {
+	srv := tokenServer(t, func(_ *testing.T, w http.ResponseWriter, _ map[string][]string) {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "refresh token revoked")
+	})
+	defer srv.Close()
+
+	_, err := testConfig(srv.URL).Refresh(context.Background(), "dead-token")
+	if !errors.Is(err, ErrInvalidGrant) {
+		t.Errorf("error = %v, want errors.Is ErrInvalidGrant", err)
+	}
+}

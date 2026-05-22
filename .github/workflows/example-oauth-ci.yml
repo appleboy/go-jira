@@ -1,0 +1,47 @@
+# Example workflow: updating Jira issues from CI using OAuth refresh-token
+# injection (the "oauth-env" mode). This file is documentation, not part of the
+# project's own CI — copy it into your own repository and adjust as needed.
+#
+# IMPORTANT — refresh-token rotation:
+# Jira DC rotates the refresh token on every refresh. go-jira writes the new
+# refresh token to JIRA_OAUTH_REFRESH_TOKEN_OUTPUT; you MUST persist it back to
+# your secret store (see the final step) or the next run will fail with
+# invalid_grant. If you cannot automate that, prefer a Personal Access Token
+# (JIRA_TOKEN) instead — it does not rotate.
+name: Jira Update (OAuth)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-jira:
+    runs-on: ubuntu-latest
+    steps:
+      # go-jira ships as a published container image; run it directly. The
+      # runner.temp dir is mounted so the rotated refresh token written by
+      # JIRA_OAUTH_REFRESH_TOKEN_OUTPUT is visible to the persist step below.
+      - name: Update Jira issues
+        env:
+          JIRA_BASE_URL: https://jira.example.com
+          JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
+          JIRA_OAUTH_CLIENT_SECRET: ${{ secrets.JIRA_OAUTH_CLIENT_SECRET }}
+          JIRA_OAUTH_REFRESH_TOKEN: ${{ secrets.JIRA_OAUTH_REFRESH_TOKEN }}
+          JIRA_OAUTH_REFRESH_TOKEN_OUTPUT: ${{ runner.temp }}/new-refresh-token
+        run: |
+          docker run --rm \
+            -e JIRA_BASE_URL -e JIRA_OAUTH_CLIENT_ID -e JIRA_OAUTH_CLIENT_SECRET \
+            -e JIRA_OAUTH_REFRESH_TOKEN -e JIRA_OAUTH_REFRESH_TOKEN_OUTPUT \
+            -v "${{ runner.temp }}:${{ runner.temp }}" \
+            ghcr.io/appleboy/go-jira:latest run \
+              --ref="${{ github.event.head_commit.message }}" \
+              --to-transition=Done \
+              --resolution=Fixed
+
+      - name: Persist rotated refresh token
+        if: always() && hashFiles(format('{0}/new-refresh-token', runner.temp)) != ''
+        env:
+          GH_TOKEN: ${{ secrets.SECRET_UPDATE_TOKEN }}
+        run: |
+          NEW=$(cat "${{ runner.temp }}/new-refresh-token")
+          gh secret set JIRA_OAUTH_REFRESH_TOKEN -b"$NEW"
