@@ -90,7 +90,7 @@ func Login(
 	// being swallowed by the Serve goroutine and surfacing as a hung redirect.
 	cert, err := cfg.resolveCallbackCert()
 	if err != nil {
-		return nil, fmt.Errorf("oauth login: %w", err)
+		return nil, fmt.Errorf("oauth login: resolve callback certificate: %w", err)
 	}
 
 	resultCh, shutdown, err := startCallbackServer(port, state, cert)
