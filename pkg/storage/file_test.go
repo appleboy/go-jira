@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 )
@@ -10,6 +11,23 @@ func newFileStore(t *testing.T) *FileStore {
 	return &FileStore{
 		Path:     filepath.Join(t.TempDir(), "tokens.enc"),
 		Password: []byte("master-pw"),
+	}
+}
+
+// TestFileStoreEmptyPassword verifies the file backend refuses to operate with
+// an empty master password rather than deriving a key from it.
+func TestFileStoreEmptyPassword(t *testing.T) {
+	s := &FileStore{Path: filepath.Join(t.TempDir(), "tokens.enc")}
+	key := MakeKey("https://jira.example.com", "client-abc")
+
+	if err := s.Save(key, sampleToken()); !errors.Is(err, errEmptyPassword) {
+		t.Errorf("Save error = %v, want errEmptyPassword", err)
+	}
+	if _, err := s.Load(key); !errors.Is(err, errEmptyPassword) {
+		t.Errorf("Load error = %v, want errEmptyPassword", err)
+	}
+	if err := s.Delete(key); !errors.Is(err, errEmptyPassword) {
+		t.Errorf("Delete error = %v, want errEmptyPassword", err)
 	}
 }
 

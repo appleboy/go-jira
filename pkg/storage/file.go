@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,7 +20,16 @@ type fileContents struct {
 	Tokens map[string]*StoredToken `json:"tokens"`
 }
 
+// errEmptyPassword guards the file backend against a zero-length master
+// password. Resolve never selects the file backend without a password, but
+// FileStore is exported and can be built directly; deriving a key from an empty
+// password would silently "encrypt" tokens under a guessable key.
+var errEmptyPassword = errors.New("storage: file backend requires a non-empty master password")
+
 func (s *FileStore) load() (*fileContents, error) {
+	if len(s.Password) == 0 {
+		return nil, errEmptyPassword
+	}
 	raw, err := os.ReadFile(s.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -42,6 +52,9 @@ func (s *FileStore) load() (*fileContents, error) {
 }
 
 func (s *FileStore) save(fc *fileContents) error {
+	if len(s.Password) == 0 {
+		return errEmptyPassword
+	}
 	pt, err := json.Marshal(fc) // #nosec G117 -- persisting the token is the point
 	if err != nil {
 		return fmt.Errorf("file marshal: %w", err)
