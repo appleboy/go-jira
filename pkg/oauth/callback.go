@@ -112,7 +112,8 @@ func startCallbackServer(
 			Certificates: []tls.Certificate{*cert},
 			MinVersion:   tls.VersionTLS12,
 		}
-		// Certs are already loaded into TLSConfig, so the file args are empty.
+		// The cert is already loaded into TLSConfig, so ServeTLS needs no
+		// cert/key file paths.
 		go func() { _ = srv.ServeTLS(ln, "", "") }()
 		return resultCh, srv.Shutdown, nil
 	}

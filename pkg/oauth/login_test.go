@@ -239,8 +239,9 @@ func mustECKeyPEM(t *testing.T, cert tls.Certificate) []byte {
 }
 
 // TestLoginEndToEndGeneratedTLS exercises the full flow against an HTTPS
-// callback whose certificate is generated in memory via GenerateTLSCert (the
-// --callback-https path), with no cert/key files supplied.
+// callback whose certificate is generated in memory by GenerateLoopbackCert
+// (triggered by Config.GenerateTLSCert, the --callback-https path), with no
+// cert/key files supplied.
 func TestLoginEndToEndGeneratedTLS(t *testing.T) {
 	srv := tokenServer(t, func(_ *testing.T, w http.ResponseWriter, form map[string][]string) {
 		if got := form["code"]; len(got) != 1 || got[0] != "browser-code" {
