@@ -49,9 +49,11 @@ func Login(
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: invalid redirect URI %q: %w", cfg.RedirectURI, err)
 	}
-	// The callback server serves plain HTTP by default and HTTPS only when a TLS
-	// key pair is configured; the redirect URI's scheme must match what it
-	// actually speaks, or the browser redirect fails to connect.
+	// The callback server serves plain HTTP by default and HTTPS when TLS is
+	// configured — either via a cert/key pair or a generated in-memory cert
+	// (GenerateTLSCert, the --callback-https path). The redirect URI's scheme
+	// must match what it actually speaks, or the browser redirect fails to
+	// connect.
 	wantScheme := "http"
 	if cfg.useTLS() {
 		wantScheme = "https"
