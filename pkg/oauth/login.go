@@ -48,6 +48,12 @@ func Login(
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: invalid redirect URI %q: %w", cfg.RedirectURI, err)
 	}
+	if redirect.Scheme != "http" {
+		return nil, fmt.Errorf(
+			"oauth login: redirect URI %q scheme must be http (the callback server serves plain HTTP)",
+			cfg.RedirectURI,
+		)
+	}
 	if redirect.Hostname() != "127.0.0.1" {
 		return nil, fmt.Errorf(
 			"oauth login: redirect URI %q host must be 127.0.0.1 (the callback server binds loopback)",

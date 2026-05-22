@@ -102,6 +102,21 @@ func TestLoginInvalidPort(t *testing.T) {
 	}
 }
 
+// TestLoginRedirectSchemeMismatch verifies Login rejects an https redirect URI,
+// since the callback server serves plain HTTP.
+func TestLoginRedirectSchemeMismatch(t *testing.T) {
+	cfg := testConfig("https://jira.example.com")
+	cfg.RedirectURI = "https://127.0.0.1:8765/callback"
+
+	_, err := Login(context.Background(), cfg, 8765, time.Second)
+	if err == nil {
+		t.Fatal("expected error when redirect URI scheme is not http")
+	}
+	if !strings.Contains(err.Error(), "scheme must be http") {
+		t.Errorf("error = %q, want a scheme-mismatch message", err.Error())
+	}
+}
+
 // TestLoginRedirectHostMismatch verifies Login rejects a redirect URI whose
 // host is not the loopback address the callback server binds.
 func TestLoginRedirectHostMismatch(t *testing.T) {
