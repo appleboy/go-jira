@@ -41,6 +41,28 @@ const (
 	flagMarkdown     = "markdown"
 	flagDebug        = "debug"
 
+	// Data subcommand flags (search/create/update/get/sprints/boards/link).
+	flagOutput      = "output"
+	flagEpicField   = "epic-field"
+	flagSprintField = "sprint-field"
+	flagJQL         = "jql"
+	flagFields      = "fields"
+	flagLimit       = "limit"
+	flagProject     = "project"
+	flagSummary     = "summary"
+	flagDescription = "description"
+	flagComponents  = "components"
+	flagLabels      = "labels"
+	flagEpic        = "epic"
+	flagSprint      = "sprint"
+	flagKey         = "key"
+	flagBoardID     = "board-id"
+	flagState       = "state"
+	flagBoardType   = "type"
+	flagFrom        = "from"
+	flagTo          = "to"
+	flagLinkType    = "link-type"
+
 	// OAuth-related flags.
 	flagClientID     = "client-id"
 	flagClientSecret = "client-secret"
@@ -80,6 +102,13 @@ const (
 const (
 	defaultCallbackPort = 8765
 	defaultScope        = "WRITE"
+
+	// Default custom field IDs for the create subcommand. These match the
+	// documented Jira Server/DC layout (Epic Link / Sprint) and can be
+	// overridden per instance via --epic-field / --sprint-field or the
+	// EPIC_FIELD / SPRINT_FIELD env vars.
+	defaultEpicField   = "customfield_10101"
+	defaultSprintField = "customfield_10100"
 )
 
 func main() {
@@ -115,8 +144,53 @@ func newRootCmd() *cobra.Command {
 		newWhoamiCmd(),
 		newTokenCmd(),
 		newConfigCmd(),
+		newSearchCmd(),
+		newCreateCmd(),
+		newUpdateCmd(),
+		newGetCmd(),
+		newSprintsCmd(),
+		newBoardsCmd(),
+		newLinkCmd(),
 	)
 	return cmd
+}
+
+// addOutputFlag registers the shared --output flag for the data subcommands.
+func addOutputFlag(cmd *cobra.Command) {
+	cmd.Flags().String(flagOutput, outputJSON,
+		"Output format: json|text (env: OUTPUT / INPUT_OUTPUT)")
+}
+
+// addCustomFieldFlags registers the configurable custom field IDs used by
+// create. Field IDs vary per Jira instance, so they are overridable.
+func addCustomFieldFlags(cmd *cobra.Command) {
+	cmd.Flags().String(flagEpicField, defaultEpicField,
+		"Epic Link custom field ID (env: EPIC_FIELD / INPUT_EPIC_FIELD)")
+	cmd.Flags().String(flagSprintField, defaultSprintField,
+		"Sprint custom field ID (env: SPRINT_FIELD / INPUT_SPRINT_FIELD)")
+}
+
+// addAuthFlags registers the bearer/basic credential flags shared by the data
+// subcommands, mirroring run/whoami. OAuth and common flags are added
+// separately by each command.
+func addAuthFlags(cmd *cobra.Command) {
+	cmd.Flags().String(flagUsername, "", "Jira username (env: USERNAME / INPUT_USERNAME)")
+	cmd.Flags().String(flagPassword, "", "Jira password (prefer env: PASSWORD / INPUT_PASSWORD)")
+	cmd.Flags().String(flagToken, "", "Jira API token (prefer env: TOKEN / INPUT_TOKEN)")
+}
+
+// addEditableIssueFlags registers the issue field flags shared by create and
+// update: the fields a caller can set on an issue. create marks --summary
+// required and adds --project on top; update treats every flag as an optional
+// partial edit.
+func addEditableIssueFlags(cmd *cobra.Command) {
+	cmd.Flags().String(flagSummary, "", "Issue summary line")
+	cmd.Flags().String(flagAssignee, "", "Assignee login name")
+	cmd.Flags().String(flagDescription, "", "Issue description body")
+	cmd.Flags().String(flagComponents, "", "Comma-separated component names")
+	cmd.Flags().String(flagLabels, "", "Comma-separated labels")
+	cmd.Flags().String(flagEpic, "", "Epic key for the epic-link field, e.g. GAIA-42")
+	cmd.Flags().Int(flagSprint, 0, "Sprint ID for the sprint field")
 }
 
 // addCommonFlags registers flags shared by all subcommands that talk to Jira.

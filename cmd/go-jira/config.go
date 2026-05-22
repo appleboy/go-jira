@@ -29,6 +29,13 @@ type Config struct {
 	markdown     bool
 	debug        bool
 
+	// Output format for the data subcommands: "json" (default) or "text".
+	output string
+	// Custom field IDs for the create subcommand. They vary per Jira instance,
+	// so they are configurable; defaults match the documented Server/DC layout.
+	epicField   string
+	sprintField string
+
 	// OAuth
 	oauthClientID           string
 	oauthClientSecret       string
@@ -77,6 +84,22 @@ func loadConfig(cmd *cobra.Command) Config {
 		assignee:     getString(flagAssignee, "assignee"),
 		markdown:     getBool(flagMarkdown, "markdown"),
 		debug:        getBool(flagDebug, "debug"),
+		output:       getString(flagOutput, "output"),
+		epicField:    getString(flagEpicField, "epic_field"),
+		sprintField:  getString(flagSprintField, "sprint_field"),
+	}
+
+	// Output defaults to JSON (machine-readable, matching the Python CLI).
+	if cfg.output == "" {
+		cfg.output = outputJSON
+	}
+	// Custom field IDs default to the documented Jira Server/DC layout when
+	// neither the flag nor the env var sets them.
+	if cfg.epicField == "" {
+		cfg.epicField = defaultEpicField
+	}
+	if cfg.sprintField == "" {
+		cfg.sprintField = defaultSprintField
 	}
 
 	// Accept the JIRA_-prefixed env vars as aliases (lowest precedence: flag >
