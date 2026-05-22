@@ -17,6 +17,10 @@ import (
 // mismatch fails fast instead of hanging until timeout.
 const callbackPath = "/callback"
 
+// loopbackHost is the IPv4 loopback address the callback server binds and the
+// redirect URI must use.
+const loopbackHost = "127.0.0.1"
+
 // callbackResult carries the outcome of the OAuth redirect back to the caller.
 type callbackResult struct {
 	Code  string
@@ -95,7 +99,7 @@ func startCallbackServer(
 		send(callbackResult{Code: code, State: q.Get("state")})
 	})
 
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	addr := fmt.Sprintf("%s:%d", loopbackHost, port)
 	var lc net.ListenConfig
 	ln, err := lc.Listen(context.Background(), "tcp", addr)
 	if err != nil {

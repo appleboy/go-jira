@@ -64,7 +64,7 @@ func Login(
 			cfg.RedirectURI, wantScheme, strings.ToUpper(wantScheme),
 		)
 	}
-	if redirect.Hostname() != "127.0.0.1" {
+	if redirect.Hostname() != loopbackHost {
 		return nil, fmt.Errorf(
 			"oauth login: redirect URI %q host must be 127.0.0.1 (the callback server binds loopback)",
 			cfg.RedirectURI,

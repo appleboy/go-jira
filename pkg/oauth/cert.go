@@ -60,7 +60,7 @@ func GenerateLoopbackCert() (tls.Certificate, error) {
 	now := time.Now()
 	tmpl := x509.Certificate{
 		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: "127.0.0.1"},
+		Subject:      pkix.Name{CommonName: loopbackHost},
 		NotBefore:    now.Add(-loopbackClockSkew),
 		NotAfter:     now.Add(loopbackCertTTL),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
