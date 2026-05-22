@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+// callbackPath is the single path the callback server serves and the only path
+// a redirect URI may use; Login validates the redirect URI against it so a
+// mismatch fails fast instead of hanging until timeout.
+const callbackPath = "/callback"
+
 // callbackResult carries the outcome of the OAuth redirect back to the caller.
 type callbackResult struct {
 	Code  string
@@ -36,7 +41,7 @@ func startCallbackServer(
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(callbackPath, func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if errStr := q.Get("error"); errStr != "" {
 			desc := q.Get("error_description")

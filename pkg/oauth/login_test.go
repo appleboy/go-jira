@@ -102,6 +102,36 @@ func TestLoginInvalidPort(t *testing.T) {
 	}
 }
 
+// TestLoginRedirectHostMismatch verifies Login rejects a redirect URI whose
+// host is not the loopback address the callback server binds.
+func TestLoginRedirectHostMismatch(t *testing.T) {
+	cfg := testConfig("https://jira.example.com")
+	cfg.RedirectURI = "http://localhost:8765/callback"
+
+	_, err := Login(context.Background(), cfg, 8765, time.Second)
+	if err == nil {
+		t.Fatal("expected error when redirect URI host is not 127.0.0.1")
+	}
+	if !strings.Contains(err.Error(), "host must be 127.0.0.1") {
+		t.Errorf("error = %q, want a host-mismatch message", err.Error())
+	}
+}
+
+// TestLoginRedirectPathMismatch verifies Login rejects a redirect URI whose
+// path is not the one the callback server serves.
+func TestLoginRedirectPathMismatch(t *testing.T) {
+	cfg := testConfig("https://jira.example.com")
+	cfg.RedirectURI = "http://127.0.0.1:8765/wrong"
+
+	_, err := Login(context.Background(), cfg, 8765, time.Second)
+	if err == nil {
+		t.Fatal("expected error when redirect URI path is not /callback")
+	}
+	if !strings.Contains(err.Error(), "path must be /callback") {
+		t.Errorf("error = %q, want a path-mismatch message", err.Error())
+	}
+}
+
 // TestLoginRedirectPortMismatch verifies Login fails fast (rather than hanging
 // until timeout) when the callback port disagrees with the RedirectURI port.
 func TestLoginRedirectPortMismatch(t *testing.T) {

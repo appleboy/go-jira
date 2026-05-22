@@ -40,17 +40,28 @@ func Login(
 	if port < 1 || port > 65535 {
 		return nil, fmt.Errorf("oauth login: callback port %d out of range (1-65535)", port)
 	}
-	// The browser is redirected to cfg.RedirectURI, but the listener binds to
-	// port. If they disagree the redirect hits nothing and Login hangs until
-	// timeout — fail fast with a clear error instead.
+	// The browser is redirected to cfg.RedirectURI, but the callback server only
+	// binds 127.0.0.1:<port> and serves callbackPath. If the redirect URI's host,
+	// port, or path disagrees, the redirect hits nothing and Login hangs until
+	// timeout — validate all three up front and fail fast with a clear error.
 	redirect, err := url.Parse(cfg.RedirectURI)
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: invalid redirect URI %q: %w", cfg.RedirectURI, err)
+	}
+	if redirect.Hostname() != "127.0.0.1" {
+		return nil, fmt.Errorf(
+			"oauth login: redirect URI %q host must be 127.0.0.1 (the callback server binds loopback)",
+			cfg.RedirectURI)
 	}
 	if redirect.Port() != strconv.Itoa(port) {
 		return nil, fmt.Errorf(
 			"oauth login: redirect URI %q port does not match callback port %d",
 			cfg.RedirectURI, port)
+	}
+	if redirect.Path != callbackPath {
+		return nil, fmt.Errorf(
+			"oauth login: redirect URI %q path must be %s",
+			cfg.RedirectURI, callbackPath)
 	}
 
 	state, err := NewState()
