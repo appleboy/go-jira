@@ -49,11 +49,13 @@ type Store interface {
 // MakeKey derives a stable, opaque storage key from the Jira base URL and
 // OAuth client ID, so different sites/clients never share an entry.
 func MakeKey(baseURL, clientID string) string {
-	// Normalize the base URL so cosmetically different but equivalent inputs
-	// (e.g. a trailing slash, or surrounding whitespace) map to the same key and
-	// a stored token isn't seen as "missing" depending on how it was entered.
+	// Normalize both inputs so cosmetically different but equivalent values
+	// (e.g. a trailing slash, or surrounding whitespace from an env var / flag)
+	// map to the same key and a stored token isn't seen as "missing" depending
+	// on how it was entered.
 	normBase := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	sum := sha256.Sum256([]byte(normBase + ":" + clientID))
+	normClient := strings.TrimSpace(clientID)
+	sum := sha256.Sum256([]byte(normBase + ":" + normClient))
 	return hex.EncodeToString(sum[:])
 }
 
