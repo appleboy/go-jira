@@ -64,14 +64,15 @@ const (
 	flagLinkType    = "link-type"
 
 	// OAuth-related flags.
-	flagClientID     = "client-id"
-	flagClientSecret = "client-secret"
-	flagCallbackPort = "callback-port"
-	flagCallbackCert = "callback-cert"
-	flagCallbackKey  = "callback-key"
-	flagScope        = "scope"
-	flagTimeout      = "timeout"
-	flagConfirm      = "confirm"
+	flagClientID      = "client-id"
+	flagClientSecret  = "client-secret"
+	flagCallbackPort  = "callback-port"
+	flagCallbackCert  = "callback-cert"
+	flagCallbackKey   = "callback-key"
+	flagCallbackHTTPS = "callback-https"
+	flagScope         = "scope"
+	flagTimeout       = "timeout"
+	flagConfirm       = "confirm"
 )
 
 // OAuth environment variables. Unlike the action config (which uses the
@@ -85,6 +86,7 @@ const (
 	envOAuthCallbackPort       = "JIRA_OAUTH_CALLBACK_PORT"
 	envOAuthCallbackCert       = "JIRA_OAUTH_CALLBACK_CERT"
 	envOAuthCallbackKey        = "JIRA_OAUTH_CALLBACK_KEY"
+	envOAuthCallbackHTTPS      = "JIRA_OAUTH_CALLBACK_HTTPS"
 	envMasterPassword          = "JIRA_MASTER_PASSWORD"
 
 	// JIRA_-prefixed aliases for the core auth/config fields, matching the env
@@ -222,6 +224,10 @@ func addOAuthFlags(cmd *cobra.Command) {
 	cmd.Flags().String(flagCallbackKey, "",
 		"TLS key file for an https callback server (env: "+envOAuthCallbackKey+
 			"); requires --"+flagCallbackCert)
+	cmd.Flags().Bool(flagCallbackHTTPS, false,
+		"Serve the https callback with an auto-generated in-memory loopback cert, so "+
+			"no cert/key files are needed (env: "+envOAuthCallbackHTTPS+
+			"); the browser shows a one-time security warning to accept")
 	cmd.Flags().String(flagScope, defaultScope, "OAuth scope to request")
 }
 

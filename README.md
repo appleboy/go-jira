@@ -96,6 +96,7 @@ go-jira supports four authentication modes:
 | JIRA_OAUTH_CALLBACK_PORT        | Local OAuth callback port (default `8765`)                                 |
 | JIRA_OAUTH_CALLBACK_CERT        | TLS cert file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_KEY`) |
 | JIRA_OAUTH_CALLBACK_KEY         | TLS key file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_CERT`) |
+| JIRA_OAUTH_CALLBACK_HTTPS       | `true` to serve the HTTPS callback with an auto-generated in-memory cert (no cert files; browser shows a one-time warning) |
 | JIRA_MASTER_PASSWORD            | Master password for the encrypted file token store (when no keyring)       |
 
 ### Usage

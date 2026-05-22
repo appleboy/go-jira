@@ -72,11 +72,49 @@ func TestRedirectURI(t *testing.T) {
 			Config{callbackPort: 8765, callbackCert: "c.pem"},
 			"http://127.0.0.1:8765/callback",
 		},
+		{
+			"https when callbackHTTPS set (generated cert)",
+			Config{callbackPort: 8765, callbackHTTPS: true},
+			"https://127.0.0.1:8765/callback",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.cfg.redirectURI(); got != tt.want {
 				t.Errorf("redirectURI() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResolveCallbackHTTPS(t *testing.T) {
+	tests := []struct {
+		name string
+		env  string // "" means unset
+		args []string
+		want bool
+	}{
+		{"default off", "", nil, false},
+		{"flag only", "", []string{"--callback-https"}, true},
+		{"env only", "true", nil, true},
+		{"env 1 is truthy", "1", nil, true},
+		{"env false beats unset flag", "false", nil, false},
+		{"env true beats unset flag", "true", nil, true},
+		{"env false beats set flag", "false", []string{"--callback-https"}, false},
+		{"env true with set flag", "true", []string{"--callback-https"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// t.Setenv("") behaves as unset for the code under test and, unlike
+			// os.Unsetenv, restores the prior value after the test so state never
+			// leaks into other tests.
+			t.Setenv(envOAuthCallbackHTTPS, tt.env)
+			cmd := newLoginCmd()
+			if err := cmd.ParseFlags(tt.args); err != nil {
+				t.Fatalf("ParseFlags: %v", err)
+			}
+			if got := resolveCallbackHTTPS(cmd); got != tt.want {
+				t.Errorf("resolveCallbackHTTPS() = %v, want %v", got, tt.want)
 			}
 		})
 	}

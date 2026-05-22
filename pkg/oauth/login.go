@@ -49,9 +49,11 @@ func Login(
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: invalid redirect URI %q: %w", cfg.RedirectURI, err)
 	}
-	// The callback server serves plain HTTP by default and HTTPS only when a TLS
-	// key pair is configured; the redirect URI's scheme must match what it
-	// actually speaks, or the browser redirect fails to connect.
+	// The callback server serves plain HTTP by default and HTTPS when TLS is
+	// configured — either via a cert/key pair or a generated in-memory cert
+	// (GenerateTLSCert, the --callback-https path). The redirect URI's scheme
+	// must match what it actually speaks, or the browser redirect fails to
+	// connect.
 	wantScheme := "http"
 	if cfg.useTLS() {
 		wantScheme = "https"
@@ -62,7 +64,7 @@ func Login(
 			cfg.RedirectURI, wantScheme, strings.ToUpper(wantScheme),
 		)
 	}
-	if redirect.Hostname() != "127.0.0.1" {
+	if redirect.Hostname() != loopbackHost {
 		return nil, fmt.Errorf(
 			"oauth login: redirect URI %q host must be 127.0.0.1 (the callback server binds loopback)",
 			cfg.RedirectURI,
@@ -85,7 +87,15 @@ func Login(
 	}
 	verifier := NewVerifier()
 
-	resultCh, shutdown, err := startCallbackServer(port, state, cfg.TLSCertFile, cfg.TLSKeyFile)
+	// Resolve the callback certificate before binding the listener so a bad/
+	// missing cert (or a key-generation failure) fails fast here rather than
+	// being swallowed by the Serve goroutine and surfacing as a hung redirect.
+	cert, err := cfg.resolveCallbackCert()
+	if err != nil {
+		return nil, fmt.Errorf("oauth login: resolve callback certificate: %w", err)
+	}
+
+	resultCh, shutdown, err := startCallbackServer(port, state, cert)
 	if err != nil {
 		return nil, fmt.Errorf("oauth login: start callback server: %w", err)
 	}

@@ -42,6 +42,30 @@ installs a local CA so the browser redirect is trusted without a warning. The
 equivalent env vars are `JIRA_OAUTH_CALLBACK_CERT` / `JIRA_OAUTH_CALLBACK_KEY`.
 Both must be set together, or neither.
 
+#### Zero-setup HTTPS callback (`--callback-https`)
+
+If you just want an https callback to work without provisioning any cert files —
+useful when **sharing one binary across a team** — pass `--callback-https` (or
+set `JIRA_OAUTH_CALLBACK_HTTPS=true`):
+
+```bash
+go-jira login --callback-https
+```
+
+This mints a self-signed certificate for `127.0.0.1` **in memory** at login
+time. No `mkcert`, no cert/key files, and nothing secret is baked into the
+binary. The redirect URI still becomes `https://127.0.0.1:<port>/callback`, so
+register that exact value in Jira.
+
+Trade-off: because the cert is self-signed (not signed by a CA your machine
+already trusts), the browser shows a one-time security warning. On `127.0.0.1`
+you can click **“Proceed to 127.0.0.1 (unsafe)”** to continue; the login then
+completes normally. If you want to avoid the warning entirely, use the
+`mkcert`-based `--callback-cert` / `--callback-key` approach above instead.
+
+When both `--callback-https` and an explicit `--callback-cert` / `--callback-key`
+pair are given, the supplied files win.
+
 You then have a **client ID** and **client secret**. These can be:
 
 1. embedded into the binary at build time (see [migration & build](#building-with-an-embedded-client)), or

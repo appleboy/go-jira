@@ -57,7 +57,7 @@ func TestCallbackServer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			port := freePort(t)
-			resultCh, shutdown, err := startCallbackServer(port, "expected", "", "")
+			resultCh, shutdown, err := startCallbackServer(port, "expected", nil)
 			if err != nil {
 				t.Fatalf("startCallbackServer: %v", err)
 			}

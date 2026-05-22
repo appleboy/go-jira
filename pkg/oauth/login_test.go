@@ -181,6 +181,121 @@ func TestLoginEndToEndTLS(t *testing.T) {
 	}
 }
 
+// TestGenerateLoopbackCert verifies the in-memory cert minted for the
+// --callback-https flow is well-formed: it parses, covers the loopback IP and
+// carries the ServerAuth usage browsers require.
+func TestGenerateLoopbackCert(t *testing.T) {
+	cert, err := GenerateLoopbackCert()
+	if err != nil {
+		t.Fatalf("GenerateLoopbackCert: %v", err)
+	}
+	if len(cert.Certificate) == 0 {
+		t.Fatal("no certificate bytes produced")
+	}
+	// The generated cert must be usable as a server certificate in a TLS config.
+	if _, err := tls.X509KeyPair(
+		pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Certificate[0]}),
+		mustECKeyPEM(t, cert),
+	); err != nil {
+		t.Fatalf("generated cert is not a valid key pair: %v", err)
+	}
+
+	leaf, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		t.Fatalf("parse leaf: %v", err)
+	}
+	hasLoopbackIP := false
+	for _, ip := range leaf.IPAddresses {
+		if ip.Equal(net.IPv4(127, 0, 0, 1)) {
+			hasLoopbackIP = true
+		}
+	}
+	if !hasLoopbackIP {
+		t.Errorf("leaf missing 127.0.0.1 IP SAN, got %v", leaf.IPAddresses)
+	}
+	hasServerAuth := false
+	for _, eku := range leaf.ExtKeyUsage {
+		if eku == x509.ExtKeyUsageServerAuth {
+			hasServerAuth = true
+		}
+	}
+	if !hasServerAuth {
+		t.Error("leaf missing ExtKeyUsageServerAuth")
+	}
+}
+
+// mustECKeyPEM marshals the cert's ECDSA private key to PEM for re-loading.
+func mustECKeyPEM(t *testing.T, cert tls.Certificate) []byte {
+	t.Helper()
+	key, ok := cert.PrivateKey.(*ecdsa.PrivateKey)
+	if !ok {
+		t.Fatalf("private key is %T, want *ecdsa.PrivateKey", cert.PrivateKey)
+	}
+	der, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		t.Fatalf("marshal key: %v", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: der})
+}
+
+// TestLoginEndToEndGeneratedTLS exercises the full flow against an HTTPS
+// callback whose certificate is generated in memory by GenerateLoopbackCert
+// (triggered by Config.GenerateTLSCert, the --callback-https path), with no
+// cert/key files supplied.
+func TestLoginEndToEndGeneratedTLS(t *testing.T) {
+	srv := tokenServer(t, func(_ *testing.T, w http.ResponseWriter, form map[string][]string) {
+		if got := form["code"]; len(got) != 1 || got[0] != "browser-code" {
+			t.Errorf("code = %v, want [browser-code]", got)
+		}
+		writeToken(w, oauth2.Token{AccessToken: "access-final"}, "refresh-final")
+	})
+	defer srv.Close()
+
+	port := freePort(t)
+	cfg := testConfig(srv.URL)
+	cfg.RedirectURI = fmt.Sprintf("https://127.0.0.1:%d/callback", port)
+	cfg.GenerateTLSCert = true
+
+	// Browser stub fires the redirect at the HTTPS callback over a TLS client.
+	orig := browserCommand
+	t.Cleanup(func() { browserCommand = orig })
+	browserCommand = func(rawURL string) (string, []string, error) {
+		u, err := url.Parse(rawURL)
+		if err != nil {
+			t.Errorf("parse authorize url: %v", err)
+		}
+		state := u.Query().Get("state")
+		query := fmt.Sprintf("code=browser-code&state=%s", url.QueryEscape(state))
+		go getCallbackTLS(t, port, query)
+		return "", nil, errors.New("browser stubbed")
+	}
+
+	res, err := Login(context.Background(), cfg, port, 5*time.Second)
+	if err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+	if res.Token.AccessToken != "access-final" {
+		t.Errorf("access token = %q, want access-final", res.Token.AccessToken)
+	}
+}
+
+// TestLoginGeneratedTLSSchemeMismatch verifies that enabling GenerateTLSCert
+// (https callback) but leaving an http redirect URI fails fast with a clear
+// scheme-mismatch error rather than hanging.
+func TestLoginGeneratedTLSSchemeMismatch(t *testing.T) {
+	cfg := testConfig("https://jira.example.com")
+	cfg.RedirectURI = "http://127.0.0.1:8765/callback"
+	cfg.GenerateTLSCert = true
+
+	_, err := Login(context.Background(), cfg, 8765, time.Second)
+	if err == nil {
+		t.Fatal("expected error when GenerateTLSCert is set but redirect URI scheme is http")
+	}
+	if !strings.Contains(err.Error(), "scheme must be https") {
+		t.Errorf("error = %q, want a scheme-mismatch message", err.Error())
+	}
+}
+
 // TestLoginTLSSchemeMismatch verifies that when a TLS pair is configured the
 // redirect URI must use https, not http.
 func TestLoginTLSSchemeMismatch(t *testing.T) {
