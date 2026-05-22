@@ -21,6 +21,11 @@ func loadDataConfig(cmd *cobra.Command) (Config, error) {
 	if err := requireBaseURL(config); err != nil {
 		return Config{}, err
 	}
+	if config.output != outputJSON && config.output != outputText {
+		return Config{}, fmt.Errorf(
+			"invalid --output %q: must be %q or %q", config.output, outputJSON, outputText,
+		)
+	}
 	return config, nil
 }
 

@@ -166,8 +166,10 @@ func addOutputFlag(cmd *cobra.Command) {
 		"Output format: json|text (env: OUTPUT / INPUT_OUTPUT)")
 }
 
-// addCustomFieldFlags registers the configurable custom field IDs used by
-// create. Field IDs vary per Jira instance, so they are overridable.
+// addCustomFieldFlags registers the configurable epic-link and sprint custom
+// field IDs. These are consumed by create and update (when setting the fields)
+// and by search (which appends them to the default field selection). Field IDs
+// vary per Jira instance, so they are overridable.
 func addCustomFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().String(flagEpicField, defaultEpicField,
 		"Epic Link custom field ID (env: EPIC_FIELD / INPUT_EPIC_FIELD)")

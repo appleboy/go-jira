@@ -87,8 +87,8 @@ go-jira supports four authentication modes:
 | MARKDOWN                        | Set to `true` to convert comment from Markdown to Jira format              |
 | DEBUG                           | Set to `true` to enable debug output                                       |
 | OUTPUT                          | Output format for the data subcommands: `json` (default) or `text`         |
-| EPIC_FIELD                      | Epic Link custom field ID for `create` (default `customfield_10101`)       |
-| SPRINT_FIELD                    | Sprint custom field ID for `create` (default `customfield_10100`)          |
+| EPIC_FIELD                      | Epic Link custom field ID used by `create`/`update`/`search` (default `customfield_10101`) |
+| SPRINT_FIELD                    | Sprint custom field ID used by `create`/`update`/`search` (default `customfield_10100`)    |
 | JIRA_OAUTH_CLIENT_ID            | OAuth client ID (overrides the embedded default)                           |
 | JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret (overrides the embedded default)                       |
 | JIRA_OAUTH_REFRESH_TOKEN        | Injected refresh token; triggers CI `oauth-env` mode                       |

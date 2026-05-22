@@ -25,6 +25,7 @@ func captureStdout(t *testing.T, fn func()) string {
 	}
 	os.Stdout = w
 	defer func() { os.Stdout = orig }()
+	defer r.Close()
 
 	fn()
 
@@ -169,6 +170,14 @@ func TestSearchCmdServerError(t *testing.T) {
 	_, err := runDataCmd(t, newSearchCmd(), server.URL, "--jql", "project=GAIA")
 	if err == nil {
 		t.Fatal("expected error for HTTP 401")
+	}
+}
+
+func TestInvalidOutputRejected(t *testing.T) {
+	_, err := runDataCmd(t, newGetCmd(), "https://example.invalid",
+		"--key", "GAIA-1", "--output", "jsno")
+	if err == nil || !strings.Contains(err.Error(), "invalid --output") {
+		t.Fatalf("expected invalid --output error, got %v", err)
 	}
 }
 
