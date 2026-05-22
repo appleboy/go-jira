@@ -1,0 +1,114 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	jira "github.com/andygrunwald/go-jira"
+	"github.com/spf13/cobra"
+)
+
+// defaultSearchBaseFields is the static part of the default field selection.
+// These are Jira REST field names, kept as literals and intentionally
+// independent of the CLI flag / log-key constants that happen to share the same
+// text — renaming a flag must not silently change the fields requested from
+// Jira. The configurable epic and sprint custom fields are appended at runtime
+// in searchFields so --epic-field / --sprint-field overrides apply.
+var defaultSearchBaseFields = []string{
+	"summary",
+	"status",   //nolint:goconst // Jira REST field name, not the statusKey log constant
+	"assignee", //nolint:goconst // Jira REST field name, not the flagAssignee constant
+	"labels",
+	"components",
+}
+
+// newSearchCmd builds the `search` subcommand: run a JQL query and print the
+// matching issues. Equivalent to the Python `search` subcommand.
+func newSearchCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "search",
+		Short:        "Search Jira issues with a JQL query",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runSearch(cmd)
+		},
+	}
+	addCommonFlags(cmd)
+	addOAuthFlags(cmd)
+	addAuthFlags(cmd)
+	addOutputFlag(cmd)
+	addCustomFieldFlags(cmd)
+	cmd.Flags().String(flagJQL, "", "JQL expression (required)")
+	cmd.Flags().String(flagFields, "",
+		"Comma-separated fields to return (default: summary,status,assignee,labels,components + epic/sprint fields)")
+	cmd.Flags().Int(flagLimit, 20, "Maximum number of results")
+	_ = cmd.MarkFlagRequired(flagJQL)
+	return cmd
+}
+
+func runSearch(cmd *cobra.Command) error {
+	config, err := loadDataConfig(cmd)
+	if err != nil {
+		return err
+	}
+	jql, _ := cmd.Flags().GetString(flagJQL)
+	fieldsArg, _ := cmd.Flags().GetString(flagFields)
+	limit, _ := cmd.Flags().GetInt(flagLimit)
+
+	ctx, cancel := context.WithTimeout(cmdContext(cmd), time.Minute)
+	defer cancel()
+
+	jiraClient, err := resolveJiraClient(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	fields := searchFields(fieldsArg, config)
+	issues, resp, err := jiraClient.Issue.SearchWithContext(ctx, jql, &jira.SearchOptions{
+		Fields:     fields,
+		MaxResults: limit,
+	})
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return fmt.Errorf("error searching issues: %w", err)
+	}
+
+	return emitResult(config, issues, func() {
+		for _, issue := range issues {
+			status := ""
+			if issue.Fields != nil && issue.Fields.Status != nil {
+				status = issue.Fields.Status.Name
+			}
+			summary := ""
+			if issue.Fields != nil {
+				summary = issue.Fields.Summary
+			}
+			fmt.Fprintf(os.Stdout, "%s\t%s\t%s\n", issue.Key, status, summary)
+		}
+	})
+}
+
+// searchFields returns the field list for the query. An explicit --fields value
+// wins; otherwise the default set is used with the configured epic/sprint
+// custom field IDs appended.
+func searchFields(fieldsArg string, config Config) []string {
+	if fieldsArg != "" {
+		parts := strings.Split(fieldsArg, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			if p = strings.TrimSpace(p); p != "" {
+				out = append(out, p)
+			}
+		}
+		return out
+	}
+	fields := make([]string, 0, len(defaultSearchBaseFields)+2)
+	fields = append(fields, defaultSearchBaseFields...)
+	fields = append(fields, config.epicField, config.sprintField)
+	return fields
+}

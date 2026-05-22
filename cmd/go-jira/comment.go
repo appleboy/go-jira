@@ -50,7 +50,7 @@ func addComments(
 					"error adding comment",
 					"issue",
 					iss.Key,
-					"status",
+					statusKey,
 					resp.StatusCode,
 					"body",
 					string(body),

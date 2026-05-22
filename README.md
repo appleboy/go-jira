@@ -33,6 +33,7 @@
       - [Log in with OAuth (local development)](#log-in-with-oauth-local-development)
       - [Show version](#show-version)
       - [Use custom environment file](#use-custom-environment-file)
+  - [Data subcommands](#data-subcommands)
   - [OAuth 2.0](#oauth-20)
 
 ## Motivation
@@ -85,6 +86,9 @@ go-jira supports four authentication modes:
 | COMMENT                         | Comment to add to the issue (optional)                                     |
 | MARKDOWN                        | Set to `true` to convert comment from Markdown to Jira format              |
 | DEBUG                           | Set to `true` to enable debug output                                       |
+| OUTPUT                          | Output format for the data subcommands: `json` (default) or `text`         |
+| EPIC_FIELD                      | Epic Link custom field ID used by `create`/`update`/`search` (default `customfield_10101`) |
+| SPRINT_FIELD                    | Sprint custom field ID used by `create`/`update`/`search` (default `customfield_10100`)    |
 | JIRA_OAUTH_CLIENT_ID            | OAuth client ID (overrides the embedded default)                           |
 | JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret (overrides the embedded default)                       |
 | JIRA_OAUTH_REFRESH_TOKEN        | Injected refresh token; triggers CI `oauth-env` mode                       |
@@ -139,6 +143,50 @@ go run ./cmd/go-jira --version
 ```bash
 go run ./cmd/go-jira run --env-file=custom.env
 ```
+
+## Data subcommands
+
+Beyond `run`, go-jira exposes a set of issue/board subcommands for scripting and
+automation. They share the same authentication (OAuth / Bearer / Basic), base
+URL, and `.env` resolution as every other command, and print machine-readable
+JSON to stdout by default. Pass `--output text` for a concise human-readable
+summary; errors go to stderr with a non-zero exit code.
+
+| Command   | Purpose                                  | Key flags                                                                            |
+| --------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| `search`  | Run a JQL query                          | `--jql` (required), `--fields`, `--limit`                                            |
+| `get`     | Fetch summary + status of one issue      | `--key` (required)                                                                   |
+| `create`  | Create a Task issue                      | `--project`, `--summary` (required), `--assignee`, `--description`, `--components`, `--labels`, `--epic`, `--sprint` |
+| `update`  | Partially update an issue's fields       | `--key` (required) + any of `--summary`, `--description`, `--assignee`, `--components`, `--labels`, `--epic`, `--sprint` |
+| `sprints` | List sprints for a board (Agile API)     | `--board-id` (required), `--state`, `--limit`                                        |
+| `boards`  | Discover boards for a project (Agile API)| `--project` (required), `--type`, `--limit`                                          |
+| `link`    | Link two issues                          | `--from`, `--to` (required), `--link-type`                                           |
+
+```bash
+export JIRA_BASE_URL="https://jira.example.com"
+export JIRA_TOKEN="your_personal_access_token"
+
+# Search (JSON to stdout)
+go run ./cmd/go-jira search --jql "project = GAIA AND status = Open" --limit 10
+
+# Human-readable summary
+go run ./cmd/go-jira get --key GAIA-123 --output text
+
+# Create a Task, attaching it to an epic and a sprint
+go run ./cmd/go-jira create --project GAIA --summary "Investigate flaky test" \
+  --epic GAIA-42 --sprint 55 --labels ci,flaky
+
+# Partial update — only the flags you pass are changed
+go run ./cmd/go-jira update --key GAIA-123 \
+  --summary "Reworded title" --assignee jdoe --labels triaged
+
+# Link two issues
+go run ./cmd/go-jira link --from GAIA-1 --to GAIA-2 --link-type Blocks
+```
+
+The epic-link and sprint custom field IDs vary per Jira instance. They default
+to `customfield_10101` / `customfield_10100`; override them with
+`--epic-field` / `--sprint-field` (or `EPIC_FIELD` / `SPRINT_FIELD`).
 
 ## OAuth 2.0
 

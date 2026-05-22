@@ -41,6 +41,7 @@ func newTokenPrintCmd() *cobra.Command {
 
 func newTokenStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
+		//nolint:goconst // cobra subcommand name, independent of the statusKey field constant
 		Use:          "status",
 		Short:        "Show token mode, time remaining, scopes, and storage backend",
 		SilenceUsage: true,
