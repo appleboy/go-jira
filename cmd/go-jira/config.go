@@ -110,9 +110,12 @@ func loadConfig(cmd *cobra.Command) Config {
 	if v := flagStringValue(cmd, flagScope); v != "" {
 		cfg.scope = v
 	}
+	// Gate on whether the flag was changed (not on a non-zero value) so an
+	// explicit --callback-port=0 is preserved and later rejected by oauth.Login
+	// rather than being silently replaced with the default.
 	cfg.callbackPort = defaultCallbackPort
-	if v := flagIntValue(cmd, flagCallbackPort); v != 0 {
-		cfg.callbackPort = v
+	if flagChanged(cmd, flagCallbackPort) {
+		cfg.callbackPort = flagIntValue(cmd, flagCallbackPort)
 	}
 
 	warnOnSecretFlags(cmd)

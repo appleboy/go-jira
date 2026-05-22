@@ -34,6 +34,12 @@ func Login(
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+	// A loopback OAuth flow needs a concrete, bindable port: the redirect URI is
+	// fixed before the listener starts, so an ephemeral (0) or out-of-range port
+	// can never round-trip. Reject it with a clear error instead of binding :0.
+	if port < 1 || port > 65535 {
+		return nil, fmt.Errorf("oauth login: callback port %d out of range (1-65535)", port)
+	}
 	// The browser is redirected to cfg.RedirectURI, but the listener binds to
 	// port. If they disagree the redirect hits nothing and Login hangs until
 	// timeout — fail fast with a clear error instead.

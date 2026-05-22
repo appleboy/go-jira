@@ -87,6 +87,21 @@ func TestLoginInvalidConfig(t *testing.T) {
 	}
 }
 
+// TestLoginInvalidPort verifies Login rejects an out-of-range callback port
+// (e.g. an explicit --callback-port=0) instead of trying to bind :0.
+func TestLoginInvalidPort(t *testing.T) {
+	cfg := testConfig("https://jira.example.com")
+	cfg.RedirectURI = "http://127.0.0.1:0/callback"
+
+	_, err := Login(context.Background(), cfg, 0, time.Second)
+	if err == nil {
+		t.Fatal("expected error for out-of-range callback port")
+	}
+	if !strings.Contains(err.Error(), "out of range") {
+		t.Errorf("error = %q, want an out-of-range message", err.Error())
+	}
+}
+
 // TestLoginRedirectPortMismatch verifies Login fails fast (rather than hanging
 // until timeout) when the callback port disagrees with the RedirectURI port.
 func TestLoginRedirectPortMismatch(t *testing.T) {
