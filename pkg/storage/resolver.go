@@ -42,10 +42,12 @@ func Resolve(opts ResolveOptions) (Store, error) {
 }
 
 // probeKeyring verifies the keyring can be written and deleted. The probe key
-// is unique per process so concurrent probes don't delete each other's entry,
-// and a not-found on Delete is treated as success (the entry may have been
-// removed by a racing probe) — only a genuine set/delete failure means the
-// keyring is unavailable and Resolve should fall back to the file backend.
+// is keyed on the PID, so probes in different processes don't delete each
+// other's entry (two probes within the same process would share the key, but
+// the CLI never resolves storage concurrently). A not-found on Delete is
+// treated as success (the entry may have been removed by a racing probe) —
+// only a genuine set/delete failure means the keyring is unavailable and
+// Resolve should fall back to the file backend.
 func probeKeyring() error {
 	probeKey := fmt.Sprintf("__probe__%d", os.Getpid())
 	if err := keyring.Set(keyringService, probeKey, "1"); err != nil {

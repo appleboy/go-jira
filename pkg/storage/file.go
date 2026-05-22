@@ -10,6 +10,14 @@ import (
 
 // FileStore persists tokens in a single AES-256-GCM encrypted file. All keys
 // share one file, which is decrypted, mutated, and re-encrypted on each write.
+//
+// Concurrency: a write is read→decrypt→mutate→encrypt→atomic-rename, with no
+// cross-process lock. Within a process this is fine (the CLI does one operation
+// at a time); across processes, two concurrent writes to the same file can race
+// so the last rename wins and drops the other's update. This is acceptable for
+// the intended use — the file backend is the fallback when no OS keyring is
+// available (e.g. a headless CI box), where concurrent token writes to the same
+// file are not expected; interactive use prefers the keyring.
 type FileStore struct {
 	Path     string // e.g. ~/.config/go-jira/tokens.enc
 	Password []byte // master password (from JIRA_MASTER_PASSWORD via ResolveOptions)
