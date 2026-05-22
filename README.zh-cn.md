@@ -30,8 +30,10 @@
     - [使用示例](#使用示例)
       - [转移问题状态并设置解决方案](#转移问题状态并设置解决方案)
       - [分配处理人并添加 Markdown 评论](#分配处理人并添加-markdown-评论)
+      - [使用 OAuth 登录（本地开发）](#使用-oauth-登录本地开发)
       - [显示版本](#显示版本)
       - [使用自定义环境文件](#使用自定义环境文件)
+  - [OAuth 2.0](#oauth-20)
 
 ## 动机
 
@@ -50,12 +52,12 @@
 
 go-jira 支持四种认证模式：
 
-| 模式             | 适用场景                  | 配置方式 |
-|------------------|---------------------------|----------|
-| **基本认证**     | 旧版 Jira 或开发/测试     | `JIRA_USERNAME` + `JIRA_PASSWORD` |
-| **Bearer / PAT** | 推荐的 CI/CD 默认         | `JIRA_TOKEN`（个人访问令牌） |
-| **OAuth（本地）**| 开发者交互式登录          | `go-jira login` |
-| **OAuth（CI/CD）**| 需要细粒度 scope 的自动化 | `JIRA_OAUTH_REFRESH_TOKEN` + 轮换处理 |
+| 模式               | 适用场景                  | 配置方式                              |
+| ------------------ | ------------------------- | ------------------------------------- |
+| **基本认证**       | 旧版 Jira 或开发/测试     | `JIRA_USERNAME` + `JIRA_PASSWORD`     |
+| **Bearer / PAT**   | 推荐的 CI/CD 默认         | `JIRA_TOKEN`（个人访问令牌）          |
+| **OAuth（本地）**  | 开发者交互式登录          | `go-jira login`                       |
+| **OAuth（CI/CD）** | 需要细粒度 scope 的自动化 | `JIRA_OAUTH_REFRESH_TOKEN` + 轮换处理 |
 
 - **跳过 SSL 验证**：设置 `JIRA_INSECURE=true`（生产环境不建议）
 
@@ -65,26 +67,26 @@ go-jira 支持四种认证模式：
 
 ### 环境变量
 
-| 变量              | 说明                                               |
-|-------------------|----------------------------------------------------|
-| JIRA_BASE_URL     | Jira 实例基础地址（如 `https://jira.example.com`）  |
-| JIRA_USERNAME     | Jira 用户名（用于基本认证）                        |
-| JIRA_PASSWORD     | Jira 密码（用于基本认证）                          |
-| JIRA_TOKEN        | Jira API Token（用于 Token 认证）                  |
-| JIRA_INSECURE     | 设为 `true` 跳过 SSL 证书验证                      |
-| REF               | 引用字符串（如 git ref/tag/commit message）         |
-| ISSUE_FORMAT      | 自定义 issue key 匹配正则（可选）                  |
-| TRANSITION        | 问题要转移到的目标状态名称                         |
-| RESOLUTION        | 问题解决方案名称（如 `Fixed`，可选）                |
-| ASSIGNEE          | 要分配的处理人用户名（可选）                        |
-| COMMENT           | 要添加到问题的评论内容（可选）                      |
-| MARKDOWN          | 设为 `true` 时将评论从 Markdown 转为 Jira 格式      |
-| DEBUG             | 设为 `true` 启用调试输出                            |
-| JIRA_OAUTH_CLIENT_ID | OAuth client ID（覆盖内嵌默认值）              |
-| JIRA_OAUTH_CLIENT_SECRET | OAuth client secret（覆盖内嵌默认值）       |
-| JIRA_OAUTH_REFRESH_TOKEN | 注入的 refresh token；触发 CI `oauth-env` 模式 |
-| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | 写入轮换后 refresh token 的文件路径    |
-| JIRA_MASTER_PASSWORD | 加密文件 token 存储的主密码（无 keyring 时）    |
+| 变量                            | 说明                                               |
+| ------------------------------- | -------------------------------------------------- |
+| JIRA_BASE_URL                   | Jira 实例基础地址（如 `https://jira.example.com`） |
+| JIRA_USERNAME                   | Jira 用户名（用于基本认证）                        |
+| JIRA_PASSWORD                   | Jira 密码（用于基本认证）                          |
+| JIRA_TOKEN                      | Jira API Token（用于 Token 认证）                  |
+| JIRA_INSECURE                   | 设为 `true` 跳过 SSL 证书验证                      |
+| REF                             | 引用字符串（如 git ref/tag/commit message）        |
+| ISSUE_FORMAT                    | 自定义 issue key 匹配正则（可选）                  |
+| TRANSITION                      | 问题要转移到的目标状态名称                         |
+| RESOLUTION                      | 问题解决方案名称（如 `Fixed`，可选）               |
+| ASSIGNEE                        | 要分配的处理人用户名（可选）                       |
+| COMMENT                         | 要添加到问题的评论内容（可选）                     |
+| MARKDOWN                        | 设为 `true` 时将评论从 Markdown 转为 Jira 格式     |
+| DEBUG                           | 设为 `true` 启用调试输出                           |
+| JIRA_OAUTH_CLIENT_ID            | OAuth client ID（覆盖内嵌默认值）                  |
+| JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret（覆盖内嵌默认值）              |
+| JIRA_OAUTH_REFRESH_TOKEN        | 注入的 refresh token；触发 CI `oauth-env` 模式     |
+| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | 写入轮换后 refresh token 的文件路径                |
+| JIRA_MASTER_PASSWORD            | 加密文件 token 存储的主密码（无 keyring 时）       |
 
 ### 使用示例
 
