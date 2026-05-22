@@ -110,8 +110,8 @@ func tryResolveOAuthStorage(cfg Config) (Authenticator, bool, error) {
 
 // resolveOAuthEnv builds an authenticator from an injected refresh token. It
 // immediately exchanges the refresh token for an access token (which also
-// rotates the refresh token) and, if configured, writes the rotated token to
-// OAuthRefreshTokenOutput.
+// rotates the refresh token) and, when an OnRotate callback is configured (the
+// caller wires one via rotationWriter), persists the rotated token through it.
 func resolveOAuthEnv(ctx context.Context, cfg Config) (Authenticator, error) {
 	if cfg.OAuthClientID == "" {
 		return nil, errors.New("oauth-env: JIRA_OAUTH_CLIENT_ID is required")
