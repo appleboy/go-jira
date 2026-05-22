@@ -177,6 +177,7 @@ func authConfigFromRun(config Config) auth.Config {
 		OAuthBaseURL:      config.baseURL,
 		OAuthRedirectURI:  config.redirectURI(),
 		OAuthScopes:       []string{config.scope},
+		OAuthHTTPClient:   oauthHTTPClient(config),
 	}
 	if config.oauthRefreshToken != "" {
 		cfg.OnRotate = rotationWriter(config.oauthRefreshTokenOutput)

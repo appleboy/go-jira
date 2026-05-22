@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github/appleboy/go-jira/pkg/oauth"
 	"github/appleboy/go-jira/pkg/storage"
+	"net/http"
 )
 
 // Config carries everything Resolve needs to choose an Authenticator.
@@ -24,6 +25,12 @@ type Config struct {
 	OAuthBaseURL      string
 	OAuthRedirectURI  string
 	OAuthScopes       []string
+
+	// OAuthHTTPClient, if set, is used for OAuth token endpoint requests
+	// (refresh / exchange) so they honour the same TLS behaviour as API calls —
+	// e.g. the --insecure client for self-signed Jira instances. nil lets
+	// oauth.Config fall back to its default timeout client.
+	OAuthHTTPClient *http.Client
 
 	// Storage backend for the local (oauth-storage) flow; nil disables it.
 	Store storage.Store
@@ -74,6 +81,7 @@ func oauthConfig(cfg Config) *oauth.Config {
 		ClientSecret: cfg.OAuthClientSecret,
 		RedirectURI:  cfg.OAuthRedirectURI,
 		Scopes:       cfg.OAuthScopes,
+		HTTPClient:   cfg.OAuthHTTPClient,
 	}
 }
 
