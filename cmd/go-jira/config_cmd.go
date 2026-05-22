@@ -137,13 +137,16 @@ func configSource(cmd *cobra.Command, flagName, envKey, aliasEnv string) string 
 }
 
 // detectAuthMode reports which auth mode run would select, mirroring
-// auth.Resolve's priority (oauth-env > oauth-storage > bearer > basic). It does
-// a read-only storage lookup but no network I/O.
+// auth.Resolve's priority (oauth-env > oauth-storage > bearer > basic) and the
+// run path's gating: it only looks up stored OAuth tokens when no explicit
+// bearer/basic credential is set. That lookup can probe the OS keyring (a
+// write+delete, not strictly read-only) but performs no network I/O.
 func detectAuthMode(config Config) string {
+	hasExplicitCred := config.token != "" || (config.username != "" && config.password != "")
 	switch {
 	case config.oauthRefreshToken != "":
 		return auth.ModeOAuthEnv
-	case storedTokenExists(config):
+	case !hasExplicitCred && storedTokenExists(config):
 		return auth.ModeOAuthStorage
 	case config.token != "":
 		return auth.ModeBearer
