@@ -17,6 +17,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -67,12 +68,15 @@ func (c *Config) Validate() error {
 // which is what the Jira DC provider expects, and avoids x/oauth2's
 // auto-detect probe request.
 func (c *Config) oauth2Config() *oauth2.Config {
+	// Trim a trailing slash so a base URL entered as "https://jira.example.com/"
+	// does not yield a double slash ("…com//rest/…") in the endpoint URLs.
+	base := strings.TrimRight(c.BaseURL, "/")
 	return &oauth2.Config{
 		ClientID:     c.ClientID,
 		ClientSecret: c.ClientSecret,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:   c.BaseURL + authorizePath,
-			TokenURL:  c.BaseURL + tokenPath,
+			AuthURL:   base + authorizePath,
+			TokenURL:  base + tokenPath,
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
 		RedirectURL: c.RedirectURI,

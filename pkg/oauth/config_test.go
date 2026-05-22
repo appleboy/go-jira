@@ -85,3 +85,19 @@ func TestConfigValidate(t *testing.T) {
 		t.Error("nil config Validate() should error")
 	}
 }
+
+// TestOAuth2ConfigTrimsTrailingSlash verifies a base URL with a trailing slash
+// does not produce double-slash endpoint URLs.
+func TestOAuth2ConfigTrimsTrailingSlash(t *testing.T) {
+	c := testConfig("https://jira.example.com/")
+	oc := c.oauth2Config()
+
+	wantAuth := "https://jira.example.com" + authorizePath
+	wantToken := "https://jira.example.com" + tokenPath
+	if oc.Endpoint.AuthURL != wantAuth {
+		t.Errorf("AuthURL = %q, want %q", oc.Endpoint.AuthURL, wantAuth)
+	}
+	if oc.Endpoint.TokenURL != wantToken {
+		t.Errorf("TokenURL = %q, want %q", oc.Endpoint.TokenURL, wantToken)
+	}
+}
