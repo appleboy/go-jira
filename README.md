@@ -33,6 +33,7 @@
       - [Log in with OAuth (local development)](#log-in-with-oauth-local-development)
       - [Show version](#show-version)
       - [Use custom environment file](#use-custom-environment-file)
+  - [Use in GitHub / Gitea Actions](#use-in-github--gitea-actions)
   - [Data subcommands](#data-subcommands)
   - [OAuth 2.0](#oauth-20)
 
@@ -46,9 +47,9 @@ The goal of this project is to make it easy to integrate Jira with GitHub or Git
 
 ## Configuration
 
-> **⚠️ Breaking change in v1.0**: `go-jira` now requires a subcommand. The
-> previous bare-command behavior moved to `go-jira run`. See the
-> [migration guide](docs/migration-v1.md).
+> **Note**: `go-jira` is invoked through subcommands. The Action behavior that
+> transitions issues and posts comments lives under `go-jira run`; see
+> [Usage](#usage) below.
 
 ### Authentication
 
@@ -101,8 +102,8 @@ go-jira supports four authentication modes:
 
 ### Usage
 
-> As of v1.0 the action runs under the `run` subcommand. Replace any previous
-> bare `go-jira` invocation with `go-jira run`.
+The Action behavior runs under the `run` subcommand. All action flags and the
+GitHub Actions `INPUT_*` environment variables are read by `go-jira run`.
 
 #### Transition issue status and set resolution
 
@@ -144,6 +145,40 @@ go run ./cmd/go-jira --version
 ```bash
 go run ./cmd/go-jira run --env-file=custom.env
 ```
+
+## Use in GitHub / Gitea Actions
+
+go-jira ships as a published container image (`ghcr.io/appleboy/go-jira`), so a
+workflow can run it directly. The example below transitions every issue key
+found in the commit message to `Done` using a Personal Access Token — the
+simplest auth mode for CI/CD.
+
+```yaml
+name: Update Jira on push
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-jira:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Transition Jira issues
+        env:
+          JIRA_BASE_URL: https://jira.example.com
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+        run: |
+          docker run --rm -e JIRA_BASE_URL -e JIRA_TOKEN \
+            ghcr.io/appleboy/go-jira:latest run \
+              --ref="${{ github.event.head_commit.message }}" \
+              --to-transition=Done \
+              --resolution=Fixed
+```
+
+The same workflow runs on Gitea Actions — the syntax is compatible. For OAuth
+in CI/CD (including refresh-token rotation), see the full example at
+[`.github/workflows/example-oauth-ci.yml`](.github/workflows/example-oauth-ci.yml)
+and [docs/oauth-usage.md](docs/oauth-usage.md).
 
 ## Data subcommands
 
@@ -203,9 +238,8 @@ Subcommands:
 - `go-jira token status|refresh|print` — inspect or refresh the stored token.
 - `go-jira config show` — show resolved config and where each value came from.
 
-See **[docs/oauth-usage.md](docs/oauth-usage.md)** for setup (registering the
-client in Jira, scopes, storage backends) and
-**[docs/migration-v1.md](docs/migration-v1.md)** for upgrading from v0.x.
+See **[docs/oauth-usage.md](docs/oauth-usage.md)** for full setup: registering
+the client in Jira, scopes, storage backends, and CI/CD refresh-token rotation.
 
 [5]: https://developer.atlassian.com/cloud/jira/platform/
 [6]: https://developer.atlassian.com/server/jira/platform/

@@ -68,7 +68,7 @@ pair are given, the supplied files win.
 
 You then have a **client ID** and **client secret**. These can be:
 
-1. embedded into the binary at build time (see [migration & build](#building-with-an-embedded-client)), or
+1. embedded into the binary at build time (see [Building with an embedded client](#building-with-an-embedded-client)), or
 2. supplied at runtime via `JIRA_OAUTH_CLIENT_ID` / `JIRA_OAUTH_CLIENT_SECRET`, or
 3. passed as `--client-id` / `--client-secret`.
 
