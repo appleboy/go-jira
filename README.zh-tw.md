@@ -43,8 +43,8 @@
 
 ## 設定說明
 
-> **⚠️ v1.0 重大變更**：`go-jira` 現在需要子命令。原本的裸命令行為移至
-> `go-jira run`。請參閱 [升級指南](docs/migration-v1.md)。
+> **說明**：`go-jira` 透過子命令操作。轉移 issue 狀態與張貼評論的 Action 行為
+> 位於 `go-jira run`，詳見下方 [使用範例](#使用範例)。
 
 ### 認證方式
 
@@ -88,7 +88,8 @@ go-jira 支援四種認證模式：
 
 ### 使用範例
 
-> 自 v1.0 起，動作改在 `run` 子命令下執行。請將原本的裸 `go-jira` 改為 `go-jira run`。
+> Action 行為在 `run` 子命令下執行。所有動作旗標與 GitHub Actions 的 `INPUT_*`
+> 環境變數皆由 `go-jira run` 讀取。
 
 #### 轉移問題狀態並設定解決方案
 
@@ -135,9 +136,9 @@ go run ./cmd/go-jira run --env-file=custom.env
 
 go-jira 透過 Authorization Code + PKCE 流程支援 Jira Data Center 的 OAuth 2.0
 provider，本機互動式登入與 CI/CD refresh token 注入皆可。子命令包括
-`login` / `logout` / `whoami` / `token` / `config show`。完整設定見
-**[docs/oauth-usage.md](docs/oauth-usage.md)**，升級說明見
-**[docs/migration-v1.md](docs/migration-v1.md)**。
+`login` / `logout` / `whoami` / `token` / `config show`。完整設定（在 Jira
+註冊 client、scope、token 儲存後端、CI/CD refresh token 輪換）見
+**[docs/oauth-usage.md](docs/oauth-usage.md)**。
 
 [5]: https://developer.atlassian.com/cloud/jira/platform/
 [6]: https://developer.atlassian.com/server/jira/platform/

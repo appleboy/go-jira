@@ -1,14 +1,12 @@
 # Changelog
 
-## v1.0.0
+## Unreleased
 
-### ⚠️ BREAKING CHANGE
+### Commands
 
-- `go-jira` now **requires a subcommand**. The previous bare-command action
-  behavior moved to `go-jira run`. Update any workflow that invoked `go-jira`
-  directly to call `go-jira run` instead. All action flags and `INPUT_*`
-  environment variables are otherwise unchanged. See
-  [docs/migration-v1.md](docs/migration-v1.md).
+- `go-jira` is invoked through subcommands. The Action behavior that transitions
+  issues and posts comments lives under `go-jira run`; all action flags and
+  `INPUT_*` environment variables are read there.
 
 ### Features
 
