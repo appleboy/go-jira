@@ -5,15 +5,21 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
 func TestEpicsCmd(t *testing.T) {
+	// The handler runs on a separate goroutine from the test body, so guard the
+	// captured request details with a mutex to stay clean under `go test -race`.
+	var mu sync.Mutex
 	var gotPath, gotQuery string
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mu.Lock()
 			gotPath = r.URL.Path
 			gotQuery = r.URL.RawQuery
+			mu.Unlock()
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"maxResults": 50,
 				"startAt":    0,
@@ -35,11 +41,14 @@ func TestEpicsCmd(t *testing.T) {
 	if !strings.Contains(out, "GAIA-100") || !strings.Contains(out, "GAIA-200") {
 		t.Errorf("epics output missing epics: %s", out)
 	}
-	if gotPath != "/rest/agile/1.0/board/10381/epic" {
-		t.Errorf("unexpected request path: %s", gotPath)
+	mu.Lock()
+	path, query := gotPath, gotQuery
+	mu.Unlock()
+	if path != "/rest/agile/1.0/board/10381/epic" {
+		t.Errorf("unexpected request path: %s", path)
 	}
-	if !strings.Contains(gotQuery, "done=false") || !strings.Contains(gotQuery, "maxResults=50") {
-		t.Errorf("unexpected query string: %s", gotQuery)
+	if !strings.Contains(query, "done=false") || !strings.Contains(query, "maxResults=50") {
+		t.Errorf("unexpected query string: %s", query)
 	}
 
 	// Text output: one tab-separated line per epic.

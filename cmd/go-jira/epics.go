@@ -41,7 +41,7 @@ type epicsList struct {
 func newEpicsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "epics",
-		Short:        "List epics for a board (Agile API)",
+		Short:        "List active epics for a board (Agile API)",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runEpics(cmd)
@@ -52,6 +52,9 @@ func newEpicsCmd() *cobra.Command {
 	addAuthFlags(cmd)
 	addOutputFlag(cmd)
 	cmd.Flags().Int(flagBoardID, 0, "Board ID, e.g. 10381 (required)")
+	// Boards typically carry far more epics than sprints, so this intentionally
+	// defaults higher than the sprints/boards commands (which use 10), matching
+	// the reference jira.py epics default.
 	cmd.Flags().Int(flagLimit, 50, "Maximum number of epics to return")
 	_ = cmd.MarkFlagRequired(flagBoardID)
 	return cmd
