@@ -229,6 +229,9 @@ Composability:
 		"Suppress informational logs on stderr; warnings, errors, and result output remain")
 	cmd.PersistentFlags().Bool(flagNoColor, false,
 		"Disable ANSI color in log output (also honored via the NO_COLOR env var)")
+	cmd.PersistentFlags().Duration(flagTimeout, 0,
+		"Maximum time to wait for the operation to complete, e.g. 30s or 2m; "+
+			"0 uses the per-command default so agents can enforce a time budget")
 	cmd.PersistentPreRunE = func(c *cobra.Command, _ []string) error {
 		quiet, _ := c.Flags().GetBool(flagQuiet)
 		noColor, _ := c.Flags().GetBool(flagNoColor)
@@ -333,9 +336,6 @@ func addCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().
 		Bool(flagInsecure, false, "Skip TLS verification (env: INSECURE / INPUT_INSECURE)")
 	cmd.Flags().Bool(flagDebug, false, "Dump resolved configuration (env: DEBUG / INPUT_DEBUG)")
-	cmd.Flags().Duration(flagTimeout, 0,
-		"Maximum time to wait for the operation to complete, e.g. 30s or 2m; "+
-			"0 uses the per-command default so agents can enforce a time budget")
 }
 
 // addOAuthFlags registers the OAuth client flags shared by login and run.

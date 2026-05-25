@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 // TestValidateNoControlChars confirms that control characters (ASCII < 0x20)
@@ -49,12 +51,25 @@ func TestValidateNoControlChars(t *testing.T) {
 
 // TestCmdContextWithTimeout verifies the --timeout flag overrides the
 // per-command default when set to a positive duration, and is otherwise
-// ignored (default kept) for absent, zero, or negative values.
+// ignored (default kept) for absent, zero, or negative values. --timeout is a
+// persistent root flag, so the subcommand is fetched from a built root to merge
+// the inherited flags the way cobra does at execution time.
 func TestCmdContextWithTimeout(t *testing.T) {
 	const def = time.Minute
 
+	subCmd := func(t *testing.T) *cobra.Command {
+		t.Helper()
+		for _, c := range newRootCmd().Commands() {
+			if c.Name() == "search" {
+				return c
+			}
+		}
+		t.Fatal("search subcommand not found under root")
+		return nil
+	}
+
 	t.Run("default when flag absent", func(t *testing.T) {
-		cmd := newSearchCmd()
+		cmd := subCmd(t)
 		if err := cmd.ParseFlags(nil); err != nil {
 			t.Fatalf("ParseFlags: %v", err)
 		}
@@ -64,7 +79,7 @@ func TestCmdContextWithTimeout(t *testing.T) {
 	})
 
 	t.Run("override when flag positive", func(t *testing.T) {
-		cmd := newSearchCmd()
+		cmd := subCmd(t)
 		if err := cmd.ParseFlags([]string{"--timeout=5s"}); err != nil {
 			t.Fatalf("ParseFlags: %v", err)
 		}
@@ -74,7 +89,7 @@ func TestCmdContextWithTimeout(t *testing.T) {
 	})
 
 	t.Run("default kept when flag zero", func(t *testing.T) {
-		cmd := newSearchCmd()
+		cmd := subCmd(t)
 		if err := cmd.ParseFlags([]string{"--timeout=0"}); err != nil {
 			t.Fatalf("ParseFlags: %v", err)
 		}
