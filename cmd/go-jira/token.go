@@ -17,8 +17,14 @@ import (
 // operating on the locally stored OAuth token.
 func newTokenCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "token",
-		Short:        "Inspect and manage the locally stored OAuth token",
+		Use:     "token",
+		Short:   "Inspect and manage the locally stored OAuth token",
+		GroupID: groupAuth,
+		Example: `  # Show token mode, expiry, scopes, and storage backend
+  go-jira token status --base-url https://jira.example.com
+
+  # Force a refresh and print the new expiry
+  go-jira token refresh --base-url https://jira.example.com`,
 		SilenceUsage: true,
 	}
 	cmd.AddCommand(newTokenPrintCmd(), newTokenStatusCmd(), newTokenRefreshCmd())
@@ -27,8 +33,10 @@ func newTokenCmd() *cobra.Command {
 
 func newTokenPrintCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "print",
-		Short:        "Print the current access token (requires --confirm)",
+		Use:   "print",
+		Short: "Print the current access token (requires --confirm)",
+		Example: `  # Print the raw access token (sensitive — requires --confirm)
+  go-jira token print --base-url https://jira.example.com --confirm`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runTokenPrint(cmd)
@@ -43,8 +51,10 @@ func newTokenPrintCmd() *cobra.Command {
 func newTokenStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		//nolint:goconst // cobra subcommand name, independent of the statusKey field constant
-		Use:          "status",
-		Short:        "Show token mode, time remaining, scopes, and storage backend",
+		Use:   "status",
+		Short: "Show token mode, time remaining, scopes, and storage backend",
+		Example: `  # Inspect the stored token without revealing it
+  go-jira token status --base-url https://jira.example.com`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runTokenStatus(cmd)
@@ -57,8 +67,10 @@ func newTokenStatusCmd() *cobra.Command {
 
 func newTokenRefreshCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "refresh",
-		Short:        "Force a token refresh and print the new expiry",
+		Use:   "refresh",
+		Short: "Force a token refresh and print the new expiry",
+		Example: `  # Force-refresh the stored token now
+  go-jira token refresh --base-url https://jira.example.com`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runTokenRefresh(cmd)

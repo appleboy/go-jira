@@ -127,12 +127,36 @@ const nameKey = "name"
 func main() {
 	diag := &requestDiag{}
 	ctx := withDiag(context.Background(), diag)
-	if err := newRootCmd().ExecuteContext(ctx); err != nil {
+	root := newRootCmd()
+	if err := root.ExecuteContext(ctx); err != nil {
 		ce := classify(err, diag)
+		addHint(ce, root)
 		emitError(ce)
 		os.Exit(ce.code)
 	}
 }
+
+// versionString returns the clean semver-ish build version, or "dev" for an
+// unstamped local build. Kept free of decorative text so `--version` emits a
+// single machine-parseable token; build metadata (commit) is exposed via the
+// `schema` command instead.
+func versionString() string {
+	if Version == "" {
+		return "dev"
+	}
+	return Version
+}
+
+// Command group IDs used to categorize subcommands in the root help output.
+// Grouping keeps the (necessarily large) command set scannable for both humans
+// and agents without changing any invocation path.
+const (
+	groupRun    = "run"
+	groupIssues = "issues"
+	groupAgile  = "agile"
+	groupAuth   = "auth"
+	groupConfig = "config"
+)
 
 // newRootCmd builds the root command and registers every subcommand. A fresh
 // command is built on each call so tests get clean flag state.
@@ -164,9 +188,23 @@ Composability:
   disable ANSI color. Text-bearing flags (--ref, --comment, --description,
   --jql) accept "-" to read the value from stdin, e.g.
     git log -1 --format=%B | go-jira run --ref - --to-transition Done`,
+		Example: `  # Show the authenticated user and active auth mode
+  go-jira whoami
+
+  # Search issues with JQL and emit JSON for an agent to parse
+  go-jira search --jql 'project = GAIA AND status = "In Progress"' --output json
+
+  # Create a Task and capture its key
+  go-jira create --project GAIA --summary "Investigate flaky test"
+
+  # Transition every issue referenced in the latest commit message
+  git log -1 --format=%B | go-jira run --ref - --to-transition Done
+
+  # Discover the runtime command/flag schema (for agents)
+  go-jira schema --output json`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       fmt.Sprintf("%s Commit: %s", Version, Commit),
+		Version:       versionString(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Help()
 		},
@@ -174,7 +212,7 @@ Composability:
 	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return &cliError{code: exitUsage, kind: kindUsage, message: err.Error(), err: err}
 	})
-	cmd.SetVersionTemplate("Version: {{.Version}}\n")
+	cmd.SetVersionTemplate("{{.Version}}\n")
 
 	// Presentation flags shared by every subcommand. PersistentPreRunE installs
 	// the matching slog handler before any command logs.
@@ -188,6 +226,14 @@ Composability:
 		setupLogging(quiet, noColor)
 		return nil
 	}
+
+	cmd.AddGroup(
+		&cobra.Group{ID: groupRun, Title: "Automation:"},
+		&cobra.Group{ID: groupIssues, Title: "Issues:"},
+		&cobra.Group{ID: groupAgile, Title: "Agile (boards/sprints/epics):"},
+		&cobra.Group{ID: groupAuth, Title: "Authentication:"},
+		&cobra.Group{ID: groupConfig, Title: "Configuration & introspection:"},
+	)
 
 	cmd.AddCommand(
 		newRunCmd(),
@@ -204,6 +250,7 @@ Composability:
 		newEpicsCmd(),
 		newBoardsCmd(),
 		newLinkCmd(),
+		newSchemaCmd(),
 	)
 	return cmd
 }

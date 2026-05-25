@@ -14,8 +14,14 @@ import (
 // tickets. Equivalent to the Python `link` subcommand.
 func newLinkCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "link",
-		Short:        "Create an issue link between two tickets",
+		Use:     "link",
+		Short:   "Create an issue link between two tickets",
+		GroupID: groupIssues,
+		Example: `  # Link two issues with the default "Relates" type
+  go-jira link --from GAIA-1 --to GAIA-2
+
+  # Use a specific link type
+  go-jira link --from GAIA-1 --to GAIA-2 --link-type Blocks`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runLink(cmd)

@@ -40,8 +40,14 @@ type epicsList struct {
 // call.
 func newEpicsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "epics",
-		Short:        "List active epics for a board (Agile API)",
+		Use:     "epics",
+		Short:   "List active epics for a board (Agile API)",
+		GroupID: groupAgile,
+		Example: `  # List epics for a board
+  go-jira epics --board-id 10381
+
+  # Cap the result count and emit JSON
+  go-jira epics --board-id 10381 --limit 20 --output json`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runEpics(cmd)

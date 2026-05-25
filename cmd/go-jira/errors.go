@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/spf13/cobra"
 )
 
 // Exit codes let callers (CI jobs, agents) classify a failure without parsing
@@ -35,6 +38,7 @@ type cliError struct {
 	code       int
 	kind       string // stable token: error|usage|auth|rate_limit
 	message    string
+	hint       string // actionable next step surfaced to the caller
 	statusCode int    // HTTP status when known (0 otherwise)
 	retryAfter string // value of the Retry-After header when present
 	err        error  // wrapped cause, for errors.Is/As
@@ -187,6 +191,7 @@ type errorEnvelope struct {
 type errorPayload struct {
 	Kind       string `json:"kind"`
 	Message    string `json:"message"`
+	Hint       string `json:"hint,omitempty"`
 	ExitCode   int    `json:"exit_code"`
 	StatusCode int    `json:"status_code,omitempty"`
 	RetryAfter string `json:"retry_after,omitempty"`
@@ -201,8 +206,69 @@ func emitError(ce *cliError) {
 	_ = enc.Encode(errorEnvelope{Error: errorPayload{
 		Kind:       ce.kind,
 		Message:    ce.message,
+		Hint:       ce.hint,
 		ExitCode:   ce.code,
 		StatusCode: ce.statusCode,
 		RetryAfter: ce.retryAfter,
 	}})
+}
+
+// addHint populates ce.hint with an actionable next step so callers (and
+// agents) get a suggested fix alongside the failure. For an unknown command we
+// surface cobra's nearest matches ("Did you mean ..."); other kinds get a
+// stable, kind-specific instruction. An already-set hint is left untouched.
+func addHint(ce *cliError, root *cobra.Command) {
+	if ce == nil || ce.hint != "" {
+		return
+	}
+	switch ce.kind {
+	case kindUsage:
+		if name := unknownCommandName(ce.message); name != "" && root != nil {
+			// SuggestionsFor uses SuggestionsMinimumDistance, which cobra only
+			// defaults to 2 as a side effect of Execute. Set it here so hint
+			// generation does not depend on call ordering.
+			if root.SuggestionsMinimumDistance <= 0 {
+				root.SuggestionsMinimumDistance = 2
+			}
+			if s := root.SuggestionsFor(name); len(s) > 0 {
+				ce.hint = fmt.Sprintf("Did you mean %q? Run %q to list all commands.",
+					s[0], root.Name()+" --help")
+				return
+			}
+		}
+		ce.hint = fmt.Sprintf("Run %q for usage and examples.", rootName(root)+" --help")
+	case kindAuth:
+		ce.hint = fmt.Sprintf(
+			"Check your credentials and base URL; run %q to verify authentication.",
+			rootName(root)+" whoami",
+		)
+	case kindRateLimit:
+		ce.hint = "Wait for the duration in retry_after before retrying; requests are not retried automatically."
+	default:
+		ce.hint = fmt.Sprintf(
+			"Run %q for the command's flags and examples.",
+			rootName(root)+" <command> --help",
+		)
+	}
+}
+
+func rootName(root *cobra.Command) string {
+	if root != nil {
+		return root.Name()
+	}
+	return "go-jira"
+}
+
+// unknownCommandName extracts X from cobra's `unknown command "X" for "..."`
+// message so we can compute spelling suggestions. Returns "" for other errors.
+func unknownCommandName(msg string) string {
+	const prefix = `unknown command "`
+	if !strings.HasPrefix(msg, prefix) {
+		return ""
+	}
+	rest := msg[len(prefix):]
+	if name, _, ok := strings.Cut(rest, `"`); ok {
+		return name
+	}
+	return ""
 }

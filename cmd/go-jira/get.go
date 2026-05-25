@@ -14,8 +14,14 @@ import (
 // issue. Equivalent to the Python `get` subcommand.
 func newGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "get",
-		Short:        "Get the summary and status of a single issue",
+		Use:     "get",
+		Short:   "Get the summary and status of a single issue",
+		GroupID: groupIssues,
+		Example: `  # Fetch one issue as JSON
+  go-jira get --key GAIA-123 --output json
+
+  # Human-readable summary and status
+  go-jira get --key GAIA-123 --output text`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runGet(cmd)

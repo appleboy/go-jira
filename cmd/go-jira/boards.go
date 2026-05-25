@@ -14,8 +14,14 @@ import (
 // via the Agile API. Equivalent to the Python `boards` subcommand.
 func newBoardsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "boards",
-		Short:        "Discover boards for a project (Agile API)",
+		Use:     "boards",
+		Short:   "Discover boards for a project (Agile API)",
+		GroupID: groupAgile,
+		Example: `  # Discover boards for a project
+  go-jira boards --project GAIA
+
+  # Only scrum boards, JSON output
+  go-jira boards --project GAIA --type scrum --output json`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runBoards(cmd)

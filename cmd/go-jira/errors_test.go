@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -77,6 +78,58 @@ func TestClassifyFromMessage(t *testing.T) {
 func TestClassifyNilReturnsNil(t *testing.T) {
 	if classify(nil, &requestDiag{}) != nil {
 		t.Fatal("classify(nil) should return nil")
+	}
+}
+
+// TestAddHintPopulatesActionableGuidance checks that addHint attaches a
+// kind-appropriate next step, and that an unknown command surfaces a spelling
+// suggestion drawn from the registered subcommands.
+func TestAddHintPopulatesActionableGuidance(t *testing.T) {
+	root := newRootCmd()
+
+	tests := []struct {
+		name     string
+		ce       *cliError
+		contains string
+	}{
+		{
+			"unknown command suggests nearest match",
+			&cliError{kind: kindUsage, message: `unknown command "serch" for "go-jira"`},
+			`Did you mean "search"?`,
+		},
+		{
+			"generic usage points at help",
+			&cliError{kind: kindUsage, message: `required flag(s) "jql" not set`},
+			"go-jira --help",
+		},
+		{
+			"auth points at whoami",
+			&cliError{kind: kindAuth, message: "auth resolution: x"},
+			"whoami",
+		},
+		{
+			"rate limit references retry_after",
+			&cliError{kind: kindRateLimit, message: "slow down"},
+			"retry_after",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addHint(tt.ce, root)
+			if tt.ce.hint == "" || !strings.Contains(tt.ce.hint, tt.contains) {
+				t.Fatalf("hint = %q, want it to contain %q", tt.ce.hint, tt.contains)
+			}
+		})
+	}
+}
+
+// TestAddHintKeepsExistingHint verifies addHint never overwrites a hint that was
+// already set on the error.
+func TestAddHintKeepsExistingHint(t *testing.T) {
+	ce := &cliError{kind: kindUsage, message: "x", hint: "preset"}
+	addHint(ce, newRootCmd())
+	if ce.hint != "preset" {
+		t.Fatalf("hint = %q, want it left untouched", ce.hint)
 	}
 }
 

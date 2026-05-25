@@ -13,8 +13,11 @@ import (
 // token for the given base URL and client.
 func newLogoutCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "logout",
-		Short:        "Remove the locally stored OAuth token for a Jira site",
+		Use:     "logout",
+		Short:   "Remove the locally stored OAuth token for a Jira site",
+		GroupID: groupAuth,
+		Example: `  # Remove the stored token for a site
+  go-jira logout --base-url https://jira.example.com`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runLogout(cmd)

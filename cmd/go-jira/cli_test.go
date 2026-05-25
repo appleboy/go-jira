@@ -30,7 +30,10 @@ func TestBareCommandShowsHelp(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected no error when no subcommand is given, got %v", err)
 	}
-	if !strings.Contains(out.String(), "Available Commands") {
+	// Commands are organized into named groups (see newRootCmd's AddGroup),
+	// so cobra emits the group titles instead of the generic "Available
+	// Commands" heading. Assert on a grouped command listing instead.
+	if !strings.Contains(out.String(), "whoami") {
 		t.Errorf("expected help output to list available commands, got:\n%s", out.String())
 	}
 }

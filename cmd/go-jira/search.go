@@ -29,8 +29,17 @@ var defaultSearchBaseFields = []string{
 // matching issues. Equivalent to the Python `search` subcommand.
 func newSearchCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "search",
-		Short:        "Search Jira issues with a JQL query",
+		Use:     "search",
+		Short:   "Search Jira issues with a JQL query",
+		GroupID: groupIssues,
+		Example: `  # Search with JQL and print JSON
+  go-jira search --jql 'project = GAIA AND status = "In Progress"' --output json
+
+  # Limit results and choose returned fields
+  go-jira search --jql 'assignee = currentUser()' --fields summary,status --limit 5
+
+  # Read the JQL from stdin
+  echo 'project = GAIA ORDER BY created DESC' | go-jira search --jql -`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runSearch(cmd)

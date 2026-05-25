@@ -19,8 +19,11 @@ const sourceEnv = "env"
 // newConfigCmd builds the `config` command group.
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "config",
-		Short:        "Inspect resolved configuration",
+		Use:     "config",
+		Short:   "Inspect resolved configuration",
+		GroupID: groupConfig,
+		Example: `  # Show resolved config values and where each came from
+  go-jira config show --base-url https://jira.example.com`,
 		SilenceUsage: true,
 	}
 	cmd.AddCommand(newConfigShowCmd())
@@ -29,8 +32,10 @@ func newConfigCmd() *cobra.Command {
 
 func newConfigShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "show",
-		Short:        "Show the resolved configuration and where each value came from",
+		Use:   "show",
+		Short: "Show the resolved configuration and where each value came from",
+		Example: `  # Print the FIELD/VALUE/SOURCE table for the resolved config
+  go-jira config show --base-url https://jira.example.com`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runConfigShow(cmd)

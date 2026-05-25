@@ -17,8 +17,15 @@ import (
 // user plus the auth mode in use.
 func newWhoamiCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "whoami",
-		Short:        "Show the authenticated Jira user and the active auth mode",
+		//nolint:goconst // cobra subcommand name, also appears in help examples
+		Use:     "whoami",
+		Short:   "Show the authenticated Jira user and the active auth mode",
+		GroupID: groupAuth,
+		Example: `  # Verify authentication using a stored OAuth token
+  go-jira whoami --base-url https://jira.example.com
+
+  # Verify a bearer token
+  go-jira whoami --base-url https://jira.example.com --token "$JIRA_TOKEN"`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runWhoami(cmd)

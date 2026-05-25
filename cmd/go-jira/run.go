@@ -20,8 +20,17 @@ import (
 // here exactly as before.
 func newRunCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "run",
-		Short:        "Transition, comment on, or assign Jira issues referenced in text",
+		Use:     "run",
+		Short:   "Transition, comment on, or assign Jira issues referenced in text",
+		GroupID: groupRun,
+		Example: `  # Move every issue mentioned in the latest commit to Done
+  git log -1 --format=%B | go-jira run --ref - --to-transition Done
+
+  # Add a Markdown comment to issues referenced in a string
+  go-jira run --ref "Fixes GAIA-12" --comment "**Deployed** to staging" --markdown
+
+  # Assign matched issues to a user
+  go-jira run --ref "GAIA-7 GAIA-8" --assignee jdoe`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return run(cmd)

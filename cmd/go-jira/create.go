@@ -17,8 +17,17 @@ import (
 // fields (configurable via --epic-field / --sprint-field).
 func newCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "create",
-		Short:        "Create a Task issue",
+		Use:     "create",
+		Short:   "Create a Task issue",
+		GroupID: groupIssues,
+		Example: `  # Create a Task in a project
+  go-jira create --project GAIA --summary "Investigate flaky test"
+
+  # Create with assignee, labels, and an epic link
+  go-jira create --project GAIA --summary "Add retries" --assignee jdoe --labels backend,infra --epic GAIA-1
+
+  # Pipe a Markdown description from stdin
+  cat notes.md | go-jira create --project GAIA --summary "Release notes" --description -`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runCreate(cmd)

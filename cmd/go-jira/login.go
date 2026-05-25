@@ -14,8 +14,14 @@ import (
 // + PKCE flow that stores the resulting token locally.
 func newLoginCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "login",
-		Short:        "Authenticate via OAuth 2.0 (Authorization Code + PKCE) and store the token",
+		Use:     "login",
+		Short:   "Authenticate via OAuth 2.0 (Authorization Code + PKCE) and store the token",
+		GroupID: groupAuth,
+		Example: `  # Interactive browser login against a Jira site
+  go-jira login --base-url https://jira.example.com
+
+  # Login with an explicit OAuth client and a longer browser timeout
+  go-jira login --base-url https://jira.example.com --client-id my-client --timeout 10m`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runLogin(cmd)

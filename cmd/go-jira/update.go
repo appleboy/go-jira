@@ -16,8 +16,14 @@ import (
 // caller explicitly sets are sent, so unspecified fields are left untouched.
 func newUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "update",
-		Short:        "Update fields of an existing issue",
+		Use:     "update",
+		Short:   "Update fields of an existing issue",
+		GroupID: groupIssues,
+		Example: `  # Reassign an issue
+  go-jira update --key GAIA-123 --assignee jdoe
+
+  # Update summary and labels in one call
+  go-jira update --key GAIA-123 --summary "New title" --labels backend,urgent`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runUpdate(cmd)

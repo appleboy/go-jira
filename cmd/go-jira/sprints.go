@@ -14,8 +14,14 @@ import (
 // the Agile API. Equivalent to the Python `sprints` subcommand.
 func newSprintsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "sprints",
-		Short:        "List sprints for a board (Agile API)",
+		Use:     "sprints",
+		Short:   "List sprints for a board (Agile API)",
+		GroupID: groupAgile,
+		Example: `  # List active sprints for a board
+  go-jira sprints --board-id 10381
+
+  # List closed sprints, JSON output
+  go-jira sprints --board-id 10381 --state closed --output json`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runSprints(cmd)
