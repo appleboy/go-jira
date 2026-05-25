@@ -29,10 +29,14 @@ func createHTTPClient(config Config, authenticator auth.Authenticator) *http.Cli
 		}
 	}
 
-	if authenticator == nil {
-		return &http.Client{Transport: httpTransport}
+	// Layer the authenticator's credentials on top when present, then wrap the
+	// whole chain in diagTransport (in a single place) so error-status responses
+	// are recorded regardless of whether authentication is configured.
+	var base http.RoundTripper = httpTransport
+	if authenticator != nil {
+		base = authenticator.Transport(httpTransport)
 	}
-	return &http.Client{Transport: authenticator.Transport(httpTransport)}
+	return &http.Client{Transport: &diagTransport{base: base}}
 }
 
 // getSelf retrieves the current authenticated user

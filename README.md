@@ -221,7 +221,36 @@ Beyond `run`, go-jira exposes a set of issue/board subcommands for scripting and
 automation. They share the same authentication (OAuth / Bearer / Basic), base
 URL, and `.env` resolution as every other command, and print machine-readable
 JSON to stdout by default. Pass `--output text` for a concise human-readable
-summary; errors go to stderr with a non-zero exit code.
+summary; errors go to stderr with a non-zero exit code (see below).
+
+### Exit codes and error output
+
+Every command exits with a distinct code per error class so scripts and agents
+can branch without parsing stderr:
+
+| Code | Meaning                                                   |
+| ---- | --------------------------------------------------------- |
+| `0`  | success                                                   |
+| `1`  | generic runtime error                                     |
+| `2`  | usage error (bad flags or arguments)                      |
+| `3`  | authentication/authorization failure (HTTP `401`/`403`)   |
+| `4`  | rate limited (HTTP `429`)                                 |
+
+On failure a single structured JSON object is written to **stderr**. Rate-limit
+and auth failures include the HTTP status, and rate-limit failures surface the
+server's `Retry-After` hint (requests are not retried automatically):
+
+```json
+{
+  "error": {
+    "kind": "rate_limit",
+    "message": "error searching issues: 429 Too Many Requests",
+    "exit_code": 4,
+    "status_code": 429,
+    "retry_after": "30"
+  }
+}
+```
 
 | Command   | Purpose                                   | Key flags                                                                                                                |
 | --------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |

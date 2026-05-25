@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -120,9 +121,12 @@ const statusKey = "status"
 const nameKey = "name"
 
 func main() {
-	if err := newRootCmd().Execute(); err != nil {
-		slog.Error("execution failed", "error", err)
-		os.Exit(1)
+	diag := &requestDiag{}
+	ctx := withDiag(context.Background(), diag)
+	if err := newRootCmd().ExecuteContext(ctx); err != nil {
+		ce := classify(err, diag)
+		emitError(ce)
+		os.Exit(ce.code)
 	}
 }
 
@@ -134,15 +138,31 @@ func main() {
 // `go-jira run`.
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "go-jira",
-		Short:         "Jira integration CLI with OAuth, Basic, and Bearer auth",
+		Use:   "go-jira",
+		Short: "Jira integration CLI with OAuth, Basic, and Bearer auth",
+		Long: `Jira integration CLI with OAuth, Basic, and Bearer auth.
+
+Exit codes (for scripts and agents):
+  0  success
+  1  generic runtime error
+  2  usage error (bad flags or arguments)
+  3  authentication/authorization failure (HTTP 401/403)
+  4  rate limited (HTTP 429)
+
+On failure a structured JSON error object is written to stderr, e.g.
+  {"error":{"kind":"rate_limit","message":"...","exit_code":4,"status_code":429,"retry_after":"30"}}
+Rate-limit responses surface the server's Retry-After hint in retry_after;
+requests are not retried automatically.`,
 		SilenceUsage:  true,
-		SilenceErrors: false,
+		SilenceErrors: true,
 		Version:       fmt.Sprintf("%s Commit: %s", Version, Commit),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Help()
 		},
 	}
+	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return &cliError{code: exitUsage, kind: kindUsage, message: err.Error(), err: err}
+	})
 	cmd.SetVersionTemplate("Version: {{.Version}}\n")
 
 	cmd.AddCommand(
