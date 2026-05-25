@@ -118,6 +118,11 @@ const (
 // satisfies goconst.
 const statusKey = "status"
 
+// nameKey is the "name" field used to build the Jira REST reference objects
+// (e.g. {"name": ...} for assignee and components). Kept as a constant so the
+// repeated literal satisfies goconst.
+const nameKey = "name"
+
 func main() {
 	if err := newRootCmd().Execute(); err != nil {
 		slog.Error("execution failed", "error", err)

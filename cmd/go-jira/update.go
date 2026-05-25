@@ -88,7 +88,7 @@ func editableFieldsMap(cmd *cobra.Command, config Config) map[string]any {
 	}
 	if cmd.Flags().Changed(flagAssignee) {
 		v, _ := cmd.Flags().GetString(flagAssignee)
-		fields["assignee"] = map[string]string{"name": v}
+		fields["assignee"] = map[string]string{nameKey: v}
 	}
 	if cmd.Flags().Changed(flagComponents) {
 		v, _ := cmd.Flags().GetString(flagComponents)
@@ -115,7 +115,7 @@ func componentRefs(s string) []map[string]string {
 	names := splitCSV(s)
 	out := make([]map[string]string, 0, len(names))
 	for _, n := range names {
-		out = append(out, map[string]string{"name": n})
+		out = append(out, map[string]string{nameKey: n})
 	}
 	return out
 }
