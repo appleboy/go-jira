@@ -34,6 +34,7 @@
       - [使用 OAuth 登入（本機開發）](#使用-oauth-登入本機開發)
       - [顯示版本](#顯示版本)
       - [使用自訂環境檔](#使用自訂環境檔)
+  - [可組合性（管線、安靜、顏色）](#可組合性管線安靜顏色)
   - [OAuth 2.0](#oauth-20)
 
 ## 動機
@@ -165,6 +166,30 @@ go run ./cmd/go-jira --version
 
 ```bash
 go run ./cmd/go-jira run --env-file=custom.env
+```
+
+## 可組合性（管線、安靜、顏色）
+
+go-jira 設計上可直接嵌入 shell 管線與 agent 工具鏈：
+
+- **stdout 與 stderr 分離** — 結果輸出到 **stdout**，所有診斷訊息輸出到
+  **stderr**，因此 `go-jira search ... > issues.json` 只會擷取 JSON。
+- **`--quiet` / `-q`** — 隱藏 stderr 上的資訊性日誌（`authenticated`、
+  `user account` 等行），只保留警告、錯誤與結果。為全域旗標，適用於所有子命令。
+- **`--no-color` / `NO_COLOR`** — 停用 stderr 日誌的 ANSI 顏色。當 stderr 不是
+  終端機時也會自動停用（遵循 [no-color.org](https://no-color.org)）。
+- **stdin 輸入** — 自由文字旗標 `--ref`、`--comment`、`--description`、`--jql`
+  皆可傳入 `-` 從 stdin 讀取其值：
+
+```bash
+# 將最新一筆 commit 訊息餵給 run 命令
+git log -1 --format=%B | go-jira run --ref - --to-transition Done
+
+# 將 Markdown 內容透過管線作為新 issue 的描述
+cat body.md | go-jira create --project GAIA --summary "New bug" --description -
+
+# 安靜模式，僅輸出機器可讀內容以利腳本處理
+go-jira --quiet search --jql "project = GAIA" > issues.json
 ```
 
 ## OAuth 2.0
