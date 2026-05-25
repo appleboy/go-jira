@@ -40,6 +40,10 @@ const (
 	flagMarkdown     = "markdown"
 	flagDebug        = "debug"
 
+	// Global presentation flags, registered as persistent flags on the root.
+	flagQuiet   = "quiet"
+	flagNoColor = "no-color"
+
 	// Data subcommand flags (search/create/update/get/sprints/boards/link).
 	flagOutput      = "output"
 	flagEpicField   = "epic-field"
@@ -152,7 +156,14 @@ Exit codes (for scripts and agents):
 On failure a structured JSON error object is written to stderr, e.g.
   {"error":{"kind":"rate_limit","message":"...","exit_code":4,"status_code":429,"retry_after":"30"}}
 Rate-limit responses surface the server's Retry-After hint in retry_after;
-requests are not retried automatically.`,
+requests are not retried automatically.
+
+Composability:
+  Diagnostics go to stderr, results to stdout. Use --quiet to drop the
+  informational stderr logs, and --no-color (or the NO_COLOR env var) to
+  disable ANSI color. Text-bearing flags (--ref, --comment, --description,
+  --jql) accept "-" to read the value from stdin, e.g.
+    git log -1 --format=%B | go-jira run --ref - --to-transition Done`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       fmt.Sprintf("%s Commit: %s", Version, Commit),
@@ -164,6 +175,19 @@ requests are not retried automatically.`,
 		return &cliError{code: exitUsage, kind: kindUsage, message: err.Error(), err: err}
 	})
 	cmd.SetVersionTemplate("Version: {{.Version}}\n")
+
+	// Presentation flags shared by every subcommand. PersistentPreRunE installs
+	// the matching slog handler before any command logs.
+	cmd.PersistentFlags().BoolP(flagQuiet, "q", false,
+		"Suppress informational logs on stderr; warnings, errors, and result output remain")
+	cmd.PersistentFlags().Bool(flagNoColor, false,
+		"Disable ANSI color in log output (also honored via the NO_COLOR env var)")
+	cmd.PersistentPreRunE = func(c *cobra.Command, _ []string) error {
+		quiet, _ := c.Flags().GetBool(flagQuiet)
+		noColor, _ := c.Flags().GetBool(flagNoColor)
+		setupLogging(quiet, noColor)
+		return nil
+	}
 
 	cmd.AddCommand(
 		newRunCmd(),
@@ -217,7 +241,7 @@ func addAuthFlags(cmd *cobra.Command) {
 func addEditableIssueFlags(cmd *cobra.Command) {
 	cmd.Flags().String(flagSummary, "", "Issue summary line")
 	cmd.Flags().String(flagAssignee, "", "Assignee login name")
-	cmd.Flags().String(flagDescription, "", "Issue description body")
+	cmd.Flags().String(flagDescription, "", `Issue description body (pass "-" to read from stdin)`)
 	cmd.Flags().String(flagComponents, "", "Comma-separated component names")
 	cmd.Flags().String(flagLabels, "", "Comma-separated labels")
 	cmd.Flags().String(flagEpic, "", "Epic key for the epic-link field, e.g. GAIA-42")

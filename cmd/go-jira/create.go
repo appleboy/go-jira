@@ -46,6 +46,9 @@ func runCreate(cmd *cobra.Command) error {
 	summary, _ := cmd.Flags().GetString(flagSummary)
 	assignee, _ := cmd.Flags().GetString(flagAssignee)
 	description, _ := cmd.Flags().GetString(flagDescription)
+	if description, err = resolveStdin(description); err != nil {
+		return err
+	}
 	components, _ := cmd.Flags().GetString(flagComponents)
 	labels, _ := cmd.Flags().GetString(flagLabels)
 	epic, _ := cmd.Flags().GetString(flagEpic)

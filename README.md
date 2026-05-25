@@ -263,6 +263,31 @@ server's `Retry-After` hint (requests are not retried automatically):
 | `boards`  | Discover boards for a project (Agile API) | `--project` (required), `--type`, `--limit`                                                                              |
 | `link`    | Link two issues                           | `--from`, `--to` (required), `--link-type`                                                                               |
 
+### Composability (pipes, quiet, color)
+
+go-jira is built to drop into shell pipelines and agent toolchains:
+
+- **stdout vs stderr** — results print to **stdout**; all diagnostics print to
+  **stderr**, so `go-jira search ... > issues.json` captures only the JSON.
+- **`--quiet` / `-q`** — suppress the informational stderr logs (the
+  `authenticated`, `user account`, … lines), leaving only warnings, errors, and
+  the result. Global flag, works on every subcommand.
+- **`--no-color` / `NO_COLOR`** — disable ANSI color in the stderr logs. Color is
+  also auto-disabled when stderr is not a terminal (per [no-color.org](https://no-color.org)).
+- **stdin input** — the free-text flags `--ref`, `--comment`, `--description`,
+  and `--jql` accept `-` to read their value from stdin:
+
+```bash
+# Feed the latest commit message into the run command
+git log -1 --format=%B | go-jira run --ref - --to-transition Done
+
+# Pipe a Markdown body into a new issue's description
+cat body.md | go-jira create --project GAIA --summary "New bug" --description -
+
+# Quiet, machine-only output for scripting
+go-jira --quiet search --jql "project = GAIA" > issues.json
+```
+
 ```bash
 export JIRA_BASE_URL="https://jira.example.com"
 export JIRA_TOKEN="your_personal_access_token"

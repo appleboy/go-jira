@@ -37,7 +37,7 @@ func newRunCmd() *cobra.Command {
 	cmd.Flags().
 		String(flagToken, "", "Jira API token — INSECURE on shared hosts, prefer env: TOKEN / INPUT_TOKEN")
 	cmd.Flags().
-		String(flagRef, "", "Commit message or text containing issue keys (env: REF / INPUT_REF)")
+		String(flagRef, "", `Commit message or text containing issue keys; pass "-" to read from stdin (env: REF / INPUT_REF)`)
 	cmd.Flags().
 		String(flagIssueFormat, "", "Regex used to extract issue keys (env: ISSUE_FORMAT / INPUT_ISSUE_FORMAT)")
 	cmd.Flags().
@@ -45,7 +45,7 @@ func newRunCmd() *cobra.Command {
 	cmd.Flags().
 		String(flagResolution, "", "Resolution name to set (env: RESOLUTION / INPUT_RESOLUTION)")
 	cmd.Flags().
-		String(flagComment, "", "Comment body to add to matched issues (env: COMMENT / INPUT_COMMENT)")
+		String(flagComment, "", `Comment body to add to matched issues; pass "-" to read from stdin (env: COMMENT / INPUT_COMMENT)`)
 	cmd.Flags().
 		String(flagAssignee, "", "Username to assign the issues to (env: ASSIGNEE / INPUT_ASSIGNEE)")
 	cmd.Flags().
@@ -60,6 +60,15 @@ func run(cmd *cobra.Command) error {
 	}
 
 	config := loadConfig(cmd)
+	// Allow the free-text inputs to be piped in via the "-" sentinel so run
+	// composes with other tools, e.g. `git log -1 --format=%B | go-jira run --ref -`.
+	var err error
+	if config.ref, err = resolveStdin(config.ref); err != nil {
+		return err
+	}
+	if config.comment, err = resolveStdin(config.comment); err != nil {
+		return err
+	}
 	if err := validateConfig(config); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}

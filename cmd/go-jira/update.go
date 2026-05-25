@@ -41,7 +41,10 @@ func runUpdate(cmd *cobra.Command) error {
 	}
 	key, _ := cmd.Flags().GetString(flagKey)
 
-	fields := editableFieldsMap(cmd, config)
+	fields, err := editableFieldsMap(cmd, config)
+	if err != nil {
+		return err
+	}
 	if len(fields) == 0 {
 		return errors.New(
 			"nothing to update — supply at least one of " +
@@ -76,7 +79,7 @@ func runUpdate(cmd *cobra.Command) error {
 // Values use the raw JSON shapes the REST API expects so the same builder works
 // for partial updates and for any future map-based create path. The epic and
 // sprint custom field IDs come from config (configurable per instance).
-func editableFieldsMap(cmd *cobra.Command, config Config) map[string]any {
+func editableFieldsMap(cmd *cobra.Command, config Config) (map[string]any, error) {
 	fields := map[string]any{}
 	if cmd.Flags().Changed(flagSummary) {
 		v, _ := cmd.Flags().GetString(flagSummary)
@@ -84,7 +87,11 @@ func editableFieldsMap(cmd *cobra.Command, config Config) map[string]any {
 	}
 	if cmd.Flags().Changed(flagDescription) {
 		v, _ := cmd.Flags().GetString(flagDescription)
-		fields["description"] = v
+		resolved, err := resolveStdin(v)
+		if err != nil {
+			return nil, err
+		}
+		fields["description"] = resolved
 	}
 	if cmd.Flags().Changed(flagAssignee) {
 		v, _ := cmd.Flags().GetString(flagAssignee)
@@ -106,7 +113,7 @@ func editableFieldsMap(cmd *cobra.Command, config Config) map[string]any {
 		v, _ := cmd.Flags().GetInt(flagSprint)
 		fields[config.sprintField] = v
 	}
-	return fields
+	return fields, nil
 }
 
 // componentRefs converts a comma-separated component-name list into the

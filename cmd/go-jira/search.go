@@ -41,7 +41,7 @@ func newSearchCmd() *cobra.Command {
 	addAuthFlags(cmd)
 	addOutputFlag(cmd)
 	addCustomFieldFlags(cmd)
-	cmd.Flags().String(flagJQL, "", "JQL expression (required)")
+	cmd.Flags().String(flagJQL, "", `JQL expression; pass "-" to read from stdin (required)`)
 	cmd.Flags().String(flagFields, "",
 		"Comma-separated fields to return (default: summary,status,assignee,labels,components + epic/sprint fields)")
 	cmd.Flags().Int(flagLimit, 20, "Maximum number of results")
@@ -55,6 +55,9 @@ func runSearch(cmd *cobra.Command) error {
 		return err
 	}
 	jql, _ := cmd.Flags().GetString(flagJQL)
+	if jql, err = resolveStdin(jql); err != nil {
+		return err
+	}
 	fieldsArg, _ := cmd.Flags().GetString(flagFields)
 	limit, _ := cmd.Flags().GetInt(flagLimit)
 
