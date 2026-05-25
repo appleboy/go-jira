@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.10.0 - 2026-05-26
+
+### Changed
+
+- **`--version` now prints only the semver string** (e.g. `v0.10.0`), dropping
+  the `Version: ` prefix and `Commit: <sha>` suffix. This is a breaking change
+  for scripts that parsed the old format: read the version token directly, and
+  get the build commit from `go-jira schema` (the `commit` field).
+
+### Features
+
+- **Agent-friendly CLI surface.** New `schema` command exposes the full command
+  and flag tree as JSON or text, every subcommand gained an Examples section,
+  errors surface actionable hints (including "Did you mean" suggestions), and
+  subcommands are grouped into named categories in the root help.
+- **Structured errors and exit codes.** Failures exit with distinct codes per
+  class (usage, auth, rate limit) and write a structured JSON error object to
+  stderr, surfacing the HTTP status and `Retry-After` hint on rate limits.
+- **Composable I/O.** Added a global `--quiet`/`-q` flag and `--no-color`
+  (also honoring `NO_COLOR` and auto-disabling when stderr is not a terminal),
+  plus `-` stdin support for `--ref`, `--comment`, `--description`, and `--jql`.
+- **Time budgets.** Added a global `--timeout` flag (a persistent root flag
+  inherited by every subcommand) so agents can cap how long any Jira operation
+  runs, resolved through a shared per-command default.
+
+### Internal
+
+- Reject arguments containing control characters before any command runs while
+  still allowing tab, newline, and carriage return for multi-line text flags.
+
 ## v0.9.0 - 2026-05-25
 
 ### Changed
