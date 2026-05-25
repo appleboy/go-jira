@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -74,7 +73,7 @@ func runEpics(cmd *cobra.Command) error {
 	boardID, _ := cmd.Flags().GetInt(flagBoardID)
 	limit, _ := cmd.Flags().GetInt(flagLimit)
 
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), time.Minute)
+	ctx, cancel := cmdContextWithTimeout(cmd, time.Minute)
 	defer cancel()
 
 	jiraClient, err := resolveJiraClient(ctx, config)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -89,7 +88,7 @@ func runCreate(cmd *cobra.Command) error {
 		fields.Unknowns[config.sprintField] = sprint
 	}
 
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), time.Minute)
+	ctx, cancel := cmdContextWithTimeout(cmd, time.Minute)
 	defer cancel()
 
 	jiraClient, err := resolveJiraClient(ctx, config)

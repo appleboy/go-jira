@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -48,7 +47,7 @@ func runWhoami(cmd *cobra.Command) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), time.Minute)
+	ctx, cancel := cmdContextWithTimeout(cmd, time.Minute)
 	defer cancel()
 
 	authenticator, err := auth.Resolve(ctx, authConfigFromRun(config))

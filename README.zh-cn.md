@@ -178,6 +178,11 @@ go-jira 设计上可直接嵌入 shell 管道与 agent 工具链：
   `user account` 等行），只保留警告、错误与结果。为全局标志，适用于所有子命令。
 - **`--no-color` / `NO_COLOR`** — 禁用 stderr 日志的 ANSI 颜色。当 stderr 不是
   终端时也会自动禁用（遵循 [no-color.org](https://no-color.org)）。
+- **`--timeout`** — 限制单次操作的执行时间，例如 `--timeout 30s` 或
+  `--timeout 2m`，让代理（agent）能设定时间预算。`0`（默认值）会使用各命令的
+  默认超时。所有与 Jira 通信的子命令均支持。
+- **控制字符防护** — 含有控制字符（ASCII < `0x20`，但允许 tab／换行／回车）的
+  参数会在任何命令执行前被拒绝并返回退出码 `2`，以防止终端转义序列与日志注入。
 - **stdin 输入** — 自由文本标志 `--ref`、`--comment`、`--description`、`--jql`
   均可传入 `-` 从 stdin 读取其值：
 

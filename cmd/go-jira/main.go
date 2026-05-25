@@ -128,6 +128,15 @@ func main() {
 	diag := &requestDiag{}
 	ctx := withDiag(context.Background(), diag)
 	root := newRootCmd()
+	// Reject control characters in the raw argv before cobra routes the command.
+	// This runs ahead of Execute so it also covers commands cobra handles
+	// specially (e.g. completion), which bypass the root PersistentPreRunE.
+	if err := validateNoControlChars(os.Args[1:]); err != nil {
+		ce := classify(err, diag)
+		addHint(ce, root)
+		emitError(ce)
+		os.Exit(ce.code)
+	}
 	if err := root.ExecuteContext(ctx); err != nil {
 		ce := classify(err, diag)
 		addHint(ce, root)
@@ -255,6 +264,28 @@ Composability:
 	return cmd
 }
 
+// validateNoControlChars rejects any argument carrying a control character
+// (ASCII < 0x20) other than tab, newline, or carriage return. Those bytes —
+// NUL, ESC, backspace, and friends — have no legitimate place in a CLI argument
+// and are a classic terminal-escape / log-injection vector, so the whole
+// invocation is refused as a usage error before any command runs. Tab/CR/LF are
+// allowed because text-bearing flags (--comment, --description) may carry them.
+func validateNoControlChars(args []string) error {
+	for _, a := range args {
+		for _, r := range a {
+			if r < 0x20 && r != '\t' && r != '\n' && r != '\r' {
+				return &cliError{
+					code: exitUsage,
+					kind: kindUsage,
+					message: fmt.Sprintf(
+						"argument contains a disallowed control character (0x%02X)", r),
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // addOutputFlag registers the shared --output flag for the data subcommands.
 func addOutputFlag(cmd *cobra.Command) {
 	cmd.Flags().String(flagOutput, outputJSON,
@@ -302,6 +333,9 @@ func addCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().
 		Bool(flagInsecure, false, "Skip TLS verification (env: INSECURE / INPUT_INSECURE)")
 	cmd.Flags().Bool(flagDebug, false, "Dump resolved configuration (env: DEBUG / INPUT_DEBUG)")
+	cmd.Flags().Duration(flagTimeout, 0,
+		"Maximum time to wait for the operation to complete, e.g. 30s or 2m; "+
+			"0 uses the per-command default so agents can enforce a time budget")
 }
 
 // addOAuthFlags registers the OAuth client flags shared by login and run.

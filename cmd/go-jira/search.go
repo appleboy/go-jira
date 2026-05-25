@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -70,7 +69,7 @@ func runSearch(cmd *cobra.Command) error {
 	fieldsArg, _ := cmd.Flags().GetString(flagFields)
 	limit, _ := cmd.Flags().GetInt(flagLimit)
 
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), time.Minute)
+	ctx, cancel := cmdContextWithTimeout(cmd, time.Minute)
 	defer cancel()
 
 	jiraClient, err := resolveJiraClient(ctx, config)

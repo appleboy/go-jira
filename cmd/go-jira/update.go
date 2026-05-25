@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -58,7 +57,7 @@ func runUpdate(cmd *cobra.Command) error {
 		)
 	}
 
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), time.Minute)
+	ctx, cancel := cmdContextWithTimeout(cmd, time.Minute)
 	defer cancel()
 
 	jiraClient, err := resolveJiraClient(ctx, config)

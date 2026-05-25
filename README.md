@@ -274,6 +274,12 @@ go-jira is built to drop into shell pipelines and agent toolchains:
   the result. Global flag, works on every subcommand.
 - **`--no-color` / `NO_COLOR`** — disable ANSI color in the stderr logs. Color is
   also auto-disabled when stderr is not a terminal (per [no-color.org](https://no-color.org)).
+- **`--timeout`** — cap how long an operation may run, e.g. `--timeout 30s` or
+  `--timeout 2m`, so agents can enforce a time budget. `0` (the default) uses the
+  per-command default. Available on every subcommand that talks to Jira.
+- **control-character safety** — arguments containing control characters
+  (ASCII < `0x20`, except tab/newline/carriage return) are rejected with exit
+  code `2` before any command runs, preventing terminal-escape and log injection.
 - **stdin input** — the free-text flags `--ref`, `--comment`, `--description`,
   and `--jql` accept `-` to read their value from stdin:
 

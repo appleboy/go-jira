@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"time"
@@ -93,7 +92,7 @@ func run(cmd *cobra.Command) error {
 		})
 	}
 
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), 5*time.Minute)
+	ctx, cancel := cmdContextWithTimeout(cmd, 5*time.Minute)
 	defer cancel()
 
 	authenticator, err := auth.Resolve(ctx, authConfigFromRun(config))

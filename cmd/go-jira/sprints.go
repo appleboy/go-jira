@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -47,7 +46,7 @@ func runSprints(cmd *cobra.Command) error {
 	state, _ := cmd.Flags().GetString(flagState)
 	limit, _ := cmd.Flags().GetInt(flagLimit)
 
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), time.Minute)
+	ctx, cancel := cmdContextWithTimeout(cmd, time.Minute)
 	defer cancel()
 
 	jiraClient, err := resolveJiraClient(ctx, config)

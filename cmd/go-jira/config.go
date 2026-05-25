@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/appleboy/go-jira/pkg/util"
 
@@ -185,6 +186,22 @@ func cmdContext(cmd *cobra.Command) context.Context {
 		}
 	}
 	return context.Background()
+}
+
+// cmdContextWithTimeout derives a deadline-bound context from the command's
+// context. The caller-supplied --timeout flag wins when set to a positive
+// duration, letting agents cap how long an operation may run; otherwise the
+// per-command default is used. The returned cancel func must always be called.
+func cmdContextWithTimeout(
+	cmd *cobra.Command, def time.Duration,
+) (context.Context, context.CancelFunc) {
+	timeout := def
+	if flagChanged(cmd, flagTimeout) {
+		if d, err := cmd.Flags().GetDuration(flagTimeout); err == nil && d > 0 {
+			timeout = d
+		}
+	}
+	return context.WithTimeout(cmdContext(cmd), timeout)
 }
 
 // flagStringValue returns a string flag's value when the command defines it and

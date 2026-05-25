@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -143,7 +142,7 @@ func runTokenRefresh(cmd *cobra.Command) error {
 	}
 
 	oc := oauthConfigFromConfig(loaded.config)
-	ctx, cancel := context.WithTimeout(cmdContext(cmd), 30*time.Second)
+	ctx, cancel := cmdContextWithTimeout(cmd, 30*time.Second)
 	defer cancel()
 	newTok, err := oc.Refresh(ctx, loaded.token.RefreshToken)
 	if err != nil {

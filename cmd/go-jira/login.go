@@ -29,7 +29,6 @@ func newLoginCmd() *cobra.Command {
 	}
 	addCommonFlags(cmd)
 	addOAuthFlags(cmd)
-	cmd.Flags().Duration(flagTimeout, 5*time.Minute, "How long to wait for browser authorization")
 	return cmd
 }
 
@@ -41,7 +40,9 @@ func runLogin(cmd *cobra.Command) error {
 
 	timeout := 5 * time.Minute
 	if cmd.Flags().Changed(flagTimeout) {
-		timeout, _ = cmd.Flags().GetDuration(flagTimeout)
+		if d, _ := cmd.Flags().GetDuration(flagTimeout); d > 0 {
+			timeout = d
+		}
 	}
 
 	oc := oauthConfigFromConfig(config)
