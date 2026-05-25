@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/auth"
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/appleboy/go-jira/pkg/auth"
 
 	jira "github.com/andygrunwald/go-jira"
 )
