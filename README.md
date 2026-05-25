@@ -24,6 +24,7 @@
 - [go-jira](#go-jira)
   - [Table of Contents](#table-of-contents)
   - [Motivation](#motivation)
+  - [Installation](#installation)
   - [Configuration](#configuration)
     - [Authentication](#authentication)
     - [Environment Variables](#environment-variables)
@@ -44,6 +45,41 @@ Since there isn't an official Jira API integration available for GitHub Actions,
 The goal of this project is to make it easy to integrate Jira with GitHub or Gitea Actions for Jira Data Center.
 
 > **⚠️ Important Note**: This project currently **only supports Jira Data Center**. Jira Cloud is **not supported** at this time due to different API implementations between the two versions.
+
+## Installation
+
+**Install with `go install`** (requires Go 1.25+). The binary lands in
+`$(go env GOPATH)/bin` — make sure that directory is on your `PATH`:
+
+```bash
+go install github.com/appleboy/go-jira/cmd/go-jira@latest
+```
+
+Then run it directly:
+
+```bash
+go-jira --version
+```
+
+**Build from source:**
+
+```bash
+git clone https://github.com/appleboy/go-jira.git
+cd go-jira
+go install ./cmd/go-jira
+```
+
+**Run with Docker** — a published image is available at
+`ghcr.io/appleboy/go-jira`; no local Go toolchain required:
+
+```bash
+docker run --rm ghcr.io/appleboy/go-jira:latest --version
+```
+
+> **Note**: the usage examples below invoke the tool with `go run ./cmd/go-jira`
+> for convenience when working from a source checkout. If you installed the
+> binary via `go install`, substitute `go-jira` for `go run ./cmd/go-jira` in
+> every command.
 
 ## Configuration
 

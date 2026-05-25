@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github/appleboy/go-jira/pkg/oauth"
-	"github/appleboy/go-jira/pkg/storage"
+	"github.com/appleboy/go-jira/pkg/oauth"
+	"github.com/appleboy/go-jira/pkg/storage"
 	"log/slog"
 	"net/http"
 	"os"

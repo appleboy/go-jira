@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"github/appleboy/go-jira/pkg/storage"
+	"github.com/appleboy/go-jira/pkg/storage"
 	"strings"
 	"testing"
 	"time"

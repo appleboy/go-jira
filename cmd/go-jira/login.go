@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github/appleboy/go-jira/pkg/storage"
+	"github.com/appleboy/go-jira/pkg/storage"
 	"os"
 	"time"
 

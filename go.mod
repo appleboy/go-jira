@@ -1,4 +1,4 @@
-module github/appleboy/go-jira
+module github.com/appleboy/go-jira
 
 go 1.25.10
 

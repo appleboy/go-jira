@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/auth"
 	"log/slog"
 	"net/http"
 	"strings"

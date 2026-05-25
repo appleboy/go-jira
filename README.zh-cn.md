@@ -24,6 +24,7 @@
 - [go-jira](#go-jira)
   - [目录](#目录)
   - [动机](#动机)
+  - [安装](#安装)
   - [配置说明](#配置说明)
     - [认证方式](#认证方式)
     - [环境变量](#环境变量)
@@ -42,6 +43,39 @@
 本项目的目标是让 Jira Data Center 能够轻松地与 GitHub 或 Gitea Actions 整合。
 
 > **⚠️ 重要提示**：本项目目前**仅支持 Jira Data Center**。由于两个版本的 API 实现方式不同，目前**不支持 Jira Cloud**。
+
+## 安装
+
+**使用 `go install` 安装**（需 Go 1.25 以上）。可执行文件会放到
+`$(go env GOPATH)/bin`，请确认该目录已加入 `PATH`：
+
+```bash
+go install github.com/appleboy/go-jira/cmd/go-jira@latest
+```
+
+随后即可直接运行：
+
+```bash
+go-jira --version
+```
+
+**从源码构建：**
+
+```bash
+git clone https://github.com/appleboy/go-jira.git
+cd go-jira
+go install ./cmd/go-jira
+```
+
+**使用 Docker 运行** — 已发布镜像位于 `ghcr.io/appleboy/go-jira`，无需安装本地 Go 环境：
+
+```bash
+docker run --rm ghcr.io/appleboy/go-jira:latest --version
+```
+
+> **备注**：下方使用示例为了方便从源码操作，均以 `go run ./cmd/go-jira`
+> 调用工具。若你已通过 `go install` 安装可执行文件，请将示例中的
+> `go run ./cmd/go-jira` 替换为 `go-jira`。
 
 ## 配置说明
 

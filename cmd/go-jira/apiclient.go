@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/auth"
 
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"

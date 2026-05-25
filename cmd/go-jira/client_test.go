@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/auth"
 	"net/http"
 	"net/http/httptest"
 	"testing"

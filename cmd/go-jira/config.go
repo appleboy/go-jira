@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github/appleboy/go-jira/pkg/util"
+	"github.com/appleboy/go-jira/pkg/util"
 	"log/slog"
 	"net/url"
 	"os"

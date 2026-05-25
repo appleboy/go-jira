@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github/appleboy/go-jira/pkg/auth"
-	"github/appleboy/go-jira/pkg/storage"
+	"github.com/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/storage"
 	"os"
 	"time"
 
