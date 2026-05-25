@@ -14,13 +14,11 @@ var (
 	Version string
 	Commit  string
 
-	// DefaultOAuthClientID and DefaultOAuthClientSecret are injected at build
-	// time via -ldflags (see .goreleaser.yaml / Makefile). They are the
-	// company-wide OAuth client baked into the binary; PKCE protects the actual
-	// flow, so the secret is treated as a soft secret. Runtime resolution order
-	// is env var > CLI flag > these embedded defaults.
-	DefaultOAuthClientID     string
-	DefaultOAuthClientSecret string
+	// DefaultOAuthClientID is injected at build time via -ldflags (see
+	// .goreleaser.yaml / Makefile). It is the company-wide OAuth client baked
+	// into the binary; the flow is a public PKCE client, so there is no secret.
+	// Runtime resolution order is env var > CLI flag > this embedded default.
+	DefaultOAuthClientID string
 )
 
 // Flag names shared between registration and lookup. Keeping them here avoids
@@ -65,7 +63,6 @@ const (
 
 	// OAuth-related flags.
 	flagClientID      = "client-id"
-	flagClientSecret  = "client-secret"
 	flagCallbackPort  = "callback-port"
 	flagCallbackCert  = "callback-cert"
 	flagCallbackKey   = "callback-key"
@@ -80,7 +77,6 @@ const (
 // use fixed JIRA_-prefixed names matching the documented CI/CD contract.
 const (
 	envOAuthClientID           = "JIRA_OAUTH_CLIENT_ID"
-	envOAuthClientSecret       = "JIRA_OAUTH_CLIENT_SECRET"        //nolint:gosec // env var name, not a secret
 	envOAuthRefreshToken       = "JIRA_OAUTH_REFRESH_TOKEN"        //nolint:gosec // env var name, not a secret
 	envOAuthRefreshTokenOutput = "JIRA_OAUTH_REFRESH_TOKEN_OUTPUT" //nolint:gosec // env var name, not a secret
 	envOAuthCallbackPort       = "JIRA_OAUTH_CALLBACK_PORT"
@@ -220,8 +216,6 @@ func addCommonFlags(cmd *cobra.Command) {
 // addOAuthFlags registers the OAuth client flags shared by login and run.
 func addOAuthFlags(cmd *cobra.Command) {
 	cmd.Flags().String(flagClientID, "", "OAuth client ID (env: "+envOAuthClientID+")")
-	cmd.Flags().
-		String(flagClientSecret, "", "OAuth client secret (env: "+envOAuthClientSecret+")")
 	cmd.Flags().
 		Int(flagCallbackPort, defaultCallbackPort, "Local OAuth callback port (env: "+envOAuthCallbackPort+")")
 	cmd.Flags().String(flagCallbackCert, "",

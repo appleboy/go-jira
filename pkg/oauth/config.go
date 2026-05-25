@@ -34,11 +34,10 @@ const defaultHTTPTimeout = 30 * time.Second
 
 // Config holds the settings needed to talk to a Jira DC OAuth provider.
 type Config struct {
-	BaseURL      string   // e.g. "https://jira.example.com"
-	ClientID     string   //
-	ClientSecret string   //
-	RedirectURI  string   // e.g. "http://127.0.0.1:8765/callback"
-	Scopes       []string // e.g. ["WRITE"]
+	BaseURL     string   // e.g. "https://jira.example.com"
+	ClientID    string   // public client; PKCE protects the flow, so no secret
+	RedirectURI string   // e.g. "http://127.0.0.1:8765/callback"
+	Scopes      []string // e.g. ["WRITE"]
 
 	// TLSCertFile and TLSKeyFile, when both set, make the local callback server
 	// serve HTTPS instead of plain HTTP. Jira DC matches the registered
@@ -92,16 +91,15 @@ func (c *Config) Validate() error {
 
 // oauth2Config builds the x/oauth2 configuration for this Jira instance.
 //
-// AuthStyleInParams puts client_id/client_secret in the request body params,
-// which is what the Jira DC provider expects, and avoids x/oauth2's
-// auto-detect probe request.
+// AuthStyleInParams puts client_id in the request body params, which is what
+// the Jira DC provider expects, and avoids x/oauth2's auto-detect probe
+// request. This is a public PKCE client, so no client secret is sent.
 func (c *Config) oauth2Config() *oauth2.Config {
 	// Trim a trailing slash so a base URL entered as "https://jira.example.com/"
 	// does not yield a double slash ("…com//rest/…") in the endpoint URLs.
 	base := strings.TrimRight(c.BaseURL, "/")
 	return &oauth2.Config{
-		ClientID:     c.ClientID,
-		ClientSecret: c.ClientSecret,
+		ClientID: c.ClientID,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   base + authorizePath,
 			TokenURL:  base + tokenPath,

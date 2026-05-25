@@ -6,10 +6,9 @@ LDFLAGS ?= -X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT)'
 
 # Optional build-time OAuth client injection (decision 3.2). Leave unset for
 # local/dev builds; OAuth login then requires --client-id / JIRA_OAUTH_CLIENT_ID.
+# The flow is a public PKCE client, so there is no client secret.
 JIRA_OAUTH_CLIENT_ID ?=
-JIRA_OAUTH_CLIENT_SECRET ?=
 LDFLAGS += -X 'main.DefaultOAuthClientID=$(JIRA_OAUTH_CLIENT_ID)'
-LDFLAGS += -X 'main.DefaultOAuthClientSecret=$(JIRA_OAUTH_CLIENT_SECRET)'
 
 ifneq ($(shell uname), Darwin)
 	EXTLDFLAGS = -extldflags "-static" $(null)

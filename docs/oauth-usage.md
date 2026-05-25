@@ -66,11 +66,12 @@ completes normally. If you want to avoid the warning entirely, use the
 When both `--callback-https` and an explicit `--callback-cert` / `--callback-key`
 pair are given, the supplied files win.
 
-You then have a **client ID** and **client secret**. These can be:
+You then have a **client ID**. go-jira uses a public PKCE client, so **no client
+secret is needed**. The client ID can be:
 
 1. embedded into the binary at build time (see [Building with an embedded client](#building-with-an-embedded-client)), or
-2. supplied at runtime via `JIRA_OAUTH_CLIENT_ID` / `JIRA_OAUTH_CLIENT_SECRET`, or
-3. passed as `--client-id` / `--client-secret`.
+2. supplied at runtime via `JIRA_OAUTH_CLIENT_ID`, or
+3. passed as `--client-id`.
 
 Resolution order is **env var > flag > embedded default**.
 
@@ -134,7 +135,6 @@ refresh token for an access token at startup.
 | Env var                           | Required             | Purpose                                 |
 | --------------------------------- | -------------------- | --------------------------------------- |
 | `JIRA_OAUTH_CLIENT_ID`            | yes                  | OAuth client ID                         |
-| `JIRA_OAUTH_CLIENT_SECRET`        | yes                  | OAuth client secret                     |
 | `JIRA_OAUTH_REFRESH_TOKEN`        | yes                  | Triggers `oauth-env` mode               |
 | `JIRA_OAUTH_REFRESH_TOKEN_OUTPUT` | strongly recommended | File to write the rotated refresh token |
 
@@ -153,11 +153,9 @@ A complete GitHub Actions example, including the secret write-back step, is in
 To ship a binary with the company-wide client baked in:
 
 ```bash
-make build \
-  JIRA_OAUTH_CLIENT_ID="$JIRA_OAUTH_CLIENT_ID" \
-  JIRA_OAUTH_CLIENT_SECRET="$JIRA_OAUTH_CLIENT_SECRET"
+make build JIRA_OAUTH_CLIENT_ID="$JIRA_OAUTH_CLIENT_ID"
 ```
 
-The release pipeline injects the same values via goreleaser ldflags from CI
-secrets. PKCE protects the actual authorization flow, so the embedded secret is
-treated as a *soft* secret; a Jira admin can revoke the client at any time.
+The release pipeline injects the same value via goreleaser ldflags from CI.
+There is no client secret — PKCE protects the authorization flow, and the client
+ID is not sensitive; a Jira admin can revoke the client at any time.

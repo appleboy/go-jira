@@ -15,7 +15,6 @@ func TestResolveOAuthEnv(t *testing.T) {
 	a, err := Resolve(context.Background(), Config{
 		OAuthRefreshToken: "injected-refresh",
 		OAuthClientID:     "client-abc",
-		OAuthClientSecret: "secret-xyz",
 		OAuthBaseURL:      srv.URL,
 		OAuthScopes:       []string{"WRITE"},
 		OnRotate: func(tok *storage.StoredToken) error {
@@ -39,22 +38,10 @@ func TestResolveOAuthEnv(t *testing.T) {
 	}
 }
 
-func TestResolveOAuthEnvRequiresClientSecret(t *testing.T) {
-	_, err := Resolve(context.Background(), Config{
-		OAuthRefreshToken: "x",
-		OAuthClientID:     "client-abc",
-		OAuthBaseURL:      "https://jira.example.com",
-	})
-	if err == nil {
-		t.Fatal("expected error when client secret missing in oauth-env mode")
-	}
-}
-
 func TestResolveOAuthEnvRequiresBaseURL(t *testing.T) {
 	_, err := Resolve(context.Background(), Config{
 		OAuthRefreshToken: "x",
 		OAuthClientID:     "client-abc",
-		OAuthClientSecret: "secret",
 	})
 	if err == nil {
 		t.Fatal("expected error when base URL missing in oauth-env mode")

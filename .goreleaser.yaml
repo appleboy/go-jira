@@ -61,12 +61,11 @@ builds:
       - -s -w
       - -X main.Version={{.Version}}
       - -X main.Commit={{.ShortCommit}}
-      # Embed the company-wide OAuth client. PKCE protects the actual flow, so
-      # the secret is a soft secret; inject both from CI secrets at release
-      # time. `index` yields "" when the env var is unset, so snapshot builds
-      # without the secrets still succeed (OAuth login then needs --client-id).
+      # Embed the company-wide OAuth client. The flow is a public PKCE client,
+      # so there is no secret; inject the client ID from CI at release time.
+      # `index` yields "" when the env var is unset, so snapshot builds without
+      # it still succeed (OAuth login then needs --client-id).
       - -X main.DefaultOAuthClientID={{ index .Env "JIRA_OAUTH_CLIENT_ID" }}
-      - -X main.DefaultOAuthClientSecret={{ index .Env "JIRA_OAUTH_CLIENT_SECRET" }}
     binary: >-
       {{ .ProjectName }}-
       {{- if .IsSnapshot }}{{ .Branch }}-

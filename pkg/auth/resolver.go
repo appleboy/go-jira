@@ -20,11 +20,10 @@ type Config struct {
 	OAuthRefreshToken string
 
 	// OAuth common
-	OAuthClientID     string
-	OAuthClientSecret string
-	OAuthBaseURL      string
-	OAuthRedirectURI  string
-	OAuthScopes       []string
+	OAuthClientID    string
+	OAuthBaseURL     string
+	OAuthRedirectURI string
+	OAuthScopes      []string
 
 	// OAuthHTTPClient, if set, is used for OAuth token endpoint requests
 	// (refresh / exchange) so they honour the same TLS behaviour as API calls —
@@ -76,12 +75,11 @@ func Resolve(ctx context.Context, cfg Config) (Authenticator, error) {
 // oauthConfig builds the protocol-layer config shared by both OAuth modes.
 func oauthConfig(cfg Config) *oauth.Config {
 	return &oauth.Config{
-		BaseURL:      cfg.OAuthBaseURL,
-		ClientID:     cfg.OAuthClientID,
-		ClientSecret: cfg.OAuthClientSecret,
-		RedirectURI:  cfg.OAuthRedirectURI,
-		Scopes:       cfg.OAuthScopes,
-		HTTPClient:   cfg.OAuthHTTPClient,
+		BaseURL:     cfg.OAuthBaseURL,
+		ClientID:    cfg.OAuthClientID,
+		RedirectURI: cfg.OAuthRedirectURI,
+		Scopes:      cfg.OAuthScopes,
+		HTTPClient:  cfg.OAuthHTTPClient,
 	}
 }
 
@@ -115,9 +113,6 @@ func tryResolveOAuthStorage(cfg Config) (Authenticator, bool, error) {
 func resolveOAuthEnv(ctx context.Context, cfg Config) (Authenticator, error) {
 	if cfg.OAuthClientID == "" {
 		return nil, errors.New("oauth-env: JIRA_OAUTH_CLIENT_ID is required")
-	}
-	if cfg.OAuthClientSecret == "" {
-		return nil, errors.New("oauth-env: JIRA_OAUTH_CLIENT_SECRET is required")
 	}
 	if cfg.OAuthBaseURL == "" {
 		// Without a base URL the token endpoint URL is empty and oc.Refresh would

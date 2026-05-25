@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Removed the OAuth client secret entirely.** go-jira is a public PKCE client,
+  so no secret is needed for either interactive login or CI refresh-token
+  injection (`oauth-env` mode). This is a breaking change: the
+  `JIRA_OAUTH_CLIENT_SECRET` environment variable, the `--client-secret` flag,
+  and the `DefaultOAuthClientSecret` build-time ldflag are gone. Drop them from
+  your build, env, and CI configuration; nothing else about the OAuth flows
+  changes.
+
 ## v0.8.0 - 2026-05-25
 
 ### Commands

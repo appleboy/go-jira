@@ -15,7 +15,7 @@ import (
 // stored secret must be rotated).
 var (
 	ErrInvalidGrant  = errors.New("oauth: invalid_grant (refresh token expired or revoked)")
-	ErrInvalidClient = errors.New("oauth: invalid_client (client_id or client_secret wrong)")
+	ErrInvalidClient = errors.New("oauth: invalid_client (client_id wrong or unknown)")
 	ErrServerError   = errors.New("oauth: server error")
 )
 

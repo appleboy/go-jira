@@ -88,11 +88,10 @@ func newOAuthMockServer(t *testing.T) *oauthMockServer {
 
 func (s *oauthMockServer) config() *oauth.Config {
 	return &oauth.Config{
-		BaseURL:      s.URL,
-		ClientID:     "client-abc",
-		ClientSecret: "secret-xyz",
-		RedirectURI:  "http://127.0.0.1:8765/callback",
-		Scopes:       []string{"WRITE"},
+		BaseURL:     s.URL,
+		ClientID:    "client-abc",
+		RedirectURI: "http://127.0.0.1:8765/callback",
+		Scopes:      []string{"WRITE"},
 	}
 }
 
@@ -242,7 +241,7 @@ func TestRoundTripRetriesOn401(t *testing.T) {
 
 	key := storage.MakeKey(srv.URL, "client-abc")
 	cfg := &oauth.Config{
-		BaseURL: srv.URL, ClientID: "client-abc", ClientSecret: "secret-xyz",
+		BaseURL: srv.URL, ClientID: "client-abc",
 		RedirectURI: "http://127.0.0.1:8765/callback", Scopes: []string{"WRITE"},
 	}
 	// Token is unexpired, so the 401 (not expiry) is what triggers the refresh.
@@ -299,7 +298,7 @@ func TestRoundTripRetryPreservesBody(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &oauth.Config{
-		BaseURL: srv.URL, ClientID: "client-abc", ClientSecret: "secret-xyz",
+		BaseURL: srv.URL, ClientID: "client-abc",
 		RedirectURI: "http://127.0.0.1:8765/callback", Scopes: []string{"WRITE"},
 	}
 	a := &OAuthAuthenticator{

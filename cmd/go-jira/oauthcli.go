@@ -140,7 +140,6 @@ func oauthConfigFromConfig(config Config) *oauth.Config {
 	return &oauth.Config{
 		BaseURL:         config.baseURL,
 		ClientID:        config.oauthClientID,
-		ClientSecret:    config.oauthClientSecret,
 		RedirectURI:     config.redirectURI(),
 		Scopes:          []string{config.scope},
 		TLSCertFile:     config.callbackCert,

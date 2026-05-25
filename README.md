@@ -127,7 +127,6 @@ go-jira supports four authentication modes:
 | EPIC_FIELD                      | Epic Link custom field ID used by `create`/`update`/`search` (default `customfield_10101`)                                 |
 | SPRINT_FIELD                    | Sprint custom field ID used by `create`/`update`/`search` (default `customfield_10100`)                                    |
 | JIRA_OAUTH_CLIENT_ID            | OAuth client ID (overrides the embedded default)                                                                           |
-| JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret (overrides the embedded default)                                                                       |
 | JIRA_OAUTH_REFRESH_TOKEN        | Injected refresh token; triggers CI `oauth-env` mode                                                                       |
 | JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | File path to write the rotated refresh token                                                                               |
 | JIRA_OAUTH_CALLBACK_PORT        | Local OAuth callback port (default `8765`)                                                                                 |

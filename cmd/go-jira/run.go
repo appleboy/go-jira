@@ -171,7 +171,6 @@ func authConfigFromRun(config Config) auth.Config {
 		Token:             config.token,
 		OAuthRefreshToken: config.oauthRefreshToken,
 		OAuthClientID:     config.oauthClientID,
-		OAuthClientSecret: config.oauthClientSecret,
 		OAuthBaseURL:      config.baseURL,
 		OAuthRedirectURI:  config.redirectURI(),
 		OAuthScopes:       []string{config.scope},

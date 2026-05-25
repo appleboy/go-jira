@@ -25,12 +25,11 @@ jobs:
         env:
           JIRA_BASE_URL: https://jira.example.com
           JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
-          JIRA_OAUTH_CLIENT_SECRET: ${{ secrets.JIRA_OAUTH_CLIENT_SECRET }}
           JIRA_OAUTH_REFRESH_TOKEN: ${{ secrets.JIRA_OAUTH_REFRESH_TOKEN }}
           JIRA_OAUTH_REFRESH_TOKEN_OUTPUT: ${{ runner.temp }}/new-refresh-token
         run: |
           docker run --rm \
-            -e JIRA_BASE_URL -e JIRA_OAUTH_CLIENT_ID -e JIRA_OAUTH_CLIENT_SECRET \
+            -e JIRA_BASE_URL -e JIRA_OAUTH_CLIENT_ID \
             -e JIRA_OAUTH_REFRESH_TOKEN -e JIRA_OAUTH_REFRESH_TOKEN_OUTPUT \
             -v "${{ runner.temp }}:${{ runner.temp }}" \
             ghcr.io/appleboy/go-jira:latest run \
