@@ -18,7 +18,7 @@ var (
 	ErrInvalidClient = errors.New(
 		"oauth: invalid_client (check client_id, or the app may be a confidential " +
 			"client that requires a secret — go-jira only supports public PKCE clients)")
-	ErrServerError   = errors.New("oauth: server error")
+	ErrServerError = errors.New("oauth: server error")
 )
 
 // mapError translates x/oauth2's *oauth2.RetrieveError into our sentinel
