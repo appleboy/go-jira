@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/auth"
-	"github.com/appleboy/go-jira/pkg/markdown"
 	"log/slog"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/markdown"
 
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"

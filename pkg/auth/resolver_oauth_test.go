@@ -2,10 +2,11 @@ package auth
 
 import (
 	"context"
-	"github.com/appleboy/go-jira/pkg/storage"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/storage"
 )
 
 func TestResolveOAuthEnv(t *testing.T) {

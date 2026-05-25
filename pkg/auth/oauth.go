@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/oauth"
-	"github.com/appleboy/go-jira/pkg/storage"
 	"io"
 	"log/slog"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/oauth"
+	"github.com/appleboy/go-jira/pkg/storage"
 )
 
 // refreshThreshold is how long before expiry a token is proactively refreshed,

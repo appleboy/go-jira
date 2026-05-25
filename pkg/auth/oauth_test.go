@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/oauth"
-	"github.com/appleboy/go-jira/pkg/storage"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +13,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/oauth"
+	"github.com/appleboy/go-jira/pkg/storage"
 )
 
 // memStore is an in-memory Store for tests.

@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/appleboy/go-jira/pkg/oauth"
-	"github.com/appleboy/go-jira/pkg/storage"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/oauth"
+	"github.com/appleboy/go-jira/pkg/storage"
 
 	jira "github.com/andygrunwald/go-jira"
 	keyring "github.com/zalando/go-keyring"

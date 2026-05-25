@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
+
 	"github.com/appleboy/go-jira/pkg/auth"
 	"github.com/appleboy/go-jira/pkg/storage"
 	"github.com/appleboy/go-jira/pkg/util"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )

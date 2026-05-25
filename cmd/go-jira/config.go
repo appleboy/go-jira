@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/util"
 	"log/slog"
 	"net/url"
 	"os"
 	"strconv"
+
+	"github.com/appleboy/go-jira/pkg/util"
 
 	"github.com/spf13/cobra"
 )

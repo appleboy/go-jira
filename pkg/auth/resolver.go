@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/appleboy/go-jira/pkg/oauth"
 	"github.com/appleboy/go-jira/pkg/storage"
-	"net/http"
 )
 
 // Config carries everything Resolve needs to choose an Authenticator.
