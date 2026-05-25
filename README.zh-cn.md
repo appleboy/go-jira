@@ -35,6 +35,7 @@
       - [显示版本](#显示版本)
       - [使用自定义环境文件](#使用自定义环境文件)
   - [可组合性（管道、安静、颜色）](#可组合性管道安静颜色)
+  - [Schema 自我描述（供代理程序使用）](#schema-自我描述供代理程序使用)
   - [OAuth 2.0](#oauth-20)
 
 ## 动机
@@ -217,6 +218,23 @@ cat body.md | go-jira create --project GAIA --summary "New bug" --description -
 # 安静模式，仅输出机器可读内容以便脚本处理
 go-jira --quiet search --jql "project = GAIA" > issues.json
 ```
+
+## Schema 自我描述（供代理程序使用）
+
+`go-jira schema` 会打印完整的命令与标志树，让代理程序（或脚本）无需爬取
+`--help` 即可探索整个 CLI 接口。使用 `--output json` 获取机器可读的描述；
+该 JSON 也包含构建的 `version` 与 `commit`：
+
+```bash
+# 机器可读的命令／标志 schema，含构建元数据
+go-jira schema --output json
+
+# 人类可读、列出每个命令及其标志的树状结构
+go-jira schema --output text
+```
+
+这也是读取构建 commit 的推荐方式——`--version`（刻意只输出单一 semver 字符串）
+已不再打印 commit。
 
 ## OAuth 2.0
 

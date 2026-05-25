@@ -36,6 +36,7 @@
       - [Use custom environment file](#use-custom-environment-file)
   - [Use in GitHub / Gitea Actions](#use-in-github--gitea-actions)
   - [Data subcommands](#data-subcommands)
+  - [Schema introspection (for agents)](#schema-introspection-for-agents)
   - [OAuth 2.0](#oauth-20)
 
 ## Motivation
@@ -344,6 +345,24 @@ go run ./cmd/go-jira link --from GAIA-1 --to GAIA-2 --link-type Blocks
 The epic-link and sprint custom field IDs vary per Jira instance. They default
 to `customfield_10101` / `customfield_10100`; override them with
 `--epic-field` / `--sprint-field` (or `EPIC_FIELD` / `SPRINT_FIELD`).
+
+## Schema introspection (for agents)
+
+`go-jira schema` prints the full command and flag tree so an agent (or a
+script) can discover the CLI surface without scraping `--help`. Use
+`--output json` for a machine-readable description; the JSON also carries the
+build `version` and `commit`:
+
+```bash
+# Machine-readable command/flag schema, including build metadata
+go-jira schema --output json
+
+# Human-readable tree of every command and its flags
+go-jira schema --output text
+```
+
+This is the recommended way to read the build commit, which `--version`
+(intentionally a single semver token) no longer prints.
 
 ## OAuth 2.0
 
