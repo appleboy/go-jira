@@ -35,6 +35,11 @@ func TestRefreshSuccessRotatesToken(t *testing.T) {
 	if got := gotForm["refresh_token"]; len(got) != 1 || got[0] != "refresh-1-old" {
 		t.Errorf("refresh_token = %v, want [refresh-1-old]", got)
 	}
+	// The refresh path also hits the token endpoint: as a public PKCE client it
+	// must never send a client_secret, even as an empty value.
+	if got, ok := gotForm["client_secret"]; ok {
+		t.Errorf("client_secret present in refresh request = %v, want absent", got)
+	}
 }
 
 func TestRefreshInvalidGrant(t *testing.T) {
