@@ -72,33 +72,33 @@ go-jira supports four authentication modes:
 
 ### Environment Variables
 
-| Variable                        | Description                                                                |
-| ------------------------------- | -------------------------------------------------------------------------- |
-| JIRA_BASE_URL                   | Jira instance base URL (e.g. `https://jira.example.com`)                   |
-| JIRA_USERNAME                   | Jira username (for basic auth)                                             |
-| JIRA_PASSWORD                   | Jira password (for basic auth)                                             |
-| JIRA_TOKEN                      | Jira API token (for token auth)                                            |
-| JIRA_INSECURE                   | Set to `true` to skip SSL certificate verification                         |
-| REF                             | Reference string (e.g. git ref/tag/commit message)                         |
-| ISSUE_FORMAT                    | Custom regex for issue key matching (optional)                             |
-| TRANSITION                      | Target status name for issue transition                                    |
-| RESOLUTION                      | Resolution name (e.g. `Fixed`, optional)                                   |
-| ASSIGNEE                        | Username to assign the issue to (optional)                                 |
-| COMMENT                         | Comment to add to the issue (optional)                                     |
-| MARKDOWN                        | Set to `true` to convert comment from Markdown to Jira format              |
-| DEBUG                           | Set to `true` to enable debug output                                       |
-| OUTPUT                          | Output format for the data subcommands: `json` (default) or `text`         |
-| EPIC_FIELD                      | Epic Link custom field ID used by `create`/`update`/`search` (default `customfield_10101`) |
-| SPRINT_FIELD                    | Sprint custom field ID used by `create`/`update`/`search` (default `customfield_10100`)    |
-| JIRA_OAUTH_CLIENT_ID            | OAuth client ID (overrides the embedded default)                           |
-| JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret (overrides the embedded default)                       |
-| JIRA_OAUTH_REFRESH_TOKEN        | Injected refresh token; triggers CI `oauth-env` mode                       |
-| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | File path to write the rotated refresh token                               |
-| JIRA_OAUTH_CALLBACK_PORT        | Local OAuth callback port (default `8765`)                                 |
-| JIRA_OAUTH_CALLBACK_CERT        | TLS cert file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_KEY`) |
-| JIRA_OAUTH_CALLBACK_KEY         | TLS key file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_CERT`) |
+| Variable                        | Description                                                                                                                |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| JIRA_BASE_URL                   | Jira instance base URL (e.g. `https://jira.example.com`)                                                                   |
+| JIRA_USERNAME                   | Jira username (for basic auth)                                                                                             |
+| JIRA_PASSWORD                   | Jira password (for basic auth)                                                                                             |
+| JIRA_TOKEN                      | Jira API token (for token auth)                                                                                            |
+| JIRA_INSECURE                   | Set to `true` to skip SSL certificate verification                                                                         |
+| REF                             | Reference string (e.g. git ref/tag/commit message)                                                                         |
+| ISSUE_FORMAT                    | Custom regex for issue key matching (optional)                                                                             |
+| TRANSITION                      | Target status name for issue transition                                                                                    |
+| RESOLUTION                      | Resolution name (e.g. `Fixed`, optional)                                                                                   |
+| ASSIGNEE                        | Username to assign the issue to (optional)                                                                                 |
+| COMMENT                         | Comment to add to the issue (optional)                                                                                     |
+| MARKDOWN                        | Set to `true` to convert comment from Markdown to Jira format                                                              |
+| DEBUG                           | Set to `true` to enable debug output                                                                                       |
+| OUTPUT                          | Output format for the data subcommands: `json` (default) or `text`                                                         |
+| EPIC_FIELD                      | Epic Link custom field ID used by `create`/`update`/`search` (default `customfield_10101`)                                 |
+| SPRINT_FIELD                    | Sprint custom field ID used by `create`/`update`/`search` (default `customfield_10100`)                                    |
+| JIRA_OAUTH_CLIENT_ID            | OAuth client ID (overrides the embedded default)                                                                           |
+| JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret (overrides the embedded default)                                                                       |
+| JIRA_OAUTH_REFRESH_TOKEN        | Injected refresh token; triggers CI `oauth-env` mode                                                                       |
+| JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | File path to write the rotated refresh token                                                                               |
+| JIRA_OAUTH_CALLBACK_PORT        | Local OAuth callback port (default `8765`)                                                                                 |
+| JIRA_OAUTH_CALLBACK_CERT        | TLS cert file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_KEY`)                                                 |
+| JIRA_OAUTH_CALLBACK_KEY         | TLS key file for an HTTPS login callback (with `JIRA_OAUTH_CALLBACK_CERT`)                                                 |
 | JIRA_OAUTH_CALLBACK_HTTPS       | `true` to serve the HTTPS callback with an auto-generated in-memory cert (no cert files; browser shows a one-time warning) |
-| JIRA_MASTER_PASSWORD            | Master password for the encrypted file token store (when no keyring)       |
+| JIRA_MASTER_PASSWORD            | Master password for the encrypted file token store (when no keyring)                                                       |
 
 ### Usage
 
@@ -188,15 +188,15 @@ URL, and `.env` resolution as every other command, and print machine-readable
 JSON to stdout by default. Pass `--output text` for a concise human-readable
 summary; errors go to stderr with a non-zero exit code.
 
-| Command   | Purpose                                  | Key flags                                                                            |
-| --------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| `search`  | Run a JQL query                          | `--jql` (required), `--fields`, `--limit`                                            |
-| `get`     | Fetch summary + status of one issue      | `--key` (required)                                                                   |
-| `create`  | Create a Task issue                      | `--project`, `--summary` (required), `--assignee`, `--description`, `--components`, `--labels`, `--epic`, `--sprint` |
-| `update`  | Partially update an issue's fields       | `--key` (required) + any of `--summary`, `--description`, `--assignee`, `--components`, `--labels`, `--epic`, `--sprint` |
-| `sprints` | List sprints for a board (Agile API)     | `--board-id` (required), `--state`, `--limit`                                        |
-| `boards`  | Discover boards for a project (Agile API)| `--project` (required), `--type`, `--limit`                                          |
-| `link`    | Link two issues                          | `--from`, `--to` (required), `--link-type`                                           |
+| Command   | Purpose                                   | Key flags                                                                                                                |
+| --------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `search`  | Run a JQL query                           | `--jql` (required), `--fields`, `--limit`                                                                                |
+| `get`     | Fetch summary + status of one issue       | `--key` (required)                                                                                                       |
+| `create`  | Create a Task issue                       | `--project`, `--summary` (required), `--assignee`, `--description`, `--components`, `--labels`, `--epic`, `--sprint`     |
+| `update`  | Partially update an issue's fields        | `--key` (required) + any of `--summary`, `--description`, `--assignee`, `--components`, `--labels`, `--epic`, `--sprint` |
+| `sprints` | List sprints for a board (Agile API)      | `--board-id` (required), `--state`, `--limit`                                                                            |
+| `boards`  | Discover boards for a project (Agile API) | `--project` (required), `--type`, `--limit`                                                                              |
+| `link`    | Link two issues                           | `--from`, `--to` (required), `--link-type`                                                                               |
 
 ```bash
 export JIRA_BASE_URL="https://jira.example.com"
