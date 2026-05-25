@@ -156,6 +156,7 @@ func newRootCmd() *cobra.Command {
 		newUpdateCmd(),
 		newGetCmd(),
 		newSprintsCmd(),
+		newEpicsCmd(),
 		newBoardsCmd(),
 		newLinkCmd(),
 	)

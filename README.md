@@ -195,6 +195,7 @@ summary; errors go to stderr with a non-zero exit code.
 | `create`  | Create a Task issue                       | `--project`, `--summary` (required), `--assignee`, `--description`, `--components`, `--labels`, `--epic`, `--sprint`     |
 | `update`  | Partially update an issue's fields        | `--key` (required) + any of `--summary`, `--description`, `--assignee`, `--components`, `--labels`, `--epic`, `--sprint` |
 | `sprints` | List sprints for a board (Agile API)      | `--board-id` (required), `--state`, `--limit`                                                                            |
+| `epics`   | List active epics for a board (Agile API) | `--board-id` (required), `--limit`                                                                                       |
 | `boards`  | Discover boards for a project (Agile API) | `--project` (required), `--type`, `--limit`                                                                              |
 | `link`    | Link two issues                           | `--from`, `--to` (required), `--link-type`                                                                               |
 
@@ -215,6 +216,9 @@ go run ./cmd/go-jira create --project GAIA --summary "Investigate flaky test" \
 # Partial update — only the flags you pass are changed
 go run ./cmd/go-jira update --key GAIA-123 \
   --summary "Reworded title" --assignee jdoe --labels triaged
+
+# List active epics for a board
+go run ./cmd/go-jira epics --board-id 10381
 
 # Link two issues
 go run ./cmd/go-jira link --from GAIA-1 --to GAIA-2 --link-type Blocks
