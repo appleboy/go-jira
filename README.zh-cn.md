@@ -117,7 +117,6 @@ go-jira 支持四种认证模式：
 | MARKDOWN                        | 设为 `true` 时将评论从 Markdown 转为 Jira 格式     |
 | DEBUG                           | 设为 `true` 启用调试输出                           |
 | JIRA_OAUTH_CLIENT_ID            | OAuth client ID（覆盖内嵌默认值）                  |
-| JIRA_OAUTH_CLIENT_SECRET        | OAuth client secret（覆盖内嵌默认值）              |
 | JIRA_OAUTH_REFRESH_TOKEN        | 注入的 refresh token；触发 CI `oauth-env` 模式     |
 | JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | 写入轮换后 refresh token 的文件路径                |
 | JIRA_MASTER_PASSWORD            | 加密文件 token 存储的主密码（无 keyring 时）       |

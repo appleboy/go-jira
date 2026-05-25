@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/auth"
-	"github.com/appleboy/go-jira/pkg/storage"
 	"os"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/storage"
 
 	"github.com/spf13/cobra"
 )

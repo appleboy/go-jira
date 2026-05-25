@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/util"
 	"log/slog"
 	"net/url"
 	"os"
 	"strconv"
+
+	"github.com/appleboy/go-jira/pkg/util"
 
 	"github.com/spf13/cobra"
 )
@@ -40,7 +41,6 @@ type Config struct {
 
 	// OAuth
 	oauthClientID           string
-	oauthClientSecret       string
 	oauthRefreshToken       string
 	oauthRefreshTokenOutput string
 	scope                   string
@@ -130,9 +130,6 @@ func loadConfig(cmd *cobra.Command) Config {
 	cfg.oauthClientID = resolveWithEnv(
 		envOAuthClientID, flagStringValue(cmd, flagClientID), DefaultOAuthClientID,
 	)
-	cfg.oauthClientSecret = resolveWithEnv(
-		envOAuthClientSecret, flagStringValue(cmd, flagClientSecret), DefaultOAuthClientSecret,
-	)
 	cfg.oauthRefreshToken = os.Getenv(envOAuthRefreshToken)
 	cfg.oauthRefreshTokenOutput = os.Getenv(envOAuthRefreshTokenOutput)
 	cfg.scope = defaultScope
@@ -141,7 +138,7 @@ func loadConfig(cmd *cobra.Command) Config {
 	}
 	cfg.callbackPort = resolveCallbackPort(cmd)
 	// Callback TLS cert/key are public file paths, so the flag is fine; resolve
-	// env > flag (matching the client-id/secret precedence) with no embedded
+	// env > flag (matching the client-id precedence) with no embedded
 	// default — empty means a plain-HTTP callback.
 	cfg.callbackCert = resolveWithEnv(
 		envOAuthCallbackCert, flagStringValue(cmd, flagCallbackCert), "",
@@ -161,7 +158,7 @@ func warnOnSecretFlags(cmd *cobra.Command) {
 	if cmd == nil {
 		return
 	}
-	for _, name := range []string{flagPassword, flagToken, flagClientSecret} {
+	for _, name := range []string{flagPassword, flagToken} {
 		if cmd.Flags().Lookup(name) != nil && cmd.Flags().Changed(name) {
 			slog.Warn(
 				"passing secrets via CLI flag is unsafe on shared hosts; prefer env vars or .env",
@@ -255,7 +252,7 @@ func resolveCallbackHTTPS(cmd *cobra.Command) bool {
 }
 
 // resolveWithEnv applies the env > flag > embedded-default precedence used for
-// the OAuth client ID and secret.
+// the OAuth client ID.
 func resolveWithEnv(envKey, flagVal, embedded string) string {
 	if v := os.Getenv(envKey); v != "" {
 		return v

@@ -42,6 +42,12 @@ func TestExchangeCodeSuccess(t *testing.T) {
 	if got := gotForm["client_id"]; len(got) != 1 || got[0] != "client-abc" {
 		t.Errorf("client_id = %v, want [client-abc]", got)
 	}
+	// go-jira is a public PKCE client: the token request must never carry a
+	// client_secret, even as an empty value. Guards against config wiring or
+	// x/oauth2 behavior reintroducing the parameter.
+	if got, ok := gotForm["client_secret"]; ok {
+		t.Errorf("client_secret present in token request = %v, want absent", got)
+	}
 }
 
 func TestExchangeCodeErrors(t *testing.T) {

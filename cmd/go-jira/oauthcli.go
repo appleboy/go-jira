@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/oauth"
-	"github.com/appleboy/go-jira/pkg/storage"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/oauth"
+	"github.com/appleboy/go-jira/pkg/storage"
 
 	"github.com/spf13/cobra"
 )
@@ -140,7 +141,6 @@ func oauthConfigFromConfig(config Config) *oauth.Config {
 	return &oauth.Config{
 		BaseURL:         config.baseURL,
 		ClientID:        config.oauthClientID,
-		ClientSecret:    config.oauthClientSecret,
 		RedirectURI:     config.redirectURI(),
 		Scopes:          []string{config.scope},
 		TLSCertFile:     config.callbackCert,

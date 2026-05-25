@@ -80,7 +80,6 @@ func TestRunOAuthEnvMode(t *testing.T) {
 	t.Setenv("INPUT_INSECURE", "true")
 	t.Setenv("INPUT_REF", "ABC-123")
 	t.Setenv(envOAuthClientID, "client-abc")
-	t.Setenv(envOAuthClientSecret, "secret-xyz")
 	t.Setenv(envOAuthRefreshToken, "injected-refresh")
 	t.Setenv(envOAuthRefreshTokenOutput, out)
 
@@ -105,7 +104,6 @@ func TestRunOAuthEnvInvalidGrant(t *testing.T) {
 	t.Setenv("INPUT_INSECURE", "true")
 	t.Setenv("INPUT_REF", "ABC-123")
 	t.Setenv(envOAuthClientID, "client-abc")
-	t.Setenv(envOAuthClientSecret, "secret-xyz")
 	t.Setenv(envOAuthRefreshToken, "dead-refresh")
 
 	err := run(nil)

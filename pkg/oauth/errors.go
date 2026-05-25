@@ -15,8 +15,10 @@ import (
 // stored secret must be rotated).
 var (
 	ErrInvalidGrant  = errors.New("oauth: invalid_grant (refresh token expired or revoked)")
-	ErrInvalidClient = errors.New("oauth: invalid_client (client_id or client_secret wrong)")
-	ErrServerError   = errors.New("oauth: server error")
+	ErrInvalidClient = errors.New(
+		"oauth: invalid_client (check client_id, or the app may be a confidential " +
+			"client that requires a secret — go-jira only supports public PKCE clients)")
+	ErrServerError = errors.New("oauth: server error")
 )
 
 // mapError translates x/oauth2's *oauth2.RetrieveError into our sentinel

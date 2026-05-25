@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/storage"
 	"os"
+
+	"github.com/appleboy/go-jira/pkg/storage"
 
 	"github.com/spf13/cobra"
 )

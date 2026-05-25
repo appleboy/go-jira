@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
+
 	"github.com/appleboy/go-jira/pkg/auth"
 	"github.com/appleboy/go-jira/pkg/storage"
 	"github.com/appleboy/go-jira/pkg/util"
-	"os"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -66,10 +67,6 @@ func runConfigShow(cmd *cobra.Command) error {
 		redactIfSecret("oauth_client_id", config.oauthClientID),
 		oauthValueSource(cmd, flagClientID, envOAuthClientID, config.oauthClientID,
 			DefaultOAuthClientID))
-	fmt.Fprintf(w, "oauth_client_secret\t%s\t%s\n",
-		redactIfSecret("oauth_client_secret", config.oauthClientSecret),
-		oauthValueSource(cmd, flagClientSecret, envOAuthClientSecret,
-			config.oauthClientSecret, DefaultOAuthClientSecret))
 	row("scope", config.scope, flagScope, "", "")
 	// oauth-env (CI) inputs: show presence/source without leaking the token.
 	fmt.Fprintf(w, "oauth_refresh_token\t%s\t%s\n",
@@ -167,8 +164,7 @@ func redactIfSecret(field, value string) string {
 		return "(unset)"
 	}
 	switch field {
-	case flagToken, flagPassword, "client_secret",
-		"oauth_client_secret", "oauth_refresh_token":
+	case flagToken, flagPassword, "oauth_refresh_token":
 		return "(set, redacted)"
 	default:
 		return value

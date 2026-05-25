@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/appleboy/go-jira/pkg/auth"
-	"github.com/appleboy/go-jira/pkg/markdown"
 	"log/slog"
 	"time"
+
+	"github.com/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/markdown"
 
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"
@@ -171,7 +172,6 @@ func authConfigFromRun(config Config) auth.Config {
 		Token:             config.token,
 		OAuthRefreshToken: config.oauthRefreshToken,
 		OAuthClientID:     config.oauthClientID,
-		OAuthClientSecret: config.oauthClientSecret,
 		OAuthBaseURL:      config.baseURL,
 		OAuthRedirectURI:  config.redirectURI(),
 		OAuthScopes:       []string{config.scope},

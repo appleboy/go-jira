@@ -12,11 +12,10 @@ import (
 // testConfig returns a Config pointed at srv with sensible defaults.
 func testConfig(baseURL string) *Config {
 	return &Config{
-		BaseURL:      baseURL,
-		ClientID:     "client-abc",
-		ClientSecret: "secret-xyz",
-		RedirectURI:  "http://127.0.0.1:8765/callback",
-		Scopes:       []string{"WRITE"},
+		BaseURL:     baseURL,
+		ClientID:    "client-abc",
+		RedirectURI: "http://127.0.0.1:8765/callback",
+		Scopes:      []string{"WRITE"},
 	}
 }
 
