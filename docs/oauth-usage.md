@@ -134,6 +134,7 @@ refresh token for an access token at startup.
 
 | Env var                           | Required             | Purpose                                 |
 | --------------------------------- | -------------------- | --------------------------------------- |
+| `JIRA_BASE_URL`                   | yes                  | Jira instance base URL                  |
 | `JIRA_OAUTH_CLIENT_ID`            | yes                  | OAuth client ID                         |
 | `JIRA_OAUTH_REFRESH_TOKEN`        | yes                  | Triggers `oauth-env` mode               |
 | `JIRA_OAUTH_REFRESH_TOKEN_OUTPUT` | strongly recommended | File to write the rotated refresh token |
