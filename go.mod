@@ -27,4 +27,4 @@ require (
 	golang.org/x/text v0.37.0 // indirect
 )
 
-replace github.com/andygrunwald/go-jira => github.com/appleboy/go-jira-lib v1.16.3
+replace github.com/andygrunwald/go-jira => github.com/appleboy/go-jira-lib v1.16.4

@@ -25,15 +25,16 @@ func TestEpicsCmd(t *testing.T) {
 				"startAt":    0,
 				"isLast":     true,
 				"values": []map[string]any{
-					{"id": 1, "key": "GAIA-100", "name": "Login epic", "done": false},
-					{"id": 2, "key": "GAIA-200", "name": "Billing epic", "done": false},
+					{"id": 1, "key": "GAIA-100", "name": "Login epic", "summary": "Login", "done": false},
+					{"id": 2, "key": "GAIA-200", "name": "Billing epic", "summary": "Billing", "done": false},
 				},
 			})
 		}),
 	)
 	defer server.Close()
 
-	// Happy path: JSON output contains both epics.
+	// Happy path: JSON output contains both epics, and the request hits the
+	// Agile board-epic endpoint built by jira.BoardService.GetEpics.
 	out, err := runDataCmd(t, newEpicsCmd(), server.URL, "--board-id", "10381")
 	if err != nil {
 		t.Fatalf("epics returned error: %v", err)
@@ -47,8 +48,20 @@ func TestEpicsCmd(t *testing.T) {
 	if path != "/rest/agile/1.0/board/10381/epic" {
 		t.Errorf("unexpected request path: %s", path)
 	}
+	// done=false is always sent (active epics); maxResults defaults to 50.
 	if !strings.Contains(query, "done=false") || !strings.Contains(query, "maxResults=50") {
 		t.Errorf("unexpected query string: %s", query)
+	}
+
+	// A custom --limit flows through to maxResults in the query string.
+	if _, err := runDataCmd(t, newEpicsCmd(), server.URL, "--board-id", "10381", "--limit", "20"); err != nil {
+		t.Fatalf("epics with limit returned error: %v", err)
+	}
+	mu.Lock()
+	query = gotQuery
+	mu.Unlock()
+	if !strings.Contains(query, "maxResults=20") {
+		t.Errorf("expected maxResults=20 in query, got: %s", query)
 	}
 
 	// Text output: one tab-separated line per epic.

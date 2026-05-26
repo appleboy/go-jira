@@ -2,41 +2,15 @@ package main
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"time"
 
+	jira "github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"
 )
 
-// epicValue is the subset of fields we surface from each entry in the Agile
-// board-epic response. The endpoint returns the standard paginated envelope
-// ({maxResults, startAt, isLast, values:[...]}); unknown fields are ignored by
-// encoding/json so this stays resilient across Jira Server/DC versions.
-type epicValue struct {
-	ID      int    `json:"id"`
-	Key     string `json:"key"`
-	Name    string `json:"name"`
-	Summary string `json:"summary"`
-	Done    bool   `json:"done"`
-}
-
-// epicsList is the paginated envelope returned by
-// GET /rest/agile/1.0/board/{boardID}/epic.
-type epicsList struct {
-	MaxResults int         `json:"maxResults"`
-	StartAt    int         `json:"startAt"`
-	IsLast     bool        `json:"isLast"`
-	Values     []epicValue `json:"values"`
-}
-
 // newEpicsCmd builds the `epics` subcommand: list epics for a board via the
 // Agile API. Equivalent to the Python `epics` subcommand.
-//
-// Unlike `sprints` and `boards`, the vendored go-jira library's BoardService
-// has no epic-listing method, so this command issues the request through the
-// client's generic NewRequestWithContext + Do path rather than a typed service
-// call.
 func newEpicsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "epics",
@@ -82,18 +56,12 @@ func runEpics(cmd *cobra.Command) error {
 	}
 
 	// The Python CLI always requests active epics (done=false); mirror that.
-	qs := url.Values{}
-	qs.Set("done", "false")
-	qs.Set("maxResults", fmt.Sprintf("%d", limit))
-	endpoint := fmt.Sprintf("rest/agile/1.0/board/%d/epic?%s", boardID, qs.Encode())
-
-	req, err := jiraClient.NewRequestWithContext(ctx, "GET", endpoint, nil)
-	if err != nil {
-		return fmt.Errorf("error building epics request for board %d: %w", boardID, err)
-	}
-
-	var epics epicsList
-	resp, err := jiraClient.Do(req, &epics)
+	done := false
+	epics, resp, err := jiraClient.Board.GetEpicsWithContext(
+		ctx, boardID, &jira.GetEpicsOptions{
+			Done:          &done,
+			SearchOptions: jira.SearchOptions{MaxResults: limit},
+		})
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}
