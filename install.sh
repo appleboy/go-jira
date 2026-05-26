@@ -139,18 +139,42 @@ function add_to_path() {
 
 # Fetch latest release version from GitHub if VERSION is not set
 function get_latest_version() {
-  local latest
-  local response
-  response=$(curl $INSECURE_ARG -# --retry 5 -fSL https://api.github.com/repos/appleboy/go-jira/releases/latest) \
-    || log_error "Failed to fetch the latest version from GitHub." 6
+  local latest http_code
+  local api="https://api.github.com/repos/appleboy/go-jira/releases/latest"
+  local body="${TMPDIR}/latest.json"
+
+  # Authenticate when a token is available. Unauthenticated requests share a
+  # 60 req/hour-per-IP budget that is easily exhausted behind a shared NAT;
+  # a token raises it to 5000 req/hour. (`${arr[@]+...}` keeps the empty-array
+  # expansion safe under `set -u` on bash 3.2, e.g. stock macOS.)
+  local -a auth=()
+  local token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+  if [[ -n "$token" ]]; then
+    auth=(-H "Authorization: Bearer ${token}")
+  fi
+
+  # Capture the body and status separately so we can explain HTTP errors
+  # instead of letting `-f` swallow them.
+  http_code=$(curl $INSECURE_ARG -sS --retry 5 ${auth[@]+"${auth[@]}"} -o "${body}" -w '%{http_code}' "${api}") \
+    || log_error "Failed to reach the GitHub API. Check your network, or pin a version with VERSION=x.y.z." 6
+
+  if [[ "$http_code" == "403" || "$http_code" == "429" ]] && grep -q "rate limit" "${body}" 2>/dev/null; then
+    log_error "GitHub API rate limit exceeded. Set GITHUB_TOKEN to raise the limit, or pin a version, e.g. VERSION=0.10.0." 6
+  fi
+  if [[ "$http_code" != "200" ]]; then
+    log_error "GitHub API returned HTTP ${http_code}. Pin a version with VERSION=x.y.z to skip this lookup." 6
+  fi
 
   if command -v jq >/dev/null 2>&1; then
-    latest=$(echo "$response" | jq -r '.tag_name // empty')
+    latest=$(jq -r '.tag_name // empty' "${body}")
   else
-    latest=$(echo "$response" | grep '"tag_name":' | sed -E 's/.*"tag_name": ?"v?([^"]+)".*/\1/')
+    latest=$(grep '"tag_name":' "${body}" | sed -E 's/.*"tag_name": ?"v?([^"]+)".*/\1/')
   fi
   # Remove leading 'v' if present
   latest="${latest#v}"
+  if [[ -z "$latest" ]]; then
+    log_error "Could not parse the latest version from the GitHub API response. Pin a version with VERSION=x.y.z." 6
+  fi
   echo "$latest"
 }
 

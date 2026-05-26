@@ -66,6 +66,10 @@ curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | 
 Supported targets: macOS (amd64/arm64), Linux (amd64/arm64/armv5-7), Windows
 (amd64), and FreeBSD (amd64).
 
+The version lookup calls the GitHub API, which limits unauthenticated requests
+to 60/hour per IP. Behind a shared NAT you may hit `rate limit exceeded` — set
+`GITHUB_TOKEN` to raise the limit, or pin `VERSION` to skip the lookup entirely.
+
 **Install with `go install`** (requires Go 1.25+). The binary lands in
 `$(go env GOPATH)/bin` — make sure that directory is on your `PATH`:
 

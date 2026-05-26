@@ -64,6 +64,10 @@ curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | 
 支援平台：macOS（amd64/arm64）、Linux（amd64/arm64/armv5-7）、Windows
 （amd64）以及 FreeBSD（amd64）。
 
+查詢版本時會呼叫 GitHub API，未認證請求每個 IP 每小時上限為 60 次。在共用
+NAT 環境下可能遇到 `rate limit exceeded`——可設定 `GITHUB_TOKEN` 提高上限，
+或指定 `VERSION` 直接跳過查詢。
+
 **使用 `go install` 安裝**（需 Go 1.25 以上）。執行檔會放到
 `$(go env GOPATH)/bin`，請確認該目錄已加入 `PATH`：
 
