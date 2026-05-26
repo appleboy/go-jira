@@ -47,6 +47,23 @@
 
 ## 安裝
 
+**使用安裝腳本（預編譯執行檔）** — 不需要 Go 工具鏈。此腳本會下載對應你
+作業系統／架構的最新發行版執行檔，依照發行版的 `checksums.txt` 驗證其
+SHA256，並安裝到 `~/.go-jira/bin`：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | bash
+```
+
+可透過環境變數覆寫預設值，例如指定版本或變更安裝目錄：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.10.0 INSTALL_DIR=/usr/local/bin bash
+```
+
+支援平台：macOS（amd64/arm64）、Linux（amd64/arm64/armv5-7）、Windows
+（amd64）以及 FreeBSD（amd64）。
+
 **使用 `go install` 安裝**（需 Go 1.25 以上）。執行檔會放到
 `$(go env GOPATH)/bin`，請確認該目錄已加入 `PATH`：
 

@@ -48,6 +48,24 @@ The goal of this project is to make it easy to integrate Jira with GitHub or Git
 
 ## Installation
 
+**Install via script (prebuilt binary)** — no Go toolchain required. This
+downloads the latest released binary for your OS/arch, verifies its SHA256
+against the release `checksums.txt`, and installs it to `~/.go-jira/bin`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | bash
+```
+
+Override the defaults with environment variables, e.g. pin a version or change
+the install directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.10.0 INSTALL_DIR=/usr/local/bin bash
+```
+
+Supported targets: macOS (amd64/arm64), Linux (amd64/arm64/armv5-7), Windows
+(amd64), and FreeBSD (amd64).
+
 **Install with `go install`** (requires Go 1.25+). The binary lands in
 `$(go env GOPATH)/bin` — make sure that directory is on your `PATH`:
 
