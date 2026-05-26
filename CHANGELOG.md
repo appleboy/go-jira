@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.11.0 - 2026-05-26
+
+### Features
+
+- **One-line installer.** Added a `curl | bash` install script that downloads
+  the right release binary for the host platform, with an authenticated version
+  lookup and clearer messaging when the GitHub API rate limit is hit.
+
+### Internal
+
+- The `epics` command now lists board epics through the typed
+  `Board.GetEpicsWithContext` library method instead of a hand-rolled request,
+  dropping the bespoke envelope structs (bumps go-jira-lib to v1.16.4).
+
 ## v0.10.0 - 2026-05-26
 
 ### Changed
