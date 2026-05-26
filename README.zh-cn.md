@@ -13,7 +13,7 @@
 - [Gitea 与 Jira 软件开发流程整合][02]
 
 [01]: https://blog.wu-boy.com/2025/03/gitea-jira-integration-en/
-[02]: https://blog.wu-boy.com/2025/03/gitea-jira-integration-zh-tw/
+[02]: https://blog.wu-boy.com/2025/03/gitea-integrate-with-jira-issue-tracking-flow-zh-tw/
 [1]: https://www.atlassian.com/software/jira
 [2]: https://docs.github.com/en/actions
 [3]: https://docs.gitea.com/usage/actions/overview
