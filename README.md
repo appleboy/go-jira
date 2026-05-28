@@ -361,8 +361,18 @@ go-jira schema --output json
 go-jira schema --output text
 ```
 
-This is the recommended way to read the build commit, which `--version`
-(intentionally a single semver token) no longer prints.
+For a quick build summary, `go-jira version` prints the version, commit, Go
+version, and platform (human-readable by default; add `--output json` for the
+machine form). `schema` remains the way to introspect the full command/flag
+surface, and `--version` is intentionally a single semver token.
+
+```bash
+# Human-readable build info (version, commit, Go version, platform)
+go-jira version
+
+# Machine-readable build info
+go-jira version --output json
+```
 
 ## OAuth 2.0
 
