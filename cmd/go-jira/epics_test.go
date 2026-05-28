@@ -25,8 +25,20 @@ func TestEpicsCmd(t *testing.T) {
 				"startAt":    0,
 				"isLast":     true,
 				"values": []map[string]any{
-					{"id": 1, "key": "GAIA-100", "name": "Login epic", "summary": "Login", "done": false},
-					{"id": 2, "key": "GAIA-200", "name": "Billing epic", "summary": "Billing", "done": false},
+					{
+						"id":      1,
+						"key":     "GAIA-100",
+						"name":    "Login epic",
+						"summary": "Login",
+						"done":    false,
+					},
+					{
+						"id":      2,
+						"key":     "GAIA-200",
+						"name":    "Billing epic",
+						"summary": "Billing",
+						"done":    false,
+					},
 				},
 			})
 		}),
@@ -54,7 +66,15 @@ func TestEpicsCmd(t *testing.T) {
 	}
 
 	// A custom --limit flows through to maxResults in the query string.
-	if _, err := runDataCmd(t, newEpicsCmd(), server.URL, "--board-id", "10381", "--limit", "20"); err != nil {
+	if _, err := runDataCmd(
+		t,
+		newEpicsCmd(),
+		server.URL,
+		"--board-id",
+		"10381",
+		"--limit",
+		"20",
+	); err != nil {
 		t.Fatalf("epics with limit returned error: %v", err)
 	}
 	mu.Lock()

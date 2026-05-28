@@ -263,6 +263,7 @@ Composability:
 		newBoardsCmd(),
 		newLinkCmd(),
 		newSchemaCmd(),
+		newVersionCmd(),
 	)
 	return cmd
 }
