@@ -17,7 +17,7 @@ import (
 // Jira. The configurable epic and sprint custom fields are appended at runtime
 // in searchFields so --epic-field / --sprint-field overrides apply.
 var defaultSearchBaseFields = []string{
-	"summary",
+	"summary",  //nolint:goconst // Jira REST field name, not the flagSummary constant
 	"status",   //nolint:goconst // Jira REST field name, not the statusKey log constant
 	"assignee", //nolint:goconst // Jira REST field name, not the flagAssignee constant
 	"labels",
