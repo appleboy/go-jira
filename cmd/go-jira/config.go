@@ -207,7 +207,7 @@ func cmdContextWithTimeout(
 // flagStringValue returns a string flag's value when the command defines it and
 // the user changed it, otherwise "".
 func flagStringValue(cmd *cobra.Command, name string) string {
-	if cmd == nil || cmd.Flags().Lookup(name) == nil || !cmd.Flags().Changed(name) {
+	if !flagChanged(cmd, name) {
 		return ""
 	}
 	v, _ := cmd.Flags().GetString(name)
@@ -250,7 +250,7 @@ func resolveCallbackPort(cmd *cobra.Command) int {
 // flagBoolValue returns a bool flag's value when the command defines it and the
 // user changed it, otherwise false.
 func flagBoolValue(cmd *cobra.Command, name string) bool {
-	if cmd == nil || cmd.Flags().Lookup(name) == nil || !cmd.Flags().Changed(name) {
+	if !flagChanged(cmd, name) {
 		return false
 	}
 	v, _ := cmd.Flags().GetBool(name)

@@ -43,5 +43,5 @@ func GetGlobalValue(key string) string {
 //
 //	bool - the boolean representation of the input string.
 func ToBool(s string) bool {
-	return strings.ToLower(s) == "true" || s == "1"
+	return s == "1" || strings.ToLower(s) == "true"
 }

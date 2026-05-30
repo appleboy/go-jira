@@ -10,10 +10,9 @@ import (
 )
 
 type JiraRenderer struct {
-	builder     strings.Builder
-	inList      bool
-	listDepth   int
-	inCodeBlock bool
+	builder   strings.Builder
+	inList    bool
+	listDepth int
 }
 
 func NewJiraRenderer() *JiraRenderer {
@@ -152,7 +151,7 @@ func (r *JiraRenderer) renderItem(w *bytes.Buffer, _ *bf.Node, entering bool) {
 		return
 	}
 	indent := strings.Repeat("*", r.listDepth)
-	if w.Len() > 0 && !strings.HasSuffix(w.String(), "\n") {
+	if b := w.Bytes(); len(b) > 0 && b[len(b)-1] != '\n' {
 		w.WriteString("\n")
 	}
 	w.WriteString(indent + " ")
@@ -166,7 +165,6 @@ func (r *JiraRenderer) renderCode(w *bytes.Buffer, node *bf.Node, _ bool) {
 
 func (r *JiraRenderer) renderCodeBlock(w *bytes.Buffer, node *bf.Node, entering bool) {
 	if entering {
-		r.inCodeBlock = true
 		language := string(node.Info)
 		if language == "" {
 			language = "java"
@@ -180,7 +178,6 @@ func (r *JiraRenderer) renderCodeBlock(w *bytes.Buffer, node *bf.Node, entering 
 		w.Write(node.Literal)
 		w.WriteString("{code}")
 	}
-	r.inCodeBlock = false
 }
 
 func (r *JiraRenderer) renderHardbreak(w *bytes.Buffer, _ *bf.Node, _ bool) {
