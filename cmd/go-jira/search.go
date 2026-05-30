@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	jira "github.com/andygrunwald/go-jira"
@@ -109,14 +108,7 @@ func runSearch(cmd *cobra.Command) error {
 // custom field IDs appended.
 func searchFields(fieldsArg string, config Config) []string {
 	if fieldsArg != "" {
-		parts := strings.Split(fieldsArg, ",")
-		out := make([]string, 0, len(parts))
-		for _, p := range parts {
-			if p = strings.TrimSpace(p); p != "" {
-				out = append(out, p)
-			}
-		}
-		return out
+		return splitCSV(fieldsArg)
 	}
 	fields := make([]string, 0, len(defaultSearchBaseFields)+2)
 	fields = append(fields, defaultSearchBaseFields...)
