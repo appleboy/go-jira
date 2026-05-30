@@ -61,14 +61,7 @@ func runGet(cmd *cobra.Command) error {
 	}
 
 	return emitResult(config, issue, func() {
-		status := ""
-		if issue.Fields != nil && issue.Fields.Status != nil {
-			status = issue.Fields.Status.Name
-		}
-		summary := ""
-		if issue.Fields != nil {
-			summary = issue.Fields.Summary
-		}
-		fmt.Fprintf(os.Stdout, "%s\t%s\t%s\n", issue.Key, status, summary)
+		fmt.Fprintf(os.Stdout, "%s\t%s\t%s\n",
+			issue.Key, issueStatusName(issue), issueSummary(issue))
 	})
 }

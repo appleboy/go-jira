@@ -10,9 +10,11 @@ import (
 )
 
 type JiraRenderer struct {
-	builder   strings.Builder
-	inList    bool
-	listDepth int
+	builder strings.Builder
+	// listOrdered tracks the ordered-ness of each currently open list level so
+	// nested lists pick the right Jira marker ('#' ordered, '*' bullet). Its
+	// length is the current nesting depth, and len > 0 means "inside a list".
+	listOrdered []bool
 }
 
 func NewJiraRenderer() *JiraRenderer {
@@ -29,6 +31,11 @@ func (r *JiraRenderer) RenderNode(w *bytes.Buffer, node *bf.Node, entering bool)
 		r.renderHorizontalRule(w, node, entering)
 	case bf.Image:
 		r.renderImage(w, node, entering)
+		// Skip the image's child nodes (the alt text): Jira image markup is
+		// `!url!` with no display-text slot, so rendering the alt corrupts it.
+		if entering {
+			return bf.SkipChildren
+		}
 	case bf.HTMLBlock, bf.HTMLSpan:
 		// Ignore HTML blocks and spans
 	case bf.Softbreak:
@@ -74,11 +81,13 @@ func (r *JiraRenderer) renderHorizontalRule(w *bytes.Buffer, _ *bf.Node, _ bool)
 }
 
 func (r *JiraRenderer) renderImage(w *bytes.Buffer, node *bf.Node, entering bool) {
-	if entering {
-		w.WriteString("!")
+	// Jira embeds images as `!url!`; the part after a `|` is reserved for
+	// attributes (width, align, thumbnail), not alt text. The alt-text child is
+	// skipped by RenderNode, so the whole token is emitted on entering.
+	if !entering {
 		return
 	}
-	w.WriteString("|")
+	w.WriteString("!")
 	w.Write(node.Destination)
 	w.WriteString("!")
 }
@@ -88,7 +97,7 @@ func (r *JiraRenderer) renderSoftbreak(w *bytes.Buffer, _ *bf.Node, _ bool) {
 }
 
 func (r *JiraRenderer) renderParagraph(w *bytes.Buffer, _ *bf.Node, entering bool) {
-	if entering && !r.inList && w.Len() > 0 {
+	if entering && len(r.listOrdered) == 0 && w.Len() > 0 {
 		w.WriteString("\n")
 		return
 	}
@@ -133,15 +142,15 @@ func (r *JiraRenderer) renderLink(w *bytes.Buffer, node *bf.Node, entering bool)
 	w.WriteString("]")
 }
 
-func (r *JiraRenderer) renderList(w *bytes.Buffer, _ *bf.Node, entering bool) {
+func (r *JiraRenderer) renderList(w *bytes.Buffer, node *bf.Node, entering bool) {
 	if entering {
-		r.inList = true
-		r.listDepth++
+		r.listOrdered = append(r.listOrdered, node.ListFlags&bf.ListTypeOrdered != 0)
 		return
 	}
-	r.listDepth--
-	if r.listDepth == 0 {
-		r.inList = false
+	if n := len(r.listOrdered); n > 0 {
+		r.listOrdered = r.listOrdered[:n-1]
+	}
+	if len(r.listOrdered) == 0 {
 		w.WriteString("\n")
 	}
 }
@@ -150,11 +159,21 @@ func (r *JiraRenderer) renderItem(w *bytes.Buffer, _ *bf.Node, entering bool) {
 	if !entering {
 		return
 	}
-	indent := strings.Repeat("*", r.listDepth)
+	// One marker per open level, e.g. a bullet nested under an ordered list is
+	// "*#". Jira uses '#' for ordered items and '*' for bullets.
+	indent := make([]byte, len(r.listOrdered))
+	for i, ordered := range r.listOrdered {
+		if ordered {
+			indent[i] = '#'
+		} else {
+			indent[i] = '*'
+		}
+	}
 	if b := w.Bytes(); len(b) > 0 && b[len(b)-1] != '\n' {
 		w.WriteString("\n")
 	}
-	w.WriteString(indent + " ")
+	w.Write(indent)
+	w.WriteString(" ")
 }
 
 func (r *JiraRenderer) renderCode(w *bytes.Buffer, node *bf.Node, _ bool) {
@@ -199,7 +218,10 @@ func (r *JiraRenderer) convertMentions(text string) string {
 	r.builder.Reset()
 	r.builder.Grow(length + count*2) // Preallocate buffer with an initial capacity
 	for i := 0; i < length; i++ {
-		if text[i] == '@' && i+1 < length && isValidMentionChar(text[i+1]) {
+		// Require a left boundary so an '@' embedded in a word (e.g. an email
+		// address such as user@example.com) is not mistaken for a mention.
+		if text[i] == '@' && (i == 0 || !isValidMentionChar(text[i-1])) &&
+			i+1 < length && isValidMentionChar(text[i+1]) {
 			r.builder.WriteString("[~")
 			i++
 			for i < length && isValidMentionChar(text[i]) {
