@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -28,8 +29,16 @@ func forEachIssueConcurrent(issues []*jira.Issue, noun string, fn func(*jira.Iss
 	wg.Wait()
 	close(errChan)
 
-	if n := len(errChan); n > 0 {
-		return fmt.Errorf("encountered %d errors while %s", n, noun)
+	// Collect the actual errors, not just a count, so the real cause (HTTP
+	// status, message) survives into the returned/serialized error instead of
+	// only reaching the per-issue logs.
+	var errs []error
+	for err := range errChan {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("encountered %d errors while %s: %w",
+			len(errs), noun, errors.Join(errs...))
 	}
 	return nil
 }

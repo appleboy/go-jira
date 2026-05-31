@@ -20,10 +20,14 @@ func processTransitions(
 	issues []*jira.Issue,
 ) error {
 	return forEachIssueConcurrent(issues, "processing transitions", func(iss *jira.Issue) error {
+		// Use the nil-safe accessors: a partial issue response can leave Fields
+		// or Status nil, and a deref here would panic inside the worker
+		// goroutine and take down the whole process.
+		summary := issueSummary(iss)
 		slog.Info("issue info",
 			"key", iss.Key,
-			"summary", iss.Fields.Summary,
-			"current status", iss.Fields.Status.Name,
+			"summary", summary,
+			"current status", issueStatusName(iss),
 		)
 
 		transitionFound := false
@@ -57,9 +61,12 @@ func processTransitions(
 			}
 			slog.Info("issue moved to transition",
 				"key", iss.Key,
-				"summary", iss.Fields.Summary,
+				"summary", summary,
 				"transition", transition.Name,
 			)
+			// The issue has moved; stop scanning so a second transition with the
+			// same name isn't attempted against the already-transitioned issue.
+			break
 		}
 
 		if !transitionFound {

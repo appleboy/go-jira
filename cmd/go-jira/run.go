@@ -143,10 +143,18 @@ func run(cmd *cobra.Command) error {
 	}
 
 	if config.resolution != "" {
-		config.resolution, err = getResolutionID(ctx, jiraClient, config.resolution)
+		var resolutionID string
+		resolutionID, err = getResolutionID(ctx, jiraClient, config.resolution)
 		if err != nil {
 			return fmt.Errorf("error getting resolution: %w", err)
 		}
+		// getResolutionID returns ("", nil) when no resolution matches; without
+		// this guard a typo'd --resolution would silently transition the issue
+		// with no resolution set and still report success.
+		if resolutionID == "" {
+			return fmt.Errorf("resolution %q not found", config.resolution)
+		}
+		config.resolution = resolutionID
 	}
 
 	if config.toTransition != "" {

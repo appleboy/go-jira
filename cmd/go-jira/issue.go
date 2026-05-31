@@ -106,3 +106,21 @@ func getIssueKeys(ref, issuePattern string) ([]string, error) {
 	}
 	return issueKeys, nil
 }
+
+// issueSummary returns the issue summary, tolerating a nil Fields — a partial
+// issue response (e.g. field-level security) can leave it unset.
+func issueSummary(iss *jira.Issue) string {
+	if iss.Fields == nil {
+		return ""
+	}
+	return iss.Fields.Summary
+}
+
+// issueStatusName returns the issue status name, tolerating nil Fields/Status
+// (both are pointers with omitempty in a partial response).
+func issueStatusName(iss *jira.Issue) string {
+	if iss.Fields == nil || iss.Fields.Status == nil {
+		return ""
+	}
+	return iss.Fields.Status.Name
+}

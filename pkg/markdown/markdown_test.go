@@ -80,6 +80,21 @@ func TestMarkdownToJira(t *testing.T) {
 			markdown: "* item 1\n* item 2",
 			want:     "* item 1\n* item 2",
 		},
+		{
+			name:     "ordered list",
+			markdown: "1. first\n2. second\n3. third",
+			want:     "# first\n# second\n# third",
+		},
+		{
+			name:     "ordered list nested under bullet",
+			markdown: "* a\n  1. one\n  2. two",
+			want:     "* a\n*# one\n*# two",
+		},
+		{
+			name:     "image",
+			markdown: "![alt text](http://example.com/a.png)",
+			want:     "!http://example.com/a.png!",
+		},
 	}
 
 	for _, tt := range tests {
@@ -148,6 +163,16 @@ func TestConvertMentions(t *testing.T) {
 			name: "mention with special characters",
 			text: "Hello @user!@name",
 			want: "Hello [~user]![~name]",
+		},
+		{
+			name: "email address is not a mention",
+			text: "email me at user@example.com please",
+			want: "email me at user@example.com please",
+		},
+		{
+			name: "mention after non-word boundary still converts",
+			text: "(@user)",
+			want: "([~user])",
 		},
 	}
 

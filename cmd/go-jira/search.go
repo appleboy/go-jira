@@ -89,16 +89,10 @@ func runSearch(cmd *cobra.Command) error {
 	}
 
 	return emitResult(config, issues, func() {
-		for _, issue := range issues {
-			status := ""
-			if issue.Fields != nil && issue.Fields.Status != nil {
-				status = issue.Fields.Status.Name
-			}
-			summary := ""
-			if issue.Fields != nil {
-				summary = issue.Fields.Summary
-			}
-			fmt.Fprintf(os.Stdout, "%s\t%s\t%s\n", issue.Key, status, summary)
+		for i := range issues {
+			issue := &issues[i]
+			fmt.Fprintf(os.Stdout, "%s\t%s\t%s\n",
+				issue.Key, issueStatusName(issue), issueSummary(issue))
 		}
 	})
 }
