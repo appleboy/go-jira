@@ -61,7 +61,7 @@ Override the defaults with environment variables, e.g. pin a version or change
 the install directory:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.11.0 INSTALL_DIR=/usr/local/bin bash
+curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.12.0 INSTALL_DIR=/usr/local/bin bash
 ```
 
 Supported targets: macOS (amd64/arm64), Linux (amd64/arm64/armv5-7), Windows

@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.12.0 - 2026-05-31
+
+### Features
+
+- **`version` subcommand.** Prints the version, commit, Go version, and
+  platform, defaulting to human-readable text with an `--output json` option
+  for agents.
+
+### Fixes
+
+- Convert ordered Markdown lists to Jira numbered lists instead of bullets, and
+  emit valid Jira image markup instead of treating alt text as the filename.
+- Stop rewriting email addresses as user mentions.
+- Guard a nil-pointer panic when transitioning issues with missing fields, and
+  error on an unknown resolution name instead of silently dropping it.
+- Preserve the underlying error detail when concurrent issue operations fail,
+  and stop scanning transitions after the first successful match.
+
+### Internal
+
+- Extract a shared goroutine/error-collection scaffold for the assignee,
+  comment, and transition commands, and consolidate nil-safe issue summary and
+  status accessors.
+
 ## v0.11.0 - 2026-05-26
 
 ### Features

@@ -59,7 +59,7 @@ curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | 
 可通过环境变量覆盖默认值，例如指定版本或更改安装目录：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.11.0 INSTALL_DIR=/usr/local/bin bash
+curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.12.0 INSTALL_DIR=/usr/local/bin bash
 ```
 
 支持平台：macOS（amd64/arm64）、Linux（amd64/arm64/armv5-7）、Windows
