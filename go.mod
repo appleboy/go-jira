@@ -4,7 +4,7 @@ go 1.25.10
 
 require (
 	github.com/andygrunwald/go-jira v1.16.0
-	github.com/appleboy/com v1.2.0
+	github.com/appleboy/com v1.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/spf13/cobra v1.10.2
