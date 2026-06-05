@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"golang.org/x/oauth2"
@@ -51,5 +52,22 @@ func TestRefreshInvalidGrant(t *testing.T) {
 	_, err := testConfig(srv.URL).Refresh(context.Background(), "dead-token")
 	if !errors.Is(err, ErrInvalidGrant) {
 		t.Errorf("error = %v, want errors.Is ErrInvalidGrant", err)
+	}
+}
+
+// When the provider returns invalid_grant with no error_description, the mapped
+// error must still match ErrInvalidGrant and must not end with a dangling ": ".
+func TestRefreshInvalidGrantNoDescription(t *testing.T) {
+	srv := tokenServer(t, func(_ *testing.T, w http.ResponseWriter, _ map[string][]string) {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "")
+	})
+	defer srv.Close()
+
+	_, err := testConfig(srv.URL).Refresh(context.Background(), "dead-token")
+	if !errors.Is(err, ErrInvalidGrant) {
+		t.Fatalf("error = %v, want errors.Is ErrInvalidGrant", err)
+	}
+	if strings.HasSuffix(err.Error(), ": ") {
+		t.Errorf("error %q ends with a dangling %q", err.Error(), ": ")
 	}
 }

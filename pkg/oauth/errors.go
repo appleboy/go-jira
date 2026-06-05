@@ -35,6 +35,17 @@ var (
 	ErrBrokerUnauthorized = errors.New("oauth: broker rejected the caller credential")
 )
 
+// wrapWithDesc wraps an OAuth sentinel with the provider's error_description, or
+// returns the bare sentinel when no description is supplied so the message never
+// ends with a dangling ": ". Shared by the direct (mapError) and broker
+// (mapBrokerError) paths so both produce identical, clean CLI output.
+func wrapWithDesc(sentinel error, desc string) error {
+	if desc == "" {
+		return sentinel
+	}
+	return fmt.Errorf("%w: %s", sentinel, desc)
+}
+
 // mapError translates x/oauth2's *oauth2.RetrieveError into our sentinel
 // errors where the RFC 6749 'error' code is one we act on, and surfaces 5xx
 // responses as ErrServerError. Other errors pass through unchanged.
@@ -48,9 +59,9 @@ func mapError(err error) error {
 	}
 	switch re.ErrorCode {
 	case codeInvalidGrant:
-		return fmt.Errorf("%w: %s", ErrInvalidGrant, re.ErrorDescription)
+		return wrapWithDesc(ErrInvalidGrant, re.ErrorDescription)
 	case codeInvalidClient:
-		return fmt.Errorf("%w: %s", ErrInvalidClient, re.ErrorDescription)
+		return wrapWithDesc(ErrInvalidClient, re.ErrorDescription)
 	}
 	if re.Response != nil && re.Response.StatusCode >= http.StatusInternalServerError {
 		return fmt.Errorf("%w: %d", ErrServerError, re.Response.StatusCode)

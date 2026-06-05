@@ -116,13 +116,10 @@ func mapBrokerError(status int, body []byte) error {
 	switch status {
 	case http.StatusBadRequest:
 		if er.Error == codeInvalidGrant {
-			// Omit the description when the broker doesn't supply one, so the
-			// message doesn't end with a dangling ": " while still matching
-			// errors.Is(ErrInvalidGrant).
-			if er.ErrorDescription == "" {
-				return ErrInvalidGrant
-			}
-			return fmt.Errorf("%w: %s", ErrInvalidGrant, er.ErrorDescription)
+			// wrapWithDesc omits the description when the broker doesn't supply
+			// one, so the message doesn't end with a dangling ": " while still
+			// matching errors.Is(ErrInvalidGrant).
+			return wrapWithDesc(ErrInvalidGrant, er.ErrorDescription)
 		}
 		return fmt.Errorf("oauth: broker rejected the request (%s): %s",
 			brokerErrCode(er, status), er.ErrorDescription)
