@@ -19,8 +19,8 @@ func newWhoamiCmd() *cobra.Command {
 		Use:     "whoami",
 		Short:   "Show the authenticated Jira user and the active auth mode",
 		GroupID: groupAuth,
-		Long: `Resolve the active authenticator and report the authenticated user, base
-URL, and auth mode. Run this first to confirm you are logged in before issuing
+		Long: `Resolve the active authenticator and report the authenticated user, base URL,
+and auth mode. Run this first to confirm you are logged in before issuing
 other commands.
 
 Recovering from an authentication failure (exit code 3):
