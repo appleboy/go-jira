@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/appleboy/go-jira/pkg/auth"
-	"github.com/appleboy/go-jira/pkg/oauth"
 	"github.com/appleboy/go-jira/pkg/storage"
 
 	"github.com/spf13/cobra"
@@ -163,18 +162,9 @@ func runTokenRefresh(cmd *cobra.Command) error {
 	defer cancel()
 	newTok, err := oc.Refresh(ctx, loaded.token.RefreshToken)
 	if err != nil {
-		// invalid_grant means the refresh token itself is expired or revoked, so
-		// a refresh can never recover — point the caller (and agents) straight at
-		// the real fix instead of leaving them to retry refresh in a loop.
-		if errors.Is(err, oauth.ErrInvalidGrant) {
-			return &cliError{
-				code:    exitAuth,
-				kind:    kindAuth,
-				message: fmt.Sprintf("refresh failed: %v", err),
-				hint:    "The refresh token has expired or been revoked; run `go-jira login` to re-authenticate.",
-				err:     err,
-			}
-		}
+		// classify() recognizes oauth.ErrInvalidGrant (refresh token expired or
+		// revoked) as an auth failure and addHint() supplies the recovery hint, so
+		// just wrap with %w to preserve the chain for errors.Is.
 		return fmt.Errorf("refresh failed: %w", err)
 	}
 

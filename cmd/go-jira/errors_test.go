@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/appleboy/go-jira/pkg/oauth"
 )
 
 func TestClassifyPrefersExistingCLIError(t *testing.T) {
@@ -72,6 +74,20 @@ func TestClassifyFromMessage(t *testing.T) {
 					ce.code, ce.kind, tt.wantCode, tt.wantKind)
 			}
 		})
+	}
+}
+
+// TestClassifyInvalidGrantIsAuth verifies a refresh failure wrapping
+// oauth.ErrInvalidGrant is classified as an auth failure (exit 3) by error
+// identity — it carries no "auth ..." message prefix or HTTP diagnostics, so
+// only errors.Is can catch it. This is what makes `token refresh` exit 3 (not
+// 1) and pick up the auth recovery hint when the refresh token is dead.
+func TestClassifyInvalidGrantIsAuth(t *testing.T) {
+	err := fmt.Errorf("refresh failed: %w", oauth.ErrInvalidGrant)
+	ce := classify(err, &requestDiag{})
+	if ce.code != exitAuth || ce.kind != kindAuth {
+		t.Fatalf("got code=%d kind=%q, want code=%d kind=%q",
+			ce.code, ce.kind, exitAuth, kindAuth)
 	}
 }
 

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/appleboy/go-jira/pkg/oauth"
+
 	"github.com/spf13/cobra"
 )
 
@@ -148,7 +150,10 @@ func classify(err error, diag *requestDiag) *cliError {
 	if isUsageError(msg) {
 		return &cliError{code: exitUsage, kind: kindUsage, message: msg, err: err}
 	}
-	if isAuthError(msg) {
+	// oauth.ErrInvalidGrant (refresh token expired or revoked) surfaces from a
+	// direct refresh call with no HTTP diagnostics and no "auth ..." message
+	// prefix, so match it by error identity to keep all auth classification here.
+	if isAuthError(msg) || errors.Is(err, oauth.ErrInvalidGrant) {
 		return &cliError{code: exitAuth, kind: kindAuth, message: msg, err: err}
 	}
 	return &cliError{code: exitError, kind: kindError, message: msg, err: err}
