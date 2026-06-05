@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/appleboy/go-jira/pkg/oauth"
 )
 
 func TestClassifyPrefersExistingCLIError(t *testing.T) {
@@ -75,6 +77,40 @@ func TestClassifyFromMessage(t *testing.T) {
 	}
 }
 
+// TestClassifyInvalidGrantIsAuth verifies a refresh failure wrapping
+// oauth.ErrInvalidGrant is classified as an auth failure (exit 3) by error
+// identity — it carries no "auth ..." message prefix or HTTP diagnostics, so
+// only errors.Is can catch it. This is what makes `token refresh` exit 3 (not
+// 1) and pick up the auth recovery hint when the refresh token is dead.
+func TestClassifyInvalidGrantIsAuth(t *testing.T) {
+	err := fmt.Errorf("refresh failed: %w", oauth.ErrInvalidGrant)
+	ce := classify(err, &requestDiag{})
+	if ce.code != exitAuth || ce.kind != kindAuth {
+		t.Fatalf("got code=%d kind=%q, want code=%d kind=%q",
+			ce.code, ce.kind, exitAuth, kindAuth)
+	}
+}
+
+// TestAddHintInvalidGrantPointsAtLogin verifies that for a refresh token that
+// is expired or revoked (oauth.ErrInvalidGrant), the hint points straight at
+// `login` and does NOT suggest `token refresh` — that command is what just
+// failed, so suggesting it would loop an agent. Guards the recovery path end to
+// end: classify() tags it auth, addHint() must emit the login-only hint.
+func TestAddHintInvalidGrantPointsAtLogin(t *testing.T) {
+	root := newRootCmd()
+	ce := classify(fmt.Errorf("refresh failed: %w", oauth.ErrInvalidGrant), &requestDiag{})
+	addHint(ce, root)
+	if !strings.Contains(ce.hint, "go-jira login") {
+		t.Fatalf("hint = %q, want it to contain %q", ce.hint, "go-jira login")
+	}
+	if strings.Contains(ce.hint, "go-jira token refresh") {
+		t.Fatalf(
+			"hint = %q, want it NOT to suggest token refresh (the command that just failed)",
+			ce.hint,
+		)
+	}
+}
+
 func TestClassifyNilReturnsNil(t *testing.T) {
 	if classify(nil, &requestDiag{}) != nil {
 		t.Fatal("classify(nil) should return nil")
@@ -88,36 +124,55 @@ func TestAddHintPopulatesActionableGuidance(t *testing.T) {
 	root := newRootCmd()
 
 	tests := []struct {
-		name     string
-		ce       *cliError
-		contains string
+		name string
+		ce   *cliError
+		// wantContain: every substring must be present. wantAbsent: none may be.
+		wantContain []string
+		wantAbsent  []string
 	}{
 		{
 			"unknown command suggests nearest match",
 			&cliError{kind: kindUsage, message: `unknown command "serch" for "go-jira"`},
-			`Did you mean "search"?`,
+			[]string{`Did you mean "search"?`},
+			nil,
 		},
 		{
 			"generic usage points at help",
 			&cliError{kind: kindUsage, message: `required flag(s) "jql" not set`},
-			"go-jira --help",
+			[]string{"go-jira --help"},
+			nil,
 		},
 		{
-			"auth points at whoami",
+			// The whole point of the recovery hint is the token refresh -> login
+			// ladder; assert both rungs are present and that it never loops back
+			// to whoami (the command the caller just ran to hit this error).
+			"auth points at the token refresh -> login ladder, not back at the failed command",
 			&cliError{kind: kindAuth, message: "auth resolution: x"},
-			"whoami",
+			[]string{"go-jira token refresh", "go-jira login"},
+			[]string{"go-jira whoami"},
 		},
 		{
 			"rate limit references retry_after",
 			&cliError{kind: kindRateLimit, message: "slow down"},
-			"retry_after",
+			[]string{"retry_after"},
+			nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			addHint(tt.ce, root)
-			if tt.ce.hint == "" || !strings.Contains(tt.ce.hint, tt.contains) {
-				t.Fatalf("hint = %q, want it to contain %q", tt.ce.hint, tt.contains)
+			if tt.ce.hint == "" {
+				t.Fatal("hint is empty, want actionable guidance")
+			}
+			for _, want := range tt.wantContain {
+				if !strings.Contains(tt.ce.hint, want) {
+					t.Fatalf("hint = %q, want it to contain %q", tt.ce.hint, want)
+				}
+			}
+			for _, absent := range tt.wantAbsent {
+				if strings.Contains(tt.ce.hint, absent) {
+					t.Fatalf("hint = %q, want it to NOT contain %q", tt.ce.hint, absent)
+				}
 			}
 		})
 	}

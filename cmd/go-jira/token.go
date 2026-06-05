@@ -19,6 +19,14 @@ func newTokenCmd() *cobra.Command {
 		Use:     "token",
 		Short:   "Inspect and manage the locally stored OAuth token",
 		GroupID: groupAuth,
+		Long: `Inspect and manage the OAuth token stored by "go-jira login":
+  status   show expiry, scopes, and storage backend (does not reveal the token)
+  refresh  force a refresh now using the saved refresh token
+  print    print the raw access token (requires --confirm)
+
+Use "go-jira token refresh" to recover when whoami or another command fails
+with an authentication error (exit code 3) and you logged in via OAuth — it
+renews an expired access token without a full re-login.`,
 		Example: `  # Show token mode, expiry, scopes, and storage backend
   go-jira token status --base-url https://jira.example.com
 
@@ -68,6 +76,14 @@ func newTokenRefreshCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "refresh",
 		Short: "Force a token refresh and print the new expiry",
+		Long: `Force an immediate refresh of the stored OAuth access token using the saved
+refresh token, persist the rotated token, and print the new expiry.
+
+This is the recovery step when "go-jira whoami" or another command fails with
+an authentication error (exit code 3) and you logged in via OAuth: it renews an
+expired access token without a full re-login. If the refresh fails with
+invalid_grant the refresh token has itself expired or been revoked — run
+"go-jira login" to re-authenticate.`,
 		Example: `  # Force-refresh the stored token now
   go-jira token refresh --base-url https://jira.example.com`,
 		SilenceUsage: true,
@@ -146,6 +162,9 @@ func runTokenRefresh(cmd *cobra.Command) error {
 	defer cancel()
 	newTok, err := oc.Refresh(ctx, loaded.token.RefreshToken)
 	if err != nil {
+		// classify() recognizes oauth.ErrInvalidGrant (refresh token expired or
+		// revoked) as an auth failure and addHint() supplies the recovery hint, so
+		// just wrap with %w to preserve the chain for errors.Is.
 		return fmt.Errorf("refresh failed: %w", err)
 	}
 

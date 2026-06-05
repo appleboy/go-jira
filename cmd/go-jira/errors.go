@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/appleboy/go-jira/pkg/oauth"
+
 	"github.com/spf13/cobra"
 )
 
@@ -148,7 +150,10 @@ func classify(err error, diag *requestDiag) *cliError {
 	if isUsageError(msg) {
 		return &cliError{code: exitUsage, kind: kindUsage, message: msg, err: err}
 	}
-	if isAuthError(msg) {
+	// oauth.ErrInvalidGrant (refresh token expired or revoked) surfaces from a
+	// direct refresh call with no HTTP diagnostics and no "auth ..." message
+	// prefix, so match it by error identity to keep all auth classification here.
+	if isAuthError(msg) || errors.Is(err, oauth.ErrInvalidGrant) {
 		return &cliError{code: exitAuth, kind: kindAuth, message: msg, err: err}
 	}
 	return &cliError{code: exitError, kind: kindError, message: msg, err: err}
@@ -238,9 +243,24 @@ func addHint(ce *cliError, root *cobra.Command) {
 		}
 		ce.hint = fmt.Sprintf("Run %q for usage and examples.", rootName(root)+" --help")
 	case kindAuth:
+		name := rootName(root)
+		if errors.Is(ce.err, oauth.ErrInvalidGrant) {
+			// The refresh token itself is dead, so suggesting `token refresh`
+			// would be self-referential (it is what just failed) and loop an
+			// agent; the only recovery is a full re-login.
+			ce.hint = fmt.Sprintf(
+				"The refresh token has expired or been revoked; run %q to re-authenticate.",
+				name+" login",
+			)
+			return
+		}
 		ce.hint = fmt.Sprintf(
-			"Check your credentials and base URL; run %q to verify authentication.",
-			rootName(root)+" whoami",
+			"If you logged in via OAuth, your access token may be expired: run %q "+
+				"to renew it from the saved refresh token, then retry. If that fails "+
+				"(refresh token expired or revoked) or no token is stored, run %q to "+
+				"re-authenticate. For --token or basic auth, verify the base URL and "+
+				"credentials instead.",
+			name+" token refresh", name+" login",
 		)
 	case kindRateLimit:
 		ce.hint = "Wait for the duration in retry_after before retrying; requests are not retried automatically."

@@ -16,15 +16,30 @@ import (
 // user plus the auth mode in use.
 func newWhoamiCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		//nolint:goconst // cobra subcommand name, also appears in help examples
 		Use:     "whoami",
 		Short:   "Show the authenticated Jira user and the active auth mode",
 		GroupID: groupAuth,
+		Long: `Resolve the active authenticator and report the authenticated user, base URL,
+and auth mode. Run this first to confirm you are logged in before issuing
+other commands.
+
+Recovering from an authentication failure (exit code 3):
+  1. The stored OAuth access token is most likely expired — run
+     "go-jira token refresh" to renew it from the saved refresh token, then
+     re-run "go-jira whoami". Do NOT just retry it; the command keeps failing
+     until the token is refreshed.
+  2. If the refresh fails (refresh token expired or revoked) or no token is
+     stored, run "go-jira login" to re-authenticate.
+  3. For --token or basic auth, verify the base URL and credentials instead.`,
 		Example: `  # Verify authentication using a stored OAuth token
   go-jira whoami --base-url https://jira.example.com
 
   # Verify a bearer token
-  go-jira whoami --base-url https://jira.example.com --token "$JIRA_TOKEN"`,
+  go-jira whoami --base-url https://jira.example.com --token "$JIRA_TOKEN"
+
+  # Recommended recovery when whoami fails with an auth error (exit code 3)
+  go-jira token refresh --base-url https://jira.example.com
+  go-jira whoami --base-url https://jira.example.com`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runWhoami(cmd)
