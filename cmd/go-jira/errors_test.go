@@ -104,36 +104,55 @@ func TestAddHintPopulatesActionableGuidance(t *testing.T) {
 	root := newRootCmd()
 
 	tests := []struct {
-		name     string
-		ce       *cliError
-		contains string
+		name string
+		ce   *cliError
+		// wantContain: every substring must be present. wantAbsent: none may be.
+		wantContain []string
+		wantAbsent  []string
 	}{
 		{
 			"unknown command suggests nearest match",
 			&cliError{kind: kindUsage, message: `unknown command "serch" for "go-jira"`},
-			`Did you mean "search"?`,
+			[]string{`Did you mean "search"?`},
+			nil,
 		},
 		{
 			"generic usage points at help",
 			&cliError{kind: kindUsage, message: `required flag(s) "jql" not set`},
-			"go-jira --help",
+			[]string{"go-jira --help"},
+			nil,
 		},
 		{
-			"auth points at the token refresh recovery step, not back at the failed command",
+			// The whole point of the recovery hint is the token refresh -> login
+			// ladder; assert both rungs are present and that it never loops back
+			// to whoami (the command the caller just ran to hit this error).
+			"auth points at the token refresh -> login ladder, not back at the failed command",
 			&cliError{kind: kindAuth, message: "auth resolution: x"},
-			"token refresh",
+			[]string{"go-jira token refresh", "go-jira login"},
+			[]string{"go-jira whoami"},
 		},
 		{
 			"rate limit references retry_after",
 			&cliError{kind: kindRateLimit, message: "slow down"},
-			"retry_after",
+			[]string{"retry_after"},
+			nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			addHint(tt.ce, root)
-			if tt.ce.hint == "" || !strings.Contains(tt.ce.hint, tt.contains) {
-				t.Fatalf("hint = %q, want it to contain %q", tt.ce.hint, tt.contains)
+			if tt.ce.hint == "" {
+				t.Fatal("hint is empty, want actionable guidance")
+			}
+			for _, want := range tt.wantContain {
+				if !strings.Contains(tt.ce.hint, want) {
+					t.Fatalf("hint = %q, want it to contain %q", tt.ce.hint, want)
+				}
+			}
+			for _, absent := range tt.wantAbsent {
+				if strings.Contains(tt.ce.hint, absent) {
+					t.Fatalf("hint = %q, want it to NOT contain %q", tt.ce.hint, absent)
+				}
 			}
 		})
 	}
