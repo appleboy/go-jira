@@ -115,3 +115,56 @@ func TestConfigShowBroker(t *testing.T) {
 		t.Errorf("config show should mark broker_token as redacted:\n%s", out)
 	}
 }
+
+// TestConfigShowBrokerSourceEnvWins verifies that when BOTH the env var and the
+// flag are set, `config show` reports SOURCE=env for the broker rows — matching
+// resolveWithEnv's env > flag precedence. A flag-first source label would print
+// the env value while claiming it came from the flag.
+func TestConfigShowBrokerSourceEnvWins(t *testing.T) {
+	clearInputEnv(t)
+	t.Setenv(envBrokerURL, "https://broker.fromenv")
+	t.Setenv(envBrokerToken, "token-fromenv")
+
+	out := captureStderr(t, func() {
+		cmd := newConfigShowCmd()
+		if err := cmd.ParseFlags([]string{
+			"--base-url=https://jira.example.com",
+			"--broker-url=https://broker.fromflag",
+			"--broker-token=token-fromflag",
+		}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		if err := runConfigShow(cmd); err != nil {
+			t.Fatalf("runConfigShow: %v", err)
+		}
+	})
+
+	// The env value wins, so the broker_url row must report SOURCE=env and show
+	// the env URL, never the overridden flag value.
+	if src := sourceForField(t, out, "broker_url"); src != sourceEnv {
+		t.Errorf("broker_url SOURCE = %q, want %q\n%s", src, sourceEnv, out)
+	}
+	if !strings.Contains(out, "https://broker.fromenv") {
+		t.Errorf("broker_url should show the env value (env wins):\n%s", out)
+	}
+	if strings.Contains(out, "https://broker.fromflag") {
+		t.Errorf("broker_url should NOT show the overridden flag value:\n%s", out)
+	}
+	if src := sourceForField(t, out, "broker_token"); src != sourceEnv {
+		t.Errorf("broker_token SOURCE = %q, want %q\n%s", src, sourceEnv, out)
+	}
+}
+
+// sourceForField returns the SOURCE column (the last whitespace-separated field)
+// of the row whose FIELD column equals field, from a `config show` table.
+func sourceForField(t *testing.T, table, field string) string {
+	t.Helper()
+	for line := range strings.SplitSeq(table, "\n") {
+		cols := strings.Fields(line)
+		if len(cols) >= 2 && cols[0] == field {
+			return cols[len(cols)-1]
+		}
+	}
+	t.Fatalf("field %q not found in table:\n%s", field, table)
+	return ""
+}

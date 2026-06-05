@@ -70,8 +70,11 @@ type Server struct {
 	refresh     RefreshFunc
 	clientID    string // when set, an incoming request's client_id must match it
 	callerToken string // optional caller bearer token; enforced only when non-empty
-	ready       func() error
-	cache       *resultCache
+	// callerTokenSum is sha256(callerToken), precomputed once so the per-request
+	// constant-time compare does not re-hash the (immutable) configured token.
+	callerTokenSum [32]byte
+	ready          func() error
+	cache          *resultCache
 
 	refreshSuccess      atomic.Int64
 	refreshError        atomic.Int64
@@ -103,10 +106,11 @@ func NewServer(opts Options) (*Server, error) {
 		return nil, errors.New("broker: Refresh function is required")
 	}
 	return &Server{
-		refresh:     opts.Refresh,
-		clientID:    opts.ClientID,
-		callerToken: opts.CallerToken,
-		ready:       opts.Ready,
+		refresh:        opts.Refresh,
+		clientID:       opts.ClientID,
+		callerToken:    opts.CallerToken,
+		callerTokenSum: sha256.Sum256([]byte(opts.CallerToken)),
+		ready:          opts.Ready,
 		cache: &resultCache{
 			ttl:      defaultCacheTTL,
 			now:      time.Now,
@@ -225,6 +229,17 @@ func (s *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, status, code, "")
 		return
 	}
+	// A RefreshFunc must return a non-nil token on success. Guard the nil/nil case
+	// defensively so a misbehaving Refresh reports a server error instead of
+	// panicking tokenResponse here — which, via coalescing, would also take down
+	// every waiter sharing this key.
+	if tok == nil {
+		s.refreshError.Add(1)
+		slog.Warn("broker refresh returned no token and no error",
+			"key", keyPrefix, "executed", executed, "latency_ms", latencyMS(start))
+		s.writeError(w, http.StatusInternalServerError, codeServerError, "")
+		return
+	}
 
 	resp := tokenResponse(tok)
 	s.refreshSuccess.Add(1)
@@ -247,13 +262,13 @@ func (s *Server) callerAuthOK(r *http.Request) bool {
 		return false
 	}
 	got := strings.TrimPrefix(h, prefix)
-	// Hash both sides to a fixed length first: subtle.ConstantTimeCompare
+	// Hash the presented token to a fixed length: subtle.ConstantTimeCompare
 	// short-circuits when the byte-slice lengths differ, which would otherwise
 	// leak the token length via timing. SHA-256 makes both operands 32 bytes so
-	// the compare is genuinely length-independent.
+	// the compare is genuinely length-independent. The want side (callerTokenSum)
+	// is precomputed at construction since the configured token never changes.
 	gotSum := sha256.Sum256([]byte(got))
-	wantSum := sha256.Sum256([]byte(s.callerToken))
-	return subtle.ConstantTimeCompare(gotSum[:], wantSum[:]) == 1
+	return subtle.ConstantTimeCompare(gotSum[:], s.callerTokenSum[:]) == 1
 }
 
 func (s *Server) writeJSON(w http.ResponseWriter, status int, body any) {

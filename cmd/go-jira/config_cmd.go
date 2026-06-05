@@ -80,11 +80,17 @@ func runConfigShow(cmd *cobra.Command) error {
 	fmt.Fprintf(w, "oauth_refresh_token_output\t%s\t%s\n",
 		redactIfSecret("oauth_refresh_token_output", config.oauthRefreshTokenOutput),
 		configSource(cmd, "", "", envOAuthRefreshTokenOutput))
-	// Token refresh broker (client-side): show the URL and the source, and the
-	// presence of the optional broker token without revealing it (row() redacts it
-	// via redactIfSecret).
-	row("broker_url", config.brokerURL, flagBrokerURL, "", envBrokerURL)
-	row("broker_token", config.brokerToken, flagBrokerToken, "", envBrokerToken)
+	// Token refresh broker (client-side): these resolve with resolveWithEnv (env >
+	// flag), so report the source env-first via oauthValueSource — the generic,
+	// flag-first configSource would mislabel an env-overridden value as coming from
+	// the flag when both are set. The broker token is still redacted by
+	// redactIfSecret; the URL is not secret and is shown in full.
+	fmt.Fprintf(w, "broker_url\t%s\t%s\n",
+		redactIfSecret("broker_url", config.brokerURL),
+		oauthValueSource(cmd, flagBrokerURL, envBrokerURL, config.brokerURL, ""))
+	fmt.Fprintf(w, "broker_token\t%s\t%s\n",
+		redactIfSecret("broker_token", config.brokerToken),
+		oauthValueSource(cmd, flagBrokerToken, envBrokerToken, config.brokerToken, ""))
 	fmt.Fprintf(w, "auth_mode\t%s\t%s\n", detectAuthMode(config), "resolved")
 
 	return w.Flush()
