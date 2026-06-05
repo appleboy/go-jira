@@ -26,8 +26,8 @@ other commands.
 Recovering from an authentication failure (exit code 3):
   1. The stored OAuth access token is most likely expired — run
      "go-jira token refresh" to renew it from the saved refresh token, then
-     re-run whoami. Do NOT just retry whoami; it will keep failing until the
-     token is refreshed.
+     re-run "go-jira whoami". Do NOT just retry it; the command keeps failing
+     until the token is refreshed.
   2. If the refresh fails (refresh token expired or revoked) or no token is
      stored, run "go-jira login" to re-authenticate.
   3. For --token or basic auth, verify the base URL and credentials instead.`,

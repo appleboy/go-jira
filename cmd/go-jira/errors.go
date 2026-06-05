@@ -255,10 +255,11 @@ func addHint(ce *cliError, root *cobra.Command) {
 			return
 		}
 		ce.hint = fmt.Sprintf(
-			"OAuth access token may be expired: run %q to renew it from the saved "+
-				"refresh token, then retry. If that fails (refresh token expired or "+
-				"revoked) or no token is stored, run %q to re-authenticate. For "+
-				"--token or basic auth, verify the base URL and credentials instead.",
+			"If you logged in via OAuth, your access token may be expired: run %q "+
+				"to renew it from the saved refresh token, then retry. If that fails "+
+				"(refresh token expired or revoked) or no token is stored, run %q to "+
+				"re-authenticate. For --token or basic auth, verify the base URL and "+
+				"credentials instead.",
 			name+" token refresh", name+" login",
 		)
 	case kindRateLimit:
