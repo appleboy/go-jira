@@ -91,6 +91,35 @@ func TestClassifyInvalidGrantIsAuth(t *testing.T) {
 	}
 }
 
+// oauth.ErrBrokerUnauthorized (the broker rejected the caller's broker token) is
+// a 401-class auth failure. Like ErrInvalidGrant it carries no "auth ..." prefix
+// and no HTTP diagnostics, so only errors.Is can catch it — this is what makes a
+// broker 401 exit 3 (not 1) consistently across the manual `token refresh` path
+// (which wraps "refresh failed: %w") and the auto-refresh paths.
+func TestClassifyBrokerUnauthorizedIsAuth(t *testing.T) {
+	err := fmt.Errorf("refresh failed: %w", oauth.ErrBrokerUnauthorized)
+	ce := classify(err, &requestDiag{})
+	if ce.code != exitAuth || ce.kind != kindAuth {
+		t.Fatalf("got code=%d kind=%q, want code=%d kind=%q",
+			ce.code, ce.kind, exitAuth, kindAuth)
+	}
+}
+
+// TestAddHintBrokerUnauthorizedPointsAtBrokerToken verifies that a broker 401
+// hint targets the broker token, not the user's Jira login/refresh — a broker
+// caller-credential failure is unrelated to the stored Jira token.
+func TestAddHintBrokerUnauthorizedPointsAtBrokerToken(t *testing.T) {
+	root := newRootCmd()
+	ce := classify(fmt.Errorf("refresh failed: %w", oauth.ErrBrokerUnauthorized), &requestDiag{})
+	addHint(ce, root)
+	if !strings.Contains(ce.hint, "broker token") {
+		t.Fatalf("hint = %q, want it to mention the broker token", ce.hint)
+	}
+	if strings.Contains(ce.hint, "go-jira login") {
+		t.Fatalf("hint = %q, want it NOT to suggest login (unrelated to a broker 401)", ce.hint)
+	}
+}
+
 // TestAddHintInvalidGrantPointsAtLogin verifies that for a refresh token that
 // is expired or revoked (oauth.ErrInvalidGrant), the hint points straight at
 // `login` and does NOT suggest `token refresh` — that command is what just

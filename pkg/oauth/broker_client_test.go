@@ -127,7 +127,7 @@ func TestRefreshViaBrokerErrorMapping(t *testing.T) {
 			"caller auth",
 			http.StatusUnauthorized,
 			broker.ErrorResponse{Error: "unauthorized"},
-			nil,
+			ErrBrokerUnauthorized,
 			"caller credential",
 		},
 		{
@@ -136,6 +136,23 @@ func TestRefreshViaBrokerErrorMapping(t *testing.T) {
 			broker.ErrorResponse{Error: "invalid_request"},
 			nil,
 			"rejected",
+		},
+		{
+			// invalid_grant with no description must not leave a dangling ": ".
+			"invalid_grant no description",
+			http.StatusBadRequest,
+			broker.ErrorResponse{Error: "invalid_grant"},
+			ErrInvalidGrant,
+			"",
+		},
+		{
+			// A 502 that is NOT the broker's own invalid_client (e.g. an
+			// ingress/proxy gateway error) falls through to ErrServerError.
+			"bad gateway not invalid_client",
+			http.StatusBadGateway,
+			broker.ErrorResponse{Error: "bad_gateway"},
+			ErrServerError,
+			"",
 		},
 	}
 	for _, tc := range cases {

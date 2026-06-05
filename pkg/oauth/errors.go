@@ -26,6 +26,12 @@ var (
 		"oauth: invalid_client (check client_id, or the app may be a confidential " +
 			"client that requires a secret — go-jira only supports public PKCE clients)")
 	ErrServerError = errors.New("oauth: server error")
+	// ErrBrokerUnauthorized means the token refresh broker rejected the caller's
+	// own credential (the JIRA_BROKER_TOKEN bearer was missing or wrong). It is a
+	// 401-class auth failure — distinct from a Jira-side auth failure — so the CLI
+	// classifies it as an auth error (exit 3) on every refresh path by identity,
+	// rather than relying on the wrapping message.
+	ErrBrokerUnauthorized = errors.New("oauth: broker rejected the caller credential")
 )
 
 // mapError translates x/oauth2's *oauth2.RetrieveError into our sentinel

@@ -150,10 +150,13 @@ func classify(err error, diag *requestDiag) *cliError {
 	if isUsageError(msg) {
 		return &cliError{code: exitUsage, kind: kindUsage, message: msg, err: err}
 	}
-	// oauth.ErrInvalidGrant (refresh token expired or revoked) surfaces from a
-	// direct refresh call with no HTTP diagnostics and no "auth ..." message
-	// prefix, so match it by error identity to keep all auth classification here.
-	if isAuthError(msg) || errors.Is(err, oauth.ErrInvalidGrant) {
+	// oauth.ErrInvalidGrant (refresh token expired or revoked) and
+	// oauth.ErrBrokerUnauthorized (broker rejected the caller token) surface from
+	// a refresh call with no HTTP diagnostics and no "auth ..." message prefix, so
+	// match them by error identity to keep all auth classification here.
+	if isAuthError(msg) ||
+		errors.Is(err, oauth.ErrInvalidGrant) ||
+		errors.Is(err, oauth.ErrBrokerUnauthorized) {
 		return &cliError{code: exitAuth, kind: kindAuth, message: msg, err: err}
 	}
 	return &cliError{code: exitError, kind: kindError, message: msg, err: err}
@@ -244,6 +247,13 @@ func addHint(ce *cliError, root *cobra.Command) {
 		ce.hint = fmt.Sprintf("Run %q for usage and examples.", rootName(root)+" --help")
 	case kindAuth:
 		name := rootName(root)
+		if errors.Is(ce.err, oauth.ErrBrokerUnauthorized) {
+			// A broker 401 is about the caller's broker token, not the user's Jira
+			// login, so the generic refresh/login hint below would misdirect.
+			ce.hint = "The token refresh broker rejected the caller credential; " +
+				"set or correct the broker token (JIRA_BROKER_TOKEN or --broker-token)."
+			return
+		}
 		if errors.Is(ce.err, oauth.ErrInvalidGrant) {
 			// The refresh token itself is dead, so suggesting `token refresh`
 			// would be self-referential (it is what just failed) and loop an

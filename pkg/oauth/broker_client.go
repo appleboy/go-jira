@@ -104,10 +104,11 @@ func brokerTokenToOAuth2(tr broker.TokenResponse, now time.Time) *oauth2.Token {
 // where one applies, mirroring mapError's mapping for the direct path:
 //
 //   - 400 invalid_grant → ErrInvalidGrant (refresh token expired/revoked)
-//   - 401              → caller-credential error (broker token missing/wrong)
+//   - 401              → ErrBrokerUnauthorized (broker token missing/wrong)
 //   - 502 invalid_client → ErrInvalidClient (broker's own secret is misconfigured)
-//   - any other 5xx    → ErrServerError (upstream timeout / broker fault), matching
-//     mapError, which maps every direct-path 5xx to ErrServerError
+//   - any other 5xx    → ErrServerError (upstream timeout / broker fault, plus a
+//     502 that is not the broker's own invalid_client), matching mapError, which
+//     maps every direct-path 5xx to ErrServerError
 func mapBrokerError(status int, body []byte) error {
 	var er broker.ErrorResponse
 	_ = json.Unmarshal(body, &er)
@@ -115,17 +116,29 @@ func mapBrokerError(status int, body []byte) error {
 	switch status {
 	case http.StatusBadRequest:
 		if er.Error == codeInvalidGrant {
+			// Omit the description when the broker doesn't supply one, so the
+			// message doesn't end with a dangling ": " while still matching
+			// errors.Is(ErrInvalidGrant).
+			if er.ErrorDescription == "" {
+				return ErrInvalidGrant
+			}
 			return fmt.Errorf("%w: %s", ErrInvalidGrant, er.ErrorDescription)
 		}
 		return fmt.Errorf("oauth: broker rejected the request (%s): %s",
 			brokerErrCode(er, status), er.ErrorDescription)
 	case http.StatusUnauthorized:
-		return fmt.Errorf(
-			"oauth: broker rejected the caller credential (status 401); " +
-				"set or correct the broker token")
+		return fmt.Errorf("%w (status 401); set or correct the broker token",
+			ErrBrokerUnauthorized)
 	case http.StatusBadGateway:
-		return fmt.Errorf("%w: broker upstream reported invalid_client "+
-			"(the broker's client secret is misconfigured)", ErrInvalidClient)
+		// Only the broker's own invalid_client (its client_secret is wrong) maps
+		// to ErrInvalidClient. A 502 without that code is almost always an
+		// ingress/proxy gateway error (e.g. an HTML 502 page), so let it fall
+		// through to the generic 5xx → ErrServerError mapping below rather than
+		// blaming the broker's secret.
+		if er.Error == codeInvalidClient {
+			return fmt.Errorf("%w: broker upstream reported invalid_client "+
+				"(the broker's client secret is misconfigured)", ErrInvalidClient)
+		}
 	}
 	// Any remaining 5xx (503 upstream-unavailable, 500 broker-internal, 504
 	// gateway-timeout, …) is a server/availability fault, classified like the
