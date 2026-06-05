@@ -244,6 +244,16 @@ func addHint(ce *cliError, root *cobra.Command) {
 		ce.hint = fmt.Sprintf("Run %q for usage and examples.", rootName(root)+" --help")
 	case kindAuth:
 		name := rootName(root)
+		if errors.Is(ce.err, oauth.ErrInvalidGrant) {
+			// The refresh token itself is dead, so suggesting `token refresh`
+			// would be self-referential (it is what just failed) and loop an
+			// agent; the only recovery is a full re-login.
+			ce.hint = fmt.Sprintf(
+				"The refresh token has expired or been revoked; run %q to re-authenticate.",
+				name+" login",
+			)
+			return
+		}
 		ce.hint = fmt.Sprintf(
 			"OAuth access token may be expired: run %q to renew it from the saved "+
 				"refresh token, then retry. If that fails (refresh token expired or "+

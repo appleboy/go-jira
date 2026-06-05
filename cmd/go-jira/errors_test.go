@@ -91,6 +91,26 @@ func TestClassifyInvalidGrantIsAuth(t *testing.T) {
 	}
 }
 
+// TestAddHintInvalidGrantPointsAtLogin verifies that for a refresh token that
+// is expired or revoked (oauth.ErrInvalidGrant), the hint points straight at
+// `login` and does NOT suggest `token refresh` — that command is what just
+// failed, so suggesting it would loop an agent. Guards the recovery path end to
+// end: classify() tags it auth, addHint() must emit the login-only hint.
+func TestAddHintInvalidGrantPointsAtLogin(t *testing.T) {
+	root := newRootCmd()
+	ce := classify(fmt.Errorf("refresh failed: %w", oauth.ErrInvalidGrant), &requestDiag{})
+	addHint(ce, root)
+	if !strings.Contains(ce.hint, "go-jira login") {
+		t.Fatalf("hint = %q, want it to contain %q", ce.hint, "go-jira login")
+	}
+	if strings.Contains(ce.hint, "go-jira token refresh") {
+		t.Fatalf(
+			"hint = %q, want it NOT to suggest token refresh (the command that just failed)",
+			ce.hint,
+		)
+	}
+}
+
 func TestClassifyNilReturnsNil(t *testing.T) {
 	if classify(nil, &requestDiag{}) != nil {
 		t.Fatal("classify(nil) should return nil")

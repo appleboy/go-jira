@@ -38,8 +38,8 @@ Recovering from an authentication failure (exit code 3):
   go-jira whoami --base-url https://jira.example.com --token "$JIRA_TOKEN"
 
   # Recommended recovery when whoami fails with an auth error (exit code 3)
-  go-jira token refresh --base-url https://jira.example.com && \
-    go-jira whoami --base-url https://jira.example.com`,
+  go-jira token refresh --base-url https://jira.example.com
+  go-jira whoami --base-url https://jira.example.com`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runWhoami(cmd)
