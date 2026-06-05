@@ -201,6 +201,10 @@ func authConfigFromRun(config Config) auth.Config {
 		OAuthRedirectURI:  config.redirectURI(),
 		OAuthScopes:       []string{config.scope},
 		OAuthHTTPClient:   oauthHTTPClient(config),
+		// Route the auto-refresh (401) and oauth-env refreshes through the broker
+		// when configured, matching the manual `token refresh` path.
+		BrokerURL:   config.brokerURL,
+		BrokerToken: config.brokerToken,
 	}
 	if config.oauthRefreshToken != "" {
 		cfg.OnRotate = rotationWriter(config.oauthRefreshTokenOutput)

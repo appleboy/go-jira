@@ -49,6 +49,11 @@ type Config struct {
 	callbackCert            string
 	callbackKey             string
 	callbackHTTPS           bool
+
+	// Token refresh broker (client-side). brokerURL routes refresh through the
+	// broker; brokerToken is the optional caller bearer token sent to it.
+	brokerURL   string
+	brokerToken string
 }
 
 // loadConfig resolves configuration from CLI flags (when explicitly set)
@@ -149,6 +154,10 @@ func loadConfig(cmd *cobra.Command) Config {
 	)
 	cfg.callbackHTTPS = resolveCallbackHTTPS(cmd)
 
+	// Token refresh broker (client-side): env > flag, no embedded default.
+	cfg.brokerURL = resolveWithEnv(envBrokerURL, flagStringValue(cmd, flagBrokerURL), "")
+	cfg.brokerToken = resolveWithEnv(envBrokerToken, flagStringValue(cmd, flagBrokerToken), "")
+
 	warnOnSecretFlags(cmd)
 	return cfg
 }
@@ -159,7 +168,7 @@ func warnOnSecretFlags(cmd *cobra.Command) {
 	if cmd == nil {
 		return
 	}
-	for _, name := range []string{flagPassword, flagToken} {
+	for _, name := range []string{flagPassword, flagToken, flagBrokerToken} {
 		if cmd.Flags().Lookup(name) != nil && cmd.Flags().Changed(name) {
 			slog.Warn(
 				"passing secrets via CLI flag is unsafe on shared hosts; prefer env vars or .env",

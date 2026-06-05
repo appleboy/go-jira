@@ -147,6 +147,10 @@ func oauthConfigFromConfig(config Config) *oauth.Config {
 		TLSKeyFile:      config.callbackKey,
 		GenerateTLSCert: config.callbackHTTPS,
 		HTTPClient:      oauthHTTPClient(config),
+		// Client-side broker routing for refresh. ClientSecret is deliberately
+		// never set here: only the broker process holds the secret.
+		BrokerURL:   config.brokerURL,
+		BrokerToken: config.brokerToken,
 	}
 }
 

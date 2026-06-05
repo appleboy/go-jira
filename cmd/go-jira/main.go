@@ -75,6 +75,15 @@ const (
 	flagScope         = "scope"
 	flagTimeout       = "timeout"
 	flagConfirm       = "confirm"
+
+	// Token refresh broker flags. --broker-url / --broker-token are client-side
+	// (route refresh through the broker); --listen / --tls-cert / --tls-key are
+	// broker-server-side (the `broker serve` subcommand).
+	flagBrokerURL   = "broker-url"
+	flagBrokerToken = "broker-token"
+	flagListen      = "listen"
+	flagTLSCert     = "tls-cert"
+	flagTLSKey      = "tls-key"
 )
 
 // OAuth environment variables. Unlike the action config (which uses the
@@ -89,6 +98,21 @@ const (
 	envOAuthCallbackKey        = "JIRA_OAUTH_CALLBACK_KEY"
 	envOAuthCallbackHTTPS      = "JIRA_OAUTH_CALLBACK_HTTPS"
 	envMasterPassword          = "JIRA_MASTER_PASSWORD"
+
+	// Token refresh broker env vars.
+	//   - envBrokerURL is client-side: route refresh through this broker.
+	//   - envBrokerToken is the shared caller bearer token: the client sends it,
+	//     and the broker enforces it only when set there too.
+	//   - envOAuthClientSecret is broker-ONLY: the confidential client_secret,
+	//     injected from a K8s Secret / Vault. It must never be set on a client.
+	//   - envBrokerListen / envBrokerTLSCert / envBrokerTLSKey configure the
+	//     broker's own HTTP(S) listener.
+	envBrokerURL         = "JIRA_TOKEN_BROKER_URL"
+	envBrokerToken       = "JIRA_BROKER_TOKEN"        //nolint:gosec // env var name, not a secret
+	envOAuthClientSecret = "JIRA_OAUTH_CLIENT_SECRET" //nolint:gosec // env var name, not a secret
+	envBrokerListen      = "JIRA_BROKER_LISTEN"
+	envBrokerTLSCert     = "JIRA_BROKER_TLS_CERT"
+	envBrokerTLSKey      = "JIRA_BROKER_TLS_KEY"
 
 	// JIRA_-prefixed aliases for the core auth/config fields, matching the env
 	// naming used throughout the docs and the auth-resolver error message. The
@@ -105,6 +129,10 @@ const (
 const (
 	defaultCallbackPort = 8765
 	defaultScope        = "WRITE"
+
+	// defaultBrokerListen is the broker server's default listen address. In
+	// Kubernetes the Service maps a stable port to this container port.
+	defaultBrokerListen = ":8080"
 
 	// Default custom field IDs used by the data subcommands that reference
 	// epic/sprint (create, update, and search). These match the documented Jira
@@ -253,6 +281,7 @@ Composability:
 		newLogoutCmd(),
 		newWhoamiCmd(),
 		newTokenCmd(),
+		newBrokerCmd(),
 		newConfigCmd(),
 		newSearchCmd(),
 		newCreateCmd(),
@@ -355,6 +384,11 @@ func addOAuthFlags(cmd *cobra.Command) {
 			"no cert/key files are needed (env: "+envOAuthCallbackHTTPS+
 			"); the browser shows a one-time security warning to accept")
 	cmd.Flags().String(flagScope, defaultScope, "OAuth scope to request")
+	cmd.Flags().String(flagBrokerURL, "",
+		"Token refresh broker base URL; when set, refresh is routed through the "+
+			"broker instead of calling Jira directly (env: "+envBrokerURL+")")
+	cmd.Flags().String(flagBrokerToken, "",
+		"Optional bearer token sent to the broker (env: "+envBrokerToken+")")
 }
 
 // loadEnvFile resolves and loads an env file, logging the absolute path that

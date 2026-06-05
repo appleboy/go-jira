@@ -80,6 +80,11 @@ func runConfigShow(cmd *cobra.Command) error {
 	fmt.Fprintf(w, "oauth_refresh_token_output\t%s\t%s\n",
 		redactIfSecret("oauth_refresh_token_output", config.oauthRefreshTokenOutput),
 		configSource(cmd, "", "", envOAuthRefreshTokenOutput))
+	// Token refresh broker (client-side): show the URL and the source, and the
+	// presence of the optional broker token without revealing it (row() redacts it
+	// via redactIfSecret).
+	row("broker_url", config.brokerURL, flagBrokerURL, "", envBrokerURL)
+	row("broker_token", config.brokerToken, flagBrokerToken, "", envBrokerToken)
 	fmt.Fprintf(w, "auth_mode\t%s\t%s\n", detectAuthMode(config), "resolved")
 
 	return w.Flush()
@@ -169,7 +174,7 @@ func redactIfSecret(field, value string) string {
 		return "(unset)"
 	}
 	switch field {
-	case flagToken, flagPassword, "oauth_refresh_token":
+	case flagToken, flagPassword, "oauth_refresh_token", "broker_token":
 		return "(set, redacted)"
 	default:
 		return value

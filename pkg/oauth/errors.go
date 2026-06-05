@@ -8,6 +8,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// RFC 6749 error codes this package recognizes, shared by the direct-path error
+// mapping (mapError) and the broker-path mapping (mapBrokerError).
+const (
+	codeInvalidGrant  = "invalid_grant"
+	codeInvalidClient = "invalid_client"
+)
+
 // Sentinel errors for the well-known OAuth failure modes that callers act on.
 //
 // ErrInvalidGrant is the important one: it means the refresh token has expired
@@ -33,9 +40,9 @@ func mapError(err error) error {
 		return err
 	}
 	switch re.ErrorCode {
-	case "invalid_grant":
+	case codeInvalidGrant:
 		return fmt.Errorf("%w: %s", ErrInvalidGrant, re.ErrorDescription)
-	case "invalid_client":
+	case codeInvalidClient:
 		return fmt.Errorf("%w: %s", ErrInvalidClient, re.ErrorDescription)
 	}
 	if re.Response != nil && re.Response.StatusCode >= http.StatusInternalServerError {
