@@ -22,6 +22,18 @@ import (
 // guarding against slow-loris clients on the (internal) listener.
 const brokerReadHeaderTimeout = 10 * time.Second
 
+// brokerReadTimeout / brokerWriteTimeout / brokerIdleTimeout bound a full
+// request read, a response write, and a keep-alive idle connection. Together
+// with ReadHeaderTimeout they stop a slow body or slow reader from pinning a
+// connection open indefinitely (a reliability/DoS risk even on internal
+// services). The refresh handler does one short upstream call, so generous
+// fixed values are ample.
+const (
+	brokerReadTimeout  = 30 * time.Second
+	brokerWriteTimeout = 30 * time.Second
+	brokerIdleTimeout  = 120 * time.Second
+)
+
 // brokerShutdownTimeout bounds graceful shutdown after a termination signal.
 const brokerShutdownTimeout = 10 * time.Second
 
@@ -152,6 +164,9 @@ func runBrokerServe(cmd *cobra.Command) error {
 		Addr:              listen,
 		Handler:           srv.Handler(),
 		ReadHeaderTimeout: brokerReadHeaderTimeout,
+		ReadTimeout:       brokerReadTimeout,
+		WriteTimeout:      brokerWriteTimeout,
+		IdleTimeout:       brokerIdleTimeout,
 	}
 	return serveBroker(cmdContext(cmd), httpSrv, config, tlsCert, tlsKey)
 }

@@ -158,12 +158,23 @@ go-jira can route **only the refresh step** through a server-side **token refres
 broker** that holds the secret. **Login is unchanged** — it stays a direct public
 PKCE flow; the broker is involved on refresh only.
 
+```mermaid
+flowchart LR
+    subgraph login["go-jira login — unchanged"]
+        direction LR
+        CLI1["CLI"] -->|"public PKCE, no secret"| J1["Jira DC"]
+    end
+    subgraph refresh["go-jira token refresh — via broker"]
+        direction LR
+        CLI2["CLI"] -->|"refresh_token + client_id"| B["broker<br/>(holds client_secret)"]
+        B -->|"refresh_token + client_id + client_secret"| J2["Jira DC"]
+        J2 -->|"rotated token pair"| B
+        B -->|"new token pair"| CLI2
+    end
 ```
-go-jira login    ──(public PKCE, no secret)──────────────────────▶ Jira DC   [unchanged]
 
-go-jira refresh  ──refresh_token──────────────▶ broker ──refresh_token + client_id + client_secret ─▶ Jira DC
-                 ◀────── new token pair ───────        ◀───────────── rotated token pair ────────────
-```
+Login stays a direct public PKCE flow with **no secret**; only `go-jira token
+refresh` routes through the broker, which adds the `client_secret` upstream.
 
 When `JIRA_TOKEN_BROKER_URL` is unset, behaviour is **identical to today** (direct
 refresh). The CLI **never** holds the secret.
@@ -206,7 +217,10 @@ Endpoints:
   invalid_client` (the **broker's** secret is misconfigured), `401`
   (caller-token check failed), `503` (upstream timeout / 5xx).
 - `GET /healthz` — liveness; never touches the secret.
-- `GET /readyz` — readiness; reports not-ready (`503`) until the secret is present.
+- `GET /readyz` — readiness; returns `200` once the process is serving. Because
+  the broker **fails fast** at startup when the secret is missing, it is ready as
+  soon as it accepts connections; the check is a defensive guard that mirrors
+  that invariant (it returns `503` only if the in-memory secret is ever absent).
 
 **Refresh-token rotation race.** Jira DC invalidates the old refresh token on
 every successful refresh, so concurrent refreshes of the same token would race.
@@ -216,6 +230,23 @@ upstream call (per-key request coalescing) and reuses the result for a short TTL
 the broker **does not persist tokens at rest**. With multiple replicas the cache
 is per-replica, so a rare cross-replica race just makes a client retry — use
 sticky routing if that matters.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C1 as CLI #1
+    participant C2 as CLI #2 (same token T)
+    participant B as broker
+    participant J as Jira DC
+    C1->>B: POST /v1/refresh (token T)
+    C2->>B: POST /v1/refresh (token T)
+    Note over B: coalesce by sha256(T) —<br/>only one upstream call in flight
+    B->>J: refresh T + client_secret (once)
+    J-->>B: rotated pair (old T invalidated)
+    B-->>C1: rotated pair
+    B-->>C2: same rotated pair (no 2nd upstream call)
+    Note over B: result cached in-memory for a short TTL (default 60s)
+```
 
 ### Security model
 

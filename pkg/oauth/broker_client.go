@@ -73,6 +73,13 @@ func (c *Config) refreshViaBroker(ctx context.Context, refreshToken string) (*oa
 		if tr.AccessToken == "" {
 			return nil, errors.New("oauth: broker returned an empty access token")
 		}
+		// Jira DC rotates the refresh token on every successful refresh and
+		// invalidates the old one, so a missing refresh_token here would leave
+		// the caller with nothing to persist — the next refresh would then fail
+		// with invalid_grant. Treat an empty refresh_token as a broker fault.
+		if tr.RefreshToken == "" {
+			return nil, errors.New("oauth: broker returned an empty refresh token")
+		}
 		return brokerTokenToOAuth2(tr, time.Now()), nil
 	}
 	return nil, mapBrokerError(resp.StatusCode, body)

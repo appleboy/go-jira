@@ -258,6 +258,12 @@ func (s *Server) callerAuthOK(r *http.Request) bool {
 
 func (s *Server) writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
+	// Refresh responses carry OAuth token material; per RFC 6749 §5.1 the token
+	// endpoint MUST forbid caching so no intermediary (reverse proxy, shared
+	// cache) retains a token-bearing body. writeJSON serves every /v1/refresh
+	// response (success and error), so setting it here covers them all.
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(body); err != nil {
 		slog.Warn("broker: encode response", "error", err)
