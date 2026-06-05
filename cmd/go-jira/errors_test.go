@@ -103,9 +103,9 @@ func TestAddHintPopulatesActionableGuidance(t *testing.T) {
 			"go-jira --help",
 		},
 		{
-			"auth points at whoami",
+			"auth points at the token refresh recovery step, not back at the failed command",
 			&cliError{kind: kindAuth, message: "auth resolution: x"},
-			"whoami",
+			"token refresh",
 		},
 		{
 			"rate limit references retry_after",

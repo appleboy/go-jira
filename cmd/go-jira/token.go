@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/appleboy/go-jira/pkg/auth"
+	"github.com/appleboy/go-jira/pkg/oauth"
 	"github.com/appleboy/go-jira/pkg/storage"
 
 	"github.com/spf13/cobra"
@@ -19,6 +20,14 @@ func newTokenCmd() *cobra.Command {
 		Use:     "token",
 		Short:   "Inspect and manage the locally stored OAuth token",
 		GroupID: groupAuth,
+		Long: `Inspect and manage the OAuth token stored by "go-jira login":
+  status   show expiry, scopes, and storage backend (does not reveal the token)
+  refresh  force a refresh now using the saved refresh token
+  print    print the raw access token (requires --confirm)
+
+Use "go-jira token refresh" to recover when whoami or another command fails
+with an authentication error (exit code 3) and you logged in via OAuth — it
+renews an expired access token without a full re-login.`,
 		Example: `  # Show token mode, expiry, scopes, and storage backend
   go-jira token status --base-url https://jira.example.com
 
@@ -68,6 +77,14 @@ func newTokenRefreshCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "refresh",
 		Short: "Force a token refresh and print the new expiry",
+		Long: `Force an immediate refresh of the stored OAuth access token using the saved
+refresh token, persist the rotated token, and print the new expiry.
+
+This is the recovery step when "go-jira whoami" or another command fails with
+an authentication error (exit code 3) and you logged in via OAuth: it renews an
+expired access token without a full re-login. If the refresh fails with
+invalid_grant the refresh token has itself expired or been revoked — run
+"go-jira login" to re-authenticate.`,
 		Example: `  # Force-refresh the stored token now
   go-jira token refresh --base-url https://jira.example.com`,
 		SilenceUsage: true,
@@ -146,6 +163,18 @@ func runTokenRefresh(cmd *cobra.Command) error {
 	defer cancel()
 	newTok, err := oc.Refresh(ctx, loaded.token.RefreshToken)
 	if err != nil {
+		// invalid_grant means the refresh token itself is expired or revoked, so
+		// a refresh can never recover — point the caller (and agents) straight at
+		// the real fix instead of leaving them to retry refresh in a loop.
+		if errors.Is(err, oauth.ErrInvalidGrant) {
+			return &cliError{
+				code:    exitAuth,
+				kind:    kindAuth,
+				message: fmt.Sprintf("refresh failed: %v", err),
+				hint:    "The refresh token has expired or been revoked; run `go-jira login` to re-authenticate.",
+				err:     err,
+			}
+		}
 		return fmt.Errorf("refresh failed: %w", err)
 	}
 

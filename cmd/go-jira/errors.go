@@ -238,9 +238,13 @@ func addHint(ce *cliError, root *cobra.Command) {
 		}
 		ce.hint = fmt.Sprintf("Run %q for usage and examples.", rootName(root)+" --help")
 	case kindAuth:
+		name := rootName(root)
 		ce.hint = fmt.Sprintf(
-			"Check your credentials and base URL; run %q to verify authentication.",
-			rootName(root)+" whoami",
+			"OAuth access token may be expired: run %q to renew it from the saved "+
+				"refresh token, then retry. If that fails (refresh token expired or "+
+				"revoked) or no token is stored, run %q to re-authenticate. For "+
+				"--token or basic auth, verify the base URL and credentials instead.",
+			name+" token refresh", name+" login",
 		)
 	case kindRateLimit:
 		ce.hint = "Wait for the duration in retry_after before retrying; requests are not retried automatically."
