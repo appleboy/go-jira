@@ -355,6 +355,42 @@ func TestResultCacheTTLEviction(t *testing.T) {
 	}
 }
 
+// TestResultCacheLazyFreshnessCheck verifies an entry past its TTL is never
+// served even when the amortized full sweep is skipped — eviction was made
+// amortized (at most once per TTL) so the hot path no longer scans the whole
+// map per request, leaving the per-key freshness check as the correctness anchor.
+func TestResultCacheLazyFreshnessCheck(t *testing.T) {
+	now := time.Unix(1000, 0)
+	c := newResultCache(60*time.Second, func() time.Time { return now })
+	var calls atomic.Int64
+	fn := func() (*oauth2.Token, error) {
+		calls.Add(1)
+		return &oauth2.Token{AccessToken: "a"}, nil
+	}
+
+	// Prime the cache: caches k@1000 and this call's sweep sets lastSwept=1000.
+	if _, executed, _ := c.do("k", fn); !executed {
+		t.Fatal("first call should execute fn")
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("calls = %d, want 1", calls.Load())
+	}
+
+	// Move past k's TTL, but pin lastSwept to now so the amortized sweep returns
+	// early: only the per-key freshness check can catch the stale entry now.
+	now = now.Add(61 * time.Second) // k is now 61s old (expired)
+	c.mu.Lock()
+	c.lastSwept = now
+	c.mu.Unlock()
+
+	if _, executed, _ := c.do("k", fn); !executed {
+		t.Fatal("expired entry must be re-fetched even when the full sweep is skipped")
+	}
+	if calls.Load() != 2 {
+		t.Errorf("calls = %d, want 2 (a stale entry must not be served)", calls.Load())
+	}
+}
+
 // TestResultCachePanicReleasesWaiters verifies that a panic in fn does not
 // deadlock coalesced waiters or wedge the key: all callers receive an error and
 // a subsequent call for the same key can execute again.

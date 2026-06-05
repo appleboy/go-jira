@@ -345,10 +345,12 @@ type inflightCall struct {
 
 // resultCache coalesces concurrent refreshes of the same key into one upstream
 // call and reuses a successful result for a short TTL. It is purely in-memory,
-// never persists, and lazily evicts expired entries on each access. Live memory
-// is therefore bounded by the number of distinct tokens seen within one TTL
+// never persists, and runs no background goroutine. Expired entries are reclaimed
+// two ways: a per-key freshness check on access (an expired hit is dropped and
+// treated as a miss) and an amortized full sweep that runs at most once per TTL
+// window. Live memory is bounded by the distinct tokens seen within ~one TTL
 // window (it can grow during a burst of distinct tokens, but every entry is
-// reclaimed once its TTL lapses), and it runs no background goroutine.
+// reclaimed within ~2×TTL).
 type resultCache struct {
 	ttl time.Duration
 	now func() time.Time
@@ -360,9 +362,10 @@ type resultCache struct {
 	// production.
 	onCoalesce func()
 
-	mu       sync.Mutex
-	results  map[string]cachedResult
-	inflight map[string]*inflightCall
+	mu        sync.Mutex
+	results   map[string]cachedResult
+	inflight  map[string]*inflightCall
+	lastSwept time.Time // time of the last full eviction sweep; gates evictExpiredLocked
 }
 
 // do returns a token for key, calling fn at most once across concurrent callers
@@ -375,8 +378,14 @@ func (c *resultCache) do(
 	c.mu.Lock()
 	c.evictExpiredLocked()
 	if r, ok := c.results[key]; ok {
-		c.mu.Unlock()
-		return r.tok, false, nil
+		// Per-key freshness check: the sweep above is amortized (runs at most
+		// once per TTL), so an entry may still be present past its TTL — never
+		// serve a stale result; drop it and fall through to a fresh refresh.
+		if c.now().Sub(r.fetchedAt) < c.ttl {
+			c.mu.Unlock()
+			return r.tok, false, nil
+		}
+		delete(c.results, key)
 	}
 	if call, ok := c.inflight[key]; ok {
 		c.mu.Unlock()
@@ -421,11 +430,21 @@ func (c *resultCache) do(
 	return call.tok, true, call.err
 }
 
-// evictExpiredLocked removes results past their TTL. c.mu must be held. Sweeping
-// the whole map on each access keeps it bounded by (request rate × TTL), which
-// is small, and avoids a background janitor goroutine.
+// evictExpiredLocked reclaims results past their TTL. c.mu must be held.
+//
+// The sweep is amortized: it walks the whole map at most once per TTL window
+// (gated by lastSwept) rather than on every call, so the per-request hot path
+// stays O(1) instead of O(len(results)) under the lock — otherwise a burst of
+// distinct tokens would make every later request (even cache hits for unrelated
+// keys) pay a full-map scan while holding the global lock. Correctness does not
+// depend on the sweep cadence: do()'s per-key freshness check never serves an
+// expired entry. Only reclamation of never-re-accessed keys relies on the sweep.
 func (c *resultCache) evictExpiredLocked() {
 	now := c.now()
+	if now.Sub(c.lastSwept) < c.ttl {
+		return
+	}
+	c.lastSwept = now
 	for k, r := range c.results {
 		if now.Sub(r.fetchedAt) >= c.ttl {
 			delete(c.results, k)
