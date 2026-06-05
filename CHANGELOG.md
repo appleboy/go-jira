@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.12.1 - 2026-06-05
+
+### Fixes
+
+- Point the auth-failure recovery hint at the token refresh and login ladder
+  instead of the command that just failed, and classify an expired or revoked
+  refresh token (`invalid_grant`) centrally so its hint sends users straight to
+  `go-jira login`.
+- Document the recovery steps in `whoami` help and `token` group help, and keep
+  the OAuth recovery advice accurate for token and basic auth users.
+
 ## v0.12.0 - 2026-05-31
 
 ### Features
