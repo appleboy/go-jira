@@ -193,8 +193,12 @@ func TestBrokerE2EConcurrentSameToken(t *testing.T) {
 		}(i)
 	}
 
-	<-j.started                        // the single executor has reached Jira
-	time.Sleep(100 * time.Millisecond) // let the rest coalesce as inflight waiters
+	<-j.started // the single executor has reached Jira and is held there
+	// No sleep needed: the executor's upstream call is held open on j.block, so
+	// every other caller either coalesces onto it or — once it completes and the
+	// rotated pair is cached — is served from that cache. Neither path makes a
+	// second upstream call, so upstream==1 and cache_hits==n-1 hold regardless of
+	// goroutine scheduling.
 	close(j.block)
 	wg.Wait()
 

@@ -338,6 +338,13 @@ type resultCache struct {
 	ttl time.Duration
 	now func() time.Time
 
+	// onCoalesce, when non-nil, is invoked each time a caller joins an existing
+	// in-flight call (just before it waits). It is a test seam used to gate the
+	// executor until all waiters have provably coalesced, so concurrency tests are
+	// deterministic without a timing-based sleep; it is nil (and free) in
+	// production.
+	onCoalesce func()
+
 	mu       sync.Mutex
 	results  map[string]cachedResult
 	inflight map[string]*inflightCall
@@ -358,6 +365,9 @@ func (c *resultCache) do(
 	}
 	if call, ok := c.inflight[key]; ok {
 		c.mu.Unlock()
+		if c.onCoalesce != nil {
+			c.onCoalesce()
+		}
 		call.wg.Wait()
 		return call.tok, false, call.err
 	}

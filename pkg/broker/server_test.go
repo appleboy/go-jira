@@ -268,6 +268,13 @@ func TestHealthzReadyz(t *testing.T) {
 // exactly one caller reported as having executed it.
 func TestResultCacheCoalesces(t *testing.T) {
 	c := newResultCache(time.Minute, time.Now)
+	const n = 10
+	// Gate the executor on all other callers provably coalescing as in-flight
+	// waiters, so the test is deterministic without a timing-based sleep.
+	var coalesced sync.WaitGroup
+	coalesced.Add(n - 1)
+	c.onCoalesce = coalesced.Done
+
 	var calls atomic.Int64
 	release := make(chan struct{})
 	started := make(chan struct{}, 1)
@@ -281,7 +288,6 @@ func TestResultCacheCoalesces(t *testing.T) {
 		return &oauth2.Token{AccessToken: "a"}, nil
 	}
 
-	const n = 10
 	var wg sync.WaitGroup
 	tokens := make([]*oauth2.Token, n)
 	executed := make([]bool, n)
@@ -297,11 +303,9 @@ func TestResultCacheCoalesces(t *testing.T) {
 		}(i)
 	}
 
-	<-started
-	// Give the other goroutines time to register as inflight waiters before the
-	// single executor completes.
-	time.Sleep(100 * time.Millisecond)
-	close(release)
+	<-started        // the single executor is now in fn
+	coalesced.Wait() // every other caller has joined as an in-flight waiter
+	close(release)   // let the executor finish
 	wg.Wait()
 
 	if calls.Load() != 1 {
@@ -356,6 +360,11 @@ func TestResultCacheTTLEviction(t *testing.T) {
 // a subsequent call for the same key can execute again.
 func TestResultCachePanicReleasesWaiters(t *testing.T) {
 	c := newResultCache(time.Minute, time.Now)
+	const n = 5
+	var coalesced sync.WaitGroup
+	coalesced.Add(n - 1)
+	c.onCoalesce = coalesced.Done
+
 	release := make(chan struct{})
 	started := make(chan struct{}, 1)
 	panicFn := func() (*oauth2.Token, error) {
@@ -367,7 +376,6 @@ func TestResultCachePanicReleasesWaiters(t *testing.T) {
 		panic("boom")
 	}
 
-	const n = 5
 	var wg sync.WaitGroup
 	errs := make([]error, n)
 	for i := range n {
@@ -378,8 +386,8 @@ func TestResultCachePanicReleasesWaiters(t *testing.T) {
 		}(i)
 	}
 
-	<-started
-	time.Sleep(100 * time.Millisecond) // let the rest coalesce as waiters
+	<-started        // the single executor is now in panicFn
+	coalesced.Wait() // the rest have joined as in-flight waiters
 	close(release)
 	wg.Wait() // must not hang
 
@@ -403,6 +411,7 @@ func TestResultCachePanicReleasesWaiters(t *testing.T) {
 // once, the failure is not counted as a cache hit, and every caller is counted
 // as an error.
 func TestRefreshCoalescedFailureMetrics(t *testing.T) {
+	const n = 6
 	release := make(chan struct{})
 	started := make(chan struct{}, 1)
 	var upstream atomic.Int64
@@ -417,8 +426,13 @@ func TestRefreshCoalescedFailureMetrics(t *testing.T) {
 			return nil, &APIError{Status: http.StatusServiceUnavailable, Code: codeServerError}
 		},
 	})
+	// Gate the executor on all other callers coalescing. A coalesced FAILURE is
+	// never cached, so without this barrier a straggler that arrived after the
+	// executor returned could start a second upstream call.
+	var coalesced sync.WaitGroup
+	coalesced.Add(n - 1)
+	s.cache.onCoalesce = coalesced.Done
 
-	const n = 6
 	var wg sync.WaitGroup
 	for range n {
 		wg.Add(1)
@@ -428,8 +442,8 @@ func TestRefreshCoalescedFailureMetrics(t *testing.T) {
 		}()
 	}
 
-	<-started
-	time.Sleep(100 * time.Millisecond)
+	<-started        // the single executor has reached the upstream call
+	coalesced.Wait() // every other caller has coalesced onto it
 	close(release)
 	wg.Wait()
 

@@ -39,11 +39,14 @@ type Config struct {
 	RedirectURI string   // e.g. "http://127.0.0.1:8765/callback"
 	Scopes      []string // e.g. ["WRITE"]
 
-	// ClientSecret is the confidential-client secret used ONLY on the broker's
-	// direct refresh path. It is left empty on every client; x/oauth2 omits an
-	// empty client_secret, so the public PKCE login/refresh flow is unchanged.
-	// The secret must never be embedded in a published binary — it is injected
-	// from the environment only in the broker process.
+	// ClientSecret is the confidential-client secret. It is left empty on every
+	// client; x/oauth2 omits an empty client_secret, so the public PKCE
+	// login/refresh flow sends no secret and is unchanged. The secret must never
+	// be embedded in a published binary — it is injected from the environment
+	// only in the broker process. When set it is part of oauth2Config and is
+	// therefore sent on any token-endpoint call that config drives (Exchange and
+	// refresh alike); in practice only the broker's refresh sends it, because the
+	// broker performs no authorization-code exchange.
 	ClientSecret string
 
 	// BrokerURL, when set, routes Refresh through the token refresh broker
@@ -113,9 +116,11 @@ func (c *Config) Validate() error {
 // AuthStyleInParams puts client_id in the request body params, which is what
 // the Jira DC provider expects, and avoids x/oauth2's auto-detect probe
 // request. ClientSecret is empty on every client, and x/oauth2 omits an empty
-// client_secret, so the public PKCE flow sends no secret; only the broker sets
-// ClientSecret, and then it is sent on the direct refresh body as Jira DC's
-// confidential-client refresh requires.
+// client_secret, so the public PKCE flow sends no secret. When ClientSecret is
+// set (only in the broker process) it is sent on every token-endpoint call this
+// config drives — both Exchange (authorization_code) and refresh — so any caller
+// that must not leak the secret leaves it empty; the broker only ever drives the
+// refresh path.
 func (c *Config) oauth2Config() *oauth2.Config {
 	// Trim a trailing slash so a base URL entered as "https://jira.example.com/"
 	// does not yield a double slash ("…com//rest/…") in the endpoint URLs.
