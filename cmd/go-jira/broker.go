@@ -36,17 +36,17 @@ func newBrokerCmd() *cobra.Command {
 		GroupID: groupAuth,
 		Long: `Run the OAuth token refresh broker.
 
-MediaTek's Jira DC OAuth app is a confidential client: its token endpoint
-requires the client_secret on the refresh step. go-jira ships as a public PKCE
-client and must never embed that secret. The broker is a small server-side
-service that holds the client_secret (injected from the environment, e.g. a
-Kubernetes Secret sourced from Vault) and performs only the secret-bearing
-refresh on a client's behalf. Clients set JIRA_TOKEN_BROKER_URL and send their
-refresh_token; the broker adds the secret and returns the rotated token pair.
+A confidential Jira DC OAuth app requires the client_secret on the refresh step.
+go-jira ships as a public PKCE client and must never embed that secret. The
+broker is a small server-side service that holds the client_secret (injected
+from the environment, e.g. a Kubernetes Secret sourced from Vault) and performs
+only the secret-bearing refresh on a client's behalf. Clients set
+JIRA_TOKEN_BROKER_URL and send their refresh_token; the broker adds the secret
+and returns the rotated token pair.
 
-The broker stores no tokens; it keeps only a short-TTL in-memory cache that
-coalesces concurrent refreshes of the same refresh_token into one upstream call
-(handling Jira DC's refresh-token rotation race).`,
+The broker does not persist tokens at rest; it keeps only a short-TTL in-memory
+cache that coalesces concurrent refreshes of the same refresh_token into one
+upstream call (handling Jira DC's refresh-token rotation race).`,
 		SilenceUsage: true,
 	}
 	cmd.AddCommand(newBrokerServeCmd())

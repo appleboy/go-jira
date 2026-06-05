@@ -1,18 +1,18 @@
 // Package broker implements the server side of the OAuth token refresh broker.
 //
-// MediaTek's internal Jira DC OAuth application is a confidential client: its
-// token endpoint requires a client_secret on the grant_type=refresh_token step.
-// go-jira ships as a public PKCE client and must never embed that secret (a
-// published binary would expose it). The broker is a small server-side service
-// that holds the client_secret and performs only the secret-bearing refresh
-// step on a client's behalf: the CLI sends its refresh_token, the broker adds
-// the client_secret, forwards to Jira DC, and returns the rotated token pair.
+// Some Jira DC OAuth applications are confidential clients: their token endpoint
+// requires a client_secret on the grant_type=refresh_token step. go-jira ships
+// as a public PKCE client and must never embed that secret (a published binary
+// would expose it). The broker is a small server-side service that holds the
+// client_secret and performs only the secret-bearing refresh step on a client's
+// behalf: the CLI sends its refresh_token, the broker adds the client_secret,
+// forwards to Jira DC, and returns the rotated token pair.
 //
-// The broker never stores any token. It keeps only a short-TTL in-memory result
-// cache (with per-key request coalescing) to absorb the refresh-token rotation
-// race Jira DC creates — a successful refresh invalidates the old refresh_token,
-// so concurrent refreshes of the same token must collapse to a single upstream
-// call and share the one rotated pair.
+// The broker does not persist tokens at rest. It keeps only a short-TTL
+// in-memory result cache (with per-key request coalescing) to absorb the
+// refresh-token rotation race Jira DC creates — a successful refresh
+// invalidates the old refresh_token, so concurrent refreshes of the same token
+// must collapse to a single upstream call and share the one rotated pair.
 //
 // This package deliberately does NOT import pkg/oauth. The refresh itself is
 // supplied as a RefreshFunc so the only component that holds the secret and

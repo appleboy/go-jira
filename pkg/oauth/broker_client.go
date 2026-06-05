@@ -56,7 +56,14 @@ func (c *Config) refreshViaBroker(ctx context.Context, refreshToken string) (*oa
 		return nil, fmt.Errorf("%w: broker request failed: %v", ErrServerError, err)
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, maxBrokerResponse))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBrokerResponse))
+	if err != nil {
+		// A failure reading the body (truncated/reset connection) is an
+		// availability problem, not a credential one — classify it like the
+		// transport-level failure above rather than letting a truncated body
+		// fall through to a misleading JSON-decode or error-mapping result.
+		return nil, fmt.Errorf("%w: read broker response failed: %v", ErrServerError, err)
+	}
 
 	if resp.StatusCode == http.StatusOK {
 		var tr broker.TokenResponse

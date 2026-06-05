@@ -247,7 +247,13 @@ func (s *Server) callerAuthOK(r *http.Request) bool {
 		return false
 	}
 	got := strings.TrimPrefix(h, prefix)
-	return subtle.ConstantTimeCompare([]byte(got), []byte(s.callerToken)) == 1
+	// Hash both sides to a fixed length first: subtle.ConstantTimeCompare
+	// short-circuits when the byte-slice lengths differ, which would otherwise
+	// leak the token length via timing. SHA-256 makes both operands 32 bytes so
+	// the compare is genuinely length-independent.
+	gotSum := sha256.Sum256([]byte(got))
+	wantSum := sha256.Sum256([]byte(s.callerToken))
+	return subtle.ConstantTimeCompare(gotSum[:], wantSum[:]) == 1
 }
 
 func (s *Server) writeJSON(w http.ResponseWriter, status int, body any) {
@@ -318,8 +324,10 @@ type inflightCall struct {
 
 // resultCache coalesces concurrent refreshes of the same key into one upstream
 // call and reuses a successful result for a short TTL. It is purely in-memory,
-// never persists, and lazily evicts expired entries on each access so it cannot
-// leak memory or goroutines.
+// never persists, and lazily evicts expired entries on each access. Live memory
+// is therefore bounded by the number of distinct tokens seen within one TTL
+// window (it can grow during a burst of distinct tokens, but every entry is
+// reclaimed once its TTL lapses), and it runs no background goroutine.
 type resultCache struct {
 	ttl time.Duration
 	now func() time.Time

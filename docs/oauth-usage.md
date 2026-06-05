@@ -213,9 +213,9 @@ every successful refresh, so concurrent refreshes of the same token would race.
 The broker coalesces concurrent calls for one refresh token into a **single**
 upstream call (per-key request coalescing) and reuses the result for a short TTL
 (default 60s). The cache is **purely in-memory, never persisted, never logged**;
-the broker stores **no** tokens. With multiple replicas the cache is per-replica,
-so a rare cross-replica race just makes a client retry — use sticky routing if
-that matters.
+the broker **does not persist tokens at rest**. With multiple replicas the cache
+is per-replica, so a rare cross-replica race just makes a client retry — use
+sticky routing if that matters.
 
 ### Security model
 
