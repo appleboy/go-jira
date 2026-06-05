@@ -39,6 +39,15 @@ type stubJira struct {
 	lastRefresh string
 }
 
+// lastSeen returns the client_secret and refresh_token the stub last received,
+// read under the same mutex the handler writes them with so assertions are
+// race-free under `go test -race`.
+func (j *stubJira) lastSeen() (secret, refresh string) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.lastSecret, j.lastRefresh
+}
+
 func newStubJira(t *testing.T, j *stubJira) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
@@ -146,11 +155,12 @@ func TestBrokerE2EHappyPath(t *testing.T) {
 	if j.upstreamCalls.Load() != 1 {
 		t.Errorf("upstream calls = %d, want 1", j.upstreamCalls.Load())
 	}
-	if j.lastSecret != brokerSecret {
-		t.Errorf("Jira saw client_secret %q, want the broker to add %q", j.lastSecret, brokerSecret)
+	lastSecret, lastRefresh := j.lastSeen()
+	if lastSecret != brokerSecret {
+		t.Errorf("Jira saw client_secret %q, want the broker to add %q", lastSecret, brokerSecret)
 	}
-	if j.lastRefresh != "refresh-old" {
-		t.Errorf("Jira saw refresh_token %q, want the client's refresh-old", j.lastRefresh)
+	if lastRefresh != "refresh-old" {
+		t.Errorf("Jira saw refresh_token %q, want the client's refresh-old", lastRefresh)
 	}
 	if m := srv.Metrics(); m.RefreshTotal["success"] != 1 || m.UpstreamCalls != 1 {
 		t.Errorf("broker metrics = %+v, want 1 success / 1 upstream", m)

@@ -71,15 +71,19 @@ func newBrokerServeCmd() *cobra.Command {
 		Short: "Start the token refresh broker HTTP server",
 		Long: `Start the token refresh broker HTTP server.
 
-Required environment (fail-fast if missing):
-  JIRA_BASE_URL             Jira DC base URL
-  JIRA_OAUTH_CLIENT_ID      OAuth client ID
-  JIRA_OAUTH_CLIENT_SECRET  confidential client secret (read ONLY from env)
+Required (fail-fast if missing):
+  JIRA_BASE_URL             Jira DC base URL            (or --base-url)
+  JIRA_OAUTH_CLIENT_ID      OAuth client ID             (or --client-id)
+  JIRA_OAUTH_CLIENT_SECRET  confidential client secret  (read ONLY from env)
 
 Optional:
-  JIRA_BROKER_TOKEN         caller bearer token; enforced only when set
-  JIRA_BROKER_LISTEN        listen address (default ` + defaultBrokerListen + `)
-  JIRA_BROKER_TLS_CERT/KEY  serve HTTPS directly (else terminate TLS at ingress)
+  JIRA_BROKER_TOKEN         caller bearer token; enforced only when set (env only)
+  JIRA_BROKER_LISTEN        listen address (default ` + defaultBrokerListen + `) (or --listen)
+  JIRA_BROKER_TLS_CERT/KEY  serve HTTPS directly (or --tls-cert/--tls-key; else terminate TLS at ingress)
+
+Precedence when both an env var and its flag are set: for client ID, listen and
+TLS the environment variable wins; for base URL the --base-url flag wins over
+JIRA_BASE_URL. The secret and caller token are read only from the environment.
 
 Endpoints: POST /v1/refresh, GET /healthz, GET /readyz.`,
 		Example: `  # Run the broker (secret comes from the environment)
