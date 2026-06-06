@@ -22,4 +22,7 @@ RUN chown jira:jira /bin/go-jira
 
 USER jira
 
+# Default listen port for `go-jira broker serve` (override with --listen / JIRA_BROKER_LISTEN).
+EXPOSE 8080
+
 ENTRYPOINT ["/bin/go-jira"]
