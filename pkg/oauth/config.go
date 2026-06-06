@@ -39,6 +39,28 @@ type Config struct {
 	RedirectURI string   // e.g. "http://127.0.0.1:8765/callback"
 	Scopes      []string // e.g. ["WRITE"]
 
+	// ClientSecret is the confidential-client secret. It is left empty on every
+	// client; x/oauth2 omits an empty client_secret, so the public PKCE
+	// login/refresh flow sends no secret and is unchanged. The secret must never
+	// be embedded in a published binary — it is injected from the environment
+	// only in the broker process. When set it is part of oauth2Config and is
+	// therefore sent on any token-endpoint call that config drives (Exchange and
+	// refresh alike); in practice only the broker's refresh sends it, because the
+	// broker performs no authorization-code exchange.
+	ClientSecret string
+
+	// BrokerURL, when set, routes Refresh through the token refresh broker
+	// instead of calling Jira DC directly: the client POSTs its refresh_token to
+	// the broker, which adds the client_secret and returns the rotated pair.
+	// Empty preserves the current behaviour (direct refresh against Jira). Only
+	// the refresh path is affected; login is always a direct public PKCE flow.
+	BrokerURL string
+
+	// BrokerToken, when set, is sent as a bearer token on broker requests. It is
+	// an optional, defence-in-depth caller credential; the broker enforces it
+	// only when it is configured there too (see pkg/broker).
+	BrokerToken string
+
 	// TLSCertFile and TLSKeyFile, when both set, make the local callback server
 	// serve HTTPS instead of plain HTTP. Jira DC matches the registered
 	// redirect URI exactly and commonly rejects an http scheme, so an https
@@ -93,13 +115,19 @@ func (c *Config) Validate() error {
 //
 // AuthStyleInParams puts client_id in the request body params, which is what
 // the Jira DC provider expects, and avoids x/oauth2's auto-detect probe
-// request. This is a public PKCE client, so no client secret is sent.
+// request. ClientSecret is empty on every client, and x/oauth2 omits an empty
+// client_secret, so the public PKCE flow sends no secret. When ClientSecret is
+// set (only in the broker process) it is sent on every token-endpoint call this
+// config drives — both Exchange (authorization_code) and refresh — so any caller
+// that must not leak the secret leaves it empty; the broker only ever drives the
+// refresh path.
 func (c *Config) oauth2Config() *oauth2.Config {
 	// Trim a trailing slash so a base URL entered as "https://jira.example.com/"
 	// does not yield a double slash ("…com//rest/…") in the endpoint URLs.
 	base := strings.TrimRight(c.BaseURL, "/")
 	return &oauth2.Config{
-		ClientID: c.ClientID,
+		ClientID:     c.ClientID,
+		ClientSecret: c.ClientSecret,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   base + authorizePath,
 			TokenURL:  base + tokenPath,
@@ -113,9 +141,16 @@ func (c *Config) oauth2Config() *oauth2.Config {
 // ctx returns a context carrying the configured HTTP client so x/oauth2 uses
 // it for all token endpoint requests, applying a default timeout otherwise.
 func (c *Config) ctx(parent context.Context) context.Context {
-	hc := c.HTTPClient
-	if hc == nil {
-		hc = &http.Client{Timeout: defaultHTTPTimeout}
+	return context.WithValue(parent, oauth2.HTTPClient, c.httpClient())
+}
+
+// httpClient returns the configured HTTP client, or a default timeout client.
+// The broker caller uses it directly (not via x/oauth2) so refresh requests to
+// the broker honour the same TLS behaviour (internal CA / --insecure) as Jira
+// API calls.
+func (c *Config) httpClient() *http.Client {
+	if c.HTTPClient != nil {
+		return c.HTTPClient
 	}
-	return context.WithValue(parent, oauth2.HTTPClient, hc)
+	return &http.Client{Timeout: defaultHTTPTimeout}
 }

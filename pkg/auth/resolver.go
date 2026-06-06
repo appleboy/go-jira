@@ -26,6 +26,12 @@ type Config struct {
 	OAuthRedirectURI string
 	OAuthScopes      []string
 
+	// BrokerURL / BrokerToken route the refresh through the token refresh broker
+	// when set, so the auto-refresh (401) and oauth-env paths use the broker too.
+	// Empty preserves the direct-refresh behaviour. login is unaffected.
+	BrokerURL   string
+	BrokerToken string
+
 	// OAuthHTTPClient, if set, is used for OAuth token endpoint requests
 	// (refresh / exchange) so they honour the same TLS behaviour as API calls —
 	// e.g. the --insecure client for self-signed Jira instances. nil lets
@@ -81,6 +87,8 @@ func oauthConfig(cfg Config) *oauth.Config {
 		RedirectURI: cfg.OAuthRedirectURI,
 		Scopes:      cfg.OAuthScopes,
 		HTTPClient:  cfg.OAuthHTTPClient,
+		BrokerURL:   cfg.BrokerURL,
+		BrokerToken: cfg.BrokerToken,
 	}
 }
 

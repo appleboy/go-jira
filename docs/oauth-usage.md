@@ -149,6 +149,133 @@ refresh token for an access token at startup.
 A complete GitHub Actions example, including the secret write-back step, is in
 [`.github/workflows/example-oauth-ci.yml`](../.github/workflows/example-oauth-ci.yml).
 
+## 6. Token refresh broker (confidential clients)
+
+Some Jira DC OAuth applications are **confidential clients**: their token
+endpoint **requires `client_secret` on the `grant_type=refresh_token` step**. A
+published binary must never embed that secret (`strings` would reveal it), so
+go-jira can route **only the refresh step** through a server-side **token refresh
+broker** that holds the secret. **Login is unchanged** — it stays a direct public
+PKCE flow; the broker is involved on refresh only.
+
+```mermaid
+flowchart LR
+    subgraph login["go-jira login — unchanged"]
+        direction LR
+        CLI1["CLI"] -->|"public PKCE, no secret"| J1["Jira DC"]
+    end
+    subgraph refresh["go-jira token refresh — via broker"]
+        direction LR
+        CLI2["CLI"] -->|"refresh_token + client_id"| B["broker<br/>(holds client_secret)"]
+        B -->|"refresh_token + client_id + client_secret"| J2["Jira DC"]
+        J2 -->|"rotated token pair"| B
+        B -->|"new token pair"| CLI2
+    end
+```
+
+Login stays a direct public PKCE flow with **no secret**; only `go-jira token
+refresh` routes through the broker, which adds the `client_secret` upstream.
+
+When `JIRA_TOKEN_BROKER_URL` is unset, behaviour is **identical to today** (direct
+refresh). The CLI **never** holds the secret.
+
+### Client setup
+
+| Env var                 | Flag             | Required | Purpose                                                  |
+| ----------------------- | ---------------- | -------- | -------------------------------------------------------- |
+| `JIRA_TOKEN_BROKER_URL` | `--broker-url`   | to use   | Broker base URL; routes refresh through the broker       |
+| `JIRA_BROKER_TOKEN`     | `--broker-token` | optional | Caller bearer token (see security model)                 |
+
+All three refresh paths use the broker once `JIRA_TOKEN_BROKER_URL` is set:
+`go-jira token refresh`, the automatic refresh after a `401`, and the `oauth-env`
+(CI) initial refresh. `go-jira config show` reports `broker_url` (and a redacted
+`broker_token`) with their source.
+
+### Broker deployment (Kubernetes + Vault)
+
+Run the **same binary** as a subcommand: `go-jira broker serve`. The secret is
+injected from a **K8s Secret sourced from Vault** (Vault Agent, Secrets Store
+CSI, or external-secrets) — never built into the image, never in ldflags.
+
+| Env var                    | Required | Purpose                                                          |
+| -------------------------- | -------- | --------------------------------------------------------------- |
+| `JIRA_BASE_URL`            | yes      | Jira instance base URL                                          |
+| `JIRA_OAUTH_CLIENT_ID`     | yes      | OAuth client ID (also matched against a request's `client_id`)  |
+| `JIRA_OAUTH_CLIENT_SECRET` | yes      | Confidential client secret — **read only here, only from env**  |
+| `JIRA_BROKER_TOKEN`        | optional | Required caller bearer token; enforced **only when set**        |
+| `JIRA_BROKER_LISTEN`       | optional | Listen address (default `:8080`); flag `--listen`               |
+| `JIRA_BROKER_TLS_CERT/KEY` | optional | Serve HTTPS directly; otherwise terminate TLS at the ingress    |
+
+The broker **fails fast** if `JIRA_BASE_URL`, `JIRA_OAUTH_CLIENT_ID`, or
+`JIRA_OAUTH_CLIENT_SECRET` is missing.
+
+Endpoints:
+
+- `POST /v1/refresh` — body `{"refresh_token":"…"}` (optional `client_id`,
+  verified against the broker's own); returns the rotated OAuth token pair, or an
+  OAuth-style error: `400 invalid_grant` (token expired/revoked), `502
+  invalid_client` (the **broker's** secret is misconfigured), `401`
+  (caller-token check failed), `503` (upstream timeout / 5xx).
+- `GET /healthz` — liveness; never touches the secret.
+- `GET /readyz` — readiness; returns `200` once the process is serving. Because
+  the broker **fails fast** at startup when the secret is missing, it is ready as
+  soon as it accepts connections; the check is a defensive guard that mirrors
+  that invariant (it returns `503` only if the in-memory secret is ever absent).
+
+**Refresh-token rotation race.** Jira DC invalidates the old refresh token on
+every successful refresh, so concurrent refreshes of the same token would race.
+The broker coalesces concurrent calls for one refresh token into a **single**
+upstream call (per-key request coalescing) and reuses the result for a short TTL
+(default 60s). The cache is **purely in-memory, never persisted, never logged**;
+the broker **does not persist tokens at rest**. With multiple replicas the cache
+is per-replica, so a rare cross-replica race just makes a client retry — use
+sticky routing if that matters.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C1 as CLI #1
+    participant C2 as CLI #2 (same token T)
+    participant B as broker
+    participant J as Jira DC
+    C1->>B: POST /v1/refresh (token T)
+    C2->>B: POST /v1/refresh (token T)
+    Note over B: coalesce by sha256(T) —<br/>only one upstream call in flight
+    B->>J: refresh T + client_secret (once)
+    J-->>B: rotated pair (old T invalidated)
+    B-->>C1: rotated pair
+    B-->>C2: same rotated pair (no 2nd upstream call)
+    Note over B: result cached in-memory for a short TTL (default 60s)
+```
+
+### Security model
+
+- **Primary control: the network.** Put the broker behind a **K8s NetworkPolicy
+  + internal-only ingress** so only approved sources can reach it, always over
+  TLS. A leaked refresh token alone is useless without network access to the
+  broker — a control a CLI cannot steal.
+- **Optional caller token (`JIRA_BROKER_TOKEN`).** Defence in depth, enforced
+  only when set. ⚠️ It is **only meaningful when it comes from a different trust
+  source than the refresh token** (e.g. a CI secret store). If it sits in the
+  **same `.env` as the refresh token**, it adds **no** protection against host/
+  file compromise — do not treat it as the primary control.
+- **Upgrade to mTLS** (certs issued/rotated by the service mesh or ingress) when
+  you need a real caller identity rather than a shared string.
+- **Accepted residual risk.** Without a caller token, "reach the broker + hold a
+  valid refresh token" is enough to refresh. Mitigate with network restriction,
+  short-lived refresh tokens + Jira's existing rotation, and broker-side logging
+  / rate limiting / anomaly alerts.
+- **Rotation needs no rebuild.** Rotate `client_secret` (update Vault/Secret →
+  rolling restart) or `JIRA_BROKER_TOKEN` (update the Secret + re-issue to
+  callers → rolling restart) **without** rebuilding or republishing the binary.
+
+### Observability
+
+Each request emits a structured log with the refresh token's **sha256 prefix**
+(never the token), cache hit/miss, upstream status, and `latency_ms` — **no
+secret or token is ever logged**. In-process counters track `refresh_total` by
+result, `upstream_calls_total`, and `cache_hits_total`.
+
 ## Building with an embedded client
 
 To ship a binary with the company-wide client baked in:

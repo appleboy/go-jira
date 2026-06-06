@@ -62,16 +62,22 @@ func runConfigShow(cmd *cobra.Command) error {
 		fmt.Fprintf(w, "%s\t%s\t%s\n", field, redactIfSecret(field, value),
 			configSource(cmd, flagName, envKey, aliasEnv))
 	}
+	// oauthRow is row's sibling for fields that resolve env > flag (resolveWithEnv
+	// precedence): their SOURCE must be reported env-first via oauthValueSource, not
+	// the flag-first configSource — otherwise an env-overridden value is mislabelled
+	// as coming from the flag when both are set.
+	oauthRow := func(field, value, flagName, envKey, embedded string) {
+		fmt.Fprintf(w, "%s\t%s\t%s\n", field, redactIfSecret(field, value),
+			oauthValueSource(cmd, flagName, envKey, value, embedded))
+	}
 
 	row("base_url", config.baseURL, flagBaseURL, "base_url", envBaseURL)
 	row("insecure", fmt.Sprintf("%t", config.insecure), flagInsecure, "insecure", envInsecure)
 	row("token", config.token, flagToken, "token", envToken)
 	row("username", config.username, flagUsername, "username", envUsername)
 	row("password", config.password, flagPassword, "password", envPassword)
-	fmt.Fprintf(w, "oauth_client_id\t%s\t%s\n",
-		redactIfSecret("oauth_client_id", config.oauthClientID),
-		oauthValueSource(cmd, flagClientID, envOAuthClientID, config.oauthClientID,
-			DefaultOAuthClientID))
+	oauthRow("oauth_client_id", config.oauthClientID, flagClientID, envOAuthClientID,
+		DefaultOAuthClientID)
 	row("scope", config.scope, flagScope, "", "")
 	// oauth-env (CI) inputs: show presence/source without leaking the token.
 	fmt.Fprintf(w, "oauth_refresh_token\t%s\t%s\n",
@@ -80,6 +86,10 @@ func runConfigShow(cmd *cobra.Command) error {
 	fmt.Fprintf(w, "oauth_refresh_token_output\t%s\t%s\n",
 		redactIfSecret("oauth_refresh_token_output", config.oauthRefreshTokenOutput),
 		configSource(cmd, "", "", envOAuthRefreshTokenOutput))
+	// Token refresh broker (client-side): broker_token is redacted by
+	// redactIfSecret; the URL is not secret and is shown in full.
+	oauthRow("broker_url", config.brokerURL, flagBrokerURL, envBrokerURL, "")
+	oauthRow("broker_token", config.brokerToken, flagBrokerToken, envBrokerToken, "")
 	fmt.Fprintf(w, "auth_mode\t%s\t%s\n", detectAuthMode(config), "resolved")
 
 	return w.Flush()
@@ -169,7 +179,7 @@ func redactIfSecret(field, value string) string {
 		return "(unset)"
 	}
 	switch field {
-	case flagToken, flagPassword, "oauth_refresh_token":
+	case flagToken, flagPassword, "oauth_refresh_token", "broker_token":
 		return "(set, redacted)"
 	default:
 		return value

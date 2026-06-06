@@ -15,6 +15,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// URL schemes recognised for the Jira base URL, the OAuth callback, and the
+// token refresh broker URL.
+const (
+	schemeHTTP  = "http"
+	schemeHTTPS = "https"
+)
+
 // Config holds the application configuration.
 type Config struct {
 	baseURL      string
@@ -49,6 +56,11 @@ type Config struct {
 	callbackCert            string
 	callbackKey             string
 	callbackHTTPS           bool
+
+	// Token refresh broker (client-side). brokerURL routes refresh through the
+	// broker; brokerToken is the optional caller bearer token sent to it.
+	brokerURL   string
+	brokerToken string
 }
 
 // loadConfig resolves configuration from CLI flags (when explicitly set)
@@ -149,8 +161,32 @@ func loadConfig(cmd *cobra.Command) Config {
 	)
 	cfg.callbackHTTPS = resolveCallbackHTTPS(cmd)
 
+	// Token refresh broker (client-side): env > flag, no embedded default.
+	cfg.brokerURL = resolveWithEnv(envBrokerURL, flagStringValue(cmd, flagBrokerURL), "")
+	cfg.brokerToken = resolveWithEnv(envBrokerToken, flagStringValue(cmd, flagBrokerToken), "")
+
 	warnOnSecretFlags(cmd)
+	warnOnInsecureBrokerURL(cfg.brokerURL)
 	return cfg
+}
+
+// warnOnInsecureBrokerURL warns when the token refresh broker URL uses cleartext
+// http: the refresh token (and any broker bearer token) would then be sent
+// unencrypted to the broker. https — or TLS terminated at an ingress in front of
+// the broker — is strongly preferred. The warning is advisory (not a hard error)
+// so loopback/dev setups still work, mirroring the broker server's own
+// plain-HTTP warning in serveBroker.
+func warnOnInsecureBrokerURL(brokerURL string) {
+	if brokerURL == "" {
+		return
+	}
+	if u, err := url.Parse(brokerURL); err == nil && u.Scheme == schemeHTTP {
+		slog.Warn(
+			"token refresh broker URL uses cleartext http; the refresh token and broker "+
+				"token are sent unencrypted — use https or terminate TLS in front of the broker",
+			"broker_url", brokerURL,
+		)
+	}
 }
 
 // warnOnSecretFlags warns when secrets arrive via CLI flag — they leak into ps
@@ -159,7 +195,7 @@ func warnOnSecretFlags(cmd *cobra.Command) {
 	if cmd == nil {
 		return
 	}
-	for _, name := range []string{flagPassword, flagToken} {
+	for _, name := range []string{flagPassword, flagToken, flagBrokerToken} {
 		if cmd.Flags().Lookup(name) != nil && cmd.Flags().Changed(name) {
 			slog.Warn(
 				"passing secrets via CLI flag is unsafe on shared hosts; prefer env vars or .env",
@@ -285,9 +321,9 @@ func resolveWithEnv(envKey, flagVal, embedded string) string {
 // TLS cert+key pair or the auto-generated cert (--callback-https), both of which
 // Jira DC needs since it rejects an http redirect URI — and http otherwise.
 func (c Config) redirectURI() string {
-	scheme := "http"
+	scheme := schemeHTTP
 	if c.callbackHTTPS || (c.callbackCert != "" && c.callbackKey != "") {
-		scheme = "https"
+		scheme = schemeHTTPS
 	}
 	return fmt.Sprintf("%s://127.0.0.1:%d/callback", scheme, c.callbackPort)
 }
@@ -306,8 +342,8 @@ func validateBaseURL(config Config) error {
 		return errors.New("base_url must be a valid URL")
 	}
 	switch u.Scheme {
-	case "https":
-	case "http":
+	case schemeHTTPS:
+	case schemeHTTP:
 		if !config.insecure {
 			return errors.New("base_url must use https; pass --insecure=true to allow http")
 		}

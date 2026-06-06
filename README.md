@@ -38,6 +38,7 @@
   - [Data subcommands](#data-subcommands)
   - [Schema introspection (for agents)](#schema-introspection-for-agents)
   - [OAuth 2.0](#oauth-20)
+    - [Token refresh broker (confidential clients)](#token-refresh-broker-confidential-clients)
 
 ## Motivation
 
@@ -251,13 +252,13 @@ summary; errors go to stderr with a non-zero exit code (see below).
 Every command exits with a distinct code per error class so scripts and agents
 can branch without parsing stderr:
 
-| Code | Meaning                                                   |
-| ---- | --------------------------------------------------------- |
-| `0`  | success                                                   |
-| `1`  | generic runtime error                                     |
-| `2`  | usage error (bad flags or arguments)                      |
-| `3`  | authentication/authorization failure (HTTP `401`/`403`)   |
-| `4`  | rate limited (HTTP `429`)                                 |
+| Code | Meaning                                                 |
+| ---- | ------------------------------------------------------- |
+| `0`  | success                                                 |
+| `1`  | generic runtime error                                   |
+| `2`  | usage error (bad flags or arguments)                    |
+| `3`  | authentication/authorization failure (HTTP `401`/`403`) |
+| `4`  | rate limited (HTTP `429`)                               |
 
 On failure a single structured JSON object is written to **stderr**. Rate-limit
 and auth failures include the HTTP status, and rate-limit failures surface the
@@ -386,10 +387,26 @@ Subcommands:
 - `go-jira logout` — remove the stored token for a site.
 - `go-jira whoami` — show the authenticated user and active auth mode.
 - `go-jira token status|refresh|print` — inspect or refresh the stored token.
+- `go-jira broker serve` — run the token refresh broker for confidential clients
+  (holds the `client_secret` server-side; see below).
 - `go-jira config show` — show resolved config and where each value came from.
 
+### Token refresh broker (confidential clients)
+
+When the Jira OAuth app is a **confidential client** (its token endpoint requires
+`client_secret` on refresh), the secret must never ship in the binary. Set
+`JIRA_TOKEN_BROKER_URL` and go-jira routes **only the refresh step** through a
+server-side broker (`go-jira broker serve`) that holds the secret and returns the
+rotated token pair. **Login is unchanged** (direct public PKCE), and with the env
+var unset behaviour is identical to today (direct refresh). The broker stores no
+tokens, coalesces concurrent refreshes of the same token into one upstream call,
+and reads the secret only from its environment (e.g. a Kubernetes Secret sourced
+from Vault). See the broker section in the guide for k8s + Vault deployment, the
+env contract, and the security model.
+
 See **[docs/oauth-usage.md](docs/oauth-usage.md)** for full setup: registering
-the client in Jira, scopes, storage backends, and CI/CD refresh-token rotation.
+the client in Jira, scopes, storage backends, CI/CD refresh-token rotation, and
+the token refresh broker.
 
 [5]: https://developer.atlassian.com/cloud/jira/platform/
 [6]: https://developer.atlassian.com/server/jira/platform/

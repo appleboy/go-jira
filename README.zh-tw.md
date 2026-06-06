@@ -37,6 +37,7 @@
   - [可組合性（管線、安靜、顏色）](#可組合性管線安靜顏色)
   - [Schema 自我描述（供代理程式使用）](#schema-自我描述供代理程式使用)
   - [OAuth 2.0](#oauth-20)
+    - [Token refresh broker（confidential client）](#token-refresh-brokerconfidential-client)
 
 ## 動機
 
@@ -240,8 +241,20 @@ go-jira schema --output text
 
 go-jira 透過 Authorization Code + PKCE 流程支援 Jira Data Center 的 OAuth 2.0
 provider，本機互動式登入與 CI/CD refresh token 注入皆可。子命令包括
-`login` / `logout` / `whoami` / `token` / `config show`。完整設定（在 Jira
-註冊 client、scope、token 儲存後端、CI/CD refresh token 輪換）見
+`login` / `logout` / `whoami` / `token` / `broker serve` / `config show`。完整設定
+（在 Jira 註冊 client、scope、token 儲存後端、CI/CD refresh token 輪換）見
+**[docs/oauth-usage.md](docs/oauth-usage.md)**。
+
+### Token refresh broker（confidential client）
+
+當 Jira OAuth 應用是 **confidential client**（token endpoint 在 refresh 時強制要求
+`client_secret`）時，secret 絕不能編進發佈的 binary。設定 `JIRA_TOKEN_BROKER_URL`
+後，go-jira 會**只**把 refresh 這一步經過一台 server 端 broker（`go-jira broker
+serve`）——broker 持有 secret、補上後向 Jira 換取輪替後的 token pair 回傳給 CLI。
+**login 完全不變**（仍是直連 public PKCE）；未設該環境變數時行為與現在完全相同
+（直連 refresh）。broker 不會將 token 持久化保存，會把同一顆 refresh token 的並發請求收斂成
+一次 upstream 呼叫，且 secret 只從其執行環境讀取（例如來源為 Vault 的 Kubernetes
+Secret）。k8s + Vault 部署、env 契約與安全模型見
 **[docs/oauth-usage.md](docs/oauth-usage.md)**。
 
 [5]: https://developer.atlassian.com/cloud/jira/platform/
