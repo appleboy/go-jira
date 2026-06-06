@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.13.0 - 2026-06-06
+
+### Features
+
+- **Token refresh broker for confidential clients.** A new `go-jira broker
+  serve` command holds the OAuth client secret and performs the secret-bearing
+  refresh on behalf of public PKCE clients. Set `JIRA_TOKEN_BROKER_URL` to route
+  manual refresh, 401 auto-refresh, and `oauth-env` through it, keeping the
+  secret confined to the broker environment. Concurrent refreshes of one token
+  coalesce into a single upstream call via a short-lived in-memory cache, broker
+  responses map to the existing OAuth error sentinels so CLI recovery hints stay
+  intact, and `config show` reports `broker_url` with a redacted `broker_token`.
+
+### Hardening
+
+- Constant-time, length-independent caller-token check; `no-store` cache headers
+  and read/write/idle timeouts on the broker server; reject a 200 refresh with an
+  empty rotated token; and warn when `JIRA_TOKEN_BROKER_URL` uses cleartext HTTP.
+
+### Internal
+
+- Bump the go directive to 1.25.11 for stdlib CVE-2026-42504, refresh module
+  dependencies, and add a Docker healthcheck plus a local Jira/PostgreSQL
+  Compose stack for testing the CLI.
+
 ## v0.12.1 - 2026-06-05
 
 ### Fixes

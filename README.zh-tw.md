@@ -60,7 +60,7 @@ curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | 
 可透過環境變數覆寫預設值，例如指定版本或變更安裝目錄：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.12.1 INSTALL_DIR=/usr/local/bin bash
+curl -fsSL https://raw.githubusercontent.com/appleboy/go-jira/main/install.sh | VERSION=0.13.0 INSTALL_DIR=/usr/local/bin bash
 ```
 
 支援平台：macOS（amd64/arm64）、Linux（amd64/arm64/armv5-7）、Windows
