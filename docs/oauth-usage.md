@@ -179,6 +179,65 @@ refresh` routes through the broker, which adds the `client_secret` upstream.
 When `JIRA_TOKEN_BROKER_URL` is unset, behaviour is **identical to today** (direct
 refresh). The CLI **never** holds the secret.
 
+### Quickstart: run the broker and use it end-to-end
+
+This walks the full loop — **start the broker → point the CLI at it → verify** —
+with copy-paste commands. It assumes you have already logged in once
+(`go-jira login`) so a refresh token is stored. Use a real internal-only
+deployment for production (see [Broker deployment](#broker-deployment-kubernetes--vault)
+and the [Security model](#security-model)); this is for local validation.
+
+**1. Start the broker.** The broker is the *same binary* (`go-jira broker serve`),
+so the published Docker image runs it directly — the secret comes only from the
+environment:
+
+```bash
+# Docker (the image's ENTRYPOINT is go-jira; pass `broker serve` as args)
+docker run --rm -p 8080:8080 \
+  -e JIRA_BASE_URL="https://jira.example.com" \
+  -e JIRA_OAUTH_CLIENT_ID="my-client" \
+  -e JIRA_OAUTH_CLIENT_SECRET="…" \
+  ghcr.io/appleboy/go-jira broker serve
+
+# …or the local binary
+JIRA_BASE_URL="https://jira.example.com" \
+JIRA_OAUTH_CLIENT_ID="my-client" \
+JIRA_OAUTH_CLIENT_SECRET="…" \
+go-jira broker serve --listen :8080
+```
+
+It logs `broker listening` on success and **fails fast** if any of the three
+required values is missing.
+
+**2. Verify the broker is up** (these never touch the secret):
+
+```bash
+curl -fsS http://127.0.0.1:8080/healthz   # liveness
+curl -fsS http://127.0.0.1:8080/readyz    # readiness (200 once serving)
+```
+
+**3. Point the CLI at the broker** and exercise a refresh. Setting
+`JIRA_TOKEN_BROKER_URL` routes **only** the refresh step through the broker;
+login is unaffected:
+
+```bash
+export JIRA_TOKEN_BROKER_URL="http://127.0.0.1:8080"
+go-jira token refresh   # the broker adds client_secret upstream
+go-jira token status    # new expiry proves the refresh went through
+```
+
+**4. Confirm the wiring.** `go-jira config show` reports `broker_url` (and a
+redacted `broker_token`) plus where each value came from:
+
+```bash
+go-jira config show
+```
+
+From here, every refresh path uses the broker while
+`JIRA_TOKEN_BROKER_URL` is set: `go-jira token refresh`, the automatic refresh
+after a `401`, and the `oauth-env` (CI) initial refresh. Unset the variable to
+return to direct refresh.
+
 ### Client setup
 
 | Env var                 | Flag             | Required | Purpose                                                  |
