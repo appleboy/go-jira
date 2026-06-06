@@ -4,6 +4,11 @@
 #   docker compose logs -f jira   # wait for "Server startup" before opening the UI
 #
 # Then open http://localhost:8090 and complete the setup wizard.
+#
+# Note: this is the single-node "jira-software" image, intended only for local
+# CLI testing. For a Jira Data Center test environment (clustered, shared home,
+# production backup restore, developer license), follow Atlassian's guide:
+#   https://community.atlassian.com/forums/Jira-articles/How-to-Set-Up-a-Jira-Test-Environment-Data-Center/ba-p/3028233
 services:
   jira:
     image: atlassian/jira-software:9.12
