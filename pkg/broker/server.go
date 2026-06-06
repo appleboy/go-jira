@@ -376,12 +376,13 @@ func (c *resultCache) do(
 	fn func() (*oauth2.Token, error),
 ) (tok *oauth2.Token, executed bool, err error) {
 	c.mu.Lock()
-	c.evictExpiredLocked()
+	now := c.now()
+	c.evictExpiredLocked(now)
 	if r, ok := c.results[key]; ok {
 		// Per-key freshness check: the sweep above is amortized (runs at most
 		// once per TTL), so an entry may still be present past its TTL — never
 		// serve a stale result; drop it and fall through to a fresh refresh.
-		if c.now().Sub(r.fetchedAt) < c.ttl {
+		if !c.expired(now, r) {
 			c.mu.Unlock()
 			return r.tok, false, nil
 		}
@@ -430,7 +431,12 @@ func (c *resultCache) do(
 	return call.tok, true, call.err
 }
 
-// evictExpiredLocked reclaims results past their TTL. c.mu must be held.
+// expired reports whether a cached result is past its TTL as of now.
+func (c *resultCache) expired(now time.Time, r cachedResult) bool {
+	return now.Sub(r.fetchedAt) >= c.ttl
+}
+
+// evictExpiredLocked reclaims results past their TTL as of now. c.mu must be held.
 //
 // The sweep is amortized: it walks the whole map at most once per TTL window
 // (gated by lastSwept) rather than on every call, so the per-request hot path
@@ -439,14 +445,13 @@ func (c *resultCache) do(
 // keys) pay a full-map scan while holding the global lock. Correctness does not
 // depend on the sweep cadence: do()'s per-key freshness check never serves an
 // expired entry. Only reclamation of never-re-accessed keys relies on the sweep.
-func (c *resultCache) evictExpiredLocked() {
-	now := c.now()
+func (c *resultCache) evictExpiredLocked(now time.Time) {
 	if now.Sub(c.lastSwept) < c.ttl {
 		return
 	}
 	c.lastSwept = now
 	for k, r := range c.results {
-		if now.Sub(r.fetchedAt) >= c.ttl {
+		if c.expired(now, r) {
 			delete(c.results, k)
 		}
 	}

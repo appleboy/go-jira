@@ -121,14 +121,13 @@ func mapBrokerError(status int, body []byte) error {
 			// matching errors.Is(ErrInvalidGrant).
 			return wrapWithDesc(ErrInvalidGrant, er.ErrorDescription)
 		}
-		// Omit the description when absent so the message doesn't end with a
-		// dangling ": " (matching the wrapWithDesc hygiene above).
-		if er.ErrorDescription == "" {
-			return fmt.Errorf("oauth: broker rejected the request (%s)",
-				brokerErrCode(er, status))
+		// Append the description only when present so the message never ends
+		// with a dangling ": " (matching the wrapWithDesc hygiene above).
+		msg := fmt.Sprintf("oauth: broker rejected the request (%s)", brokerErrCode(er, status))
+		if er.ErrorDescription != "" {
+			msg += ": " + er.ErrorDescription
 		}
-		return fmt.Errorf("oauth: broker rejected the request (%s): %s",
-			brokerErrCode(er, status), er.ErrorDescription)
+		return errors.New(msg)
 	case http.StatusUnauthorized:
 		return fmt.Errorf("%w (status 401); set or correct the broker token",
 			ErrBrokerUnauthorized)
