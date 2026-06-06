@@ -393,16 +393,47 @@ Subcommands:
 
 ### Token refresh broker (confidential clients)
 
-When the Jira OAuth app is a **confidential client** (its token endpoint requires
-`client_secret` on refresh), the secret must never ship in the binary. Set
-`JIRA_TOKEN_BROKER_URL` and go-jira routes **only the refresh step** through a
-server-side broker (`go-jira broker serve`) that holds the secret and returns the
-rotated token pair. **Login is unchanged** (direct public PKCE), and with the env
-var unset behaviour is identical to today (direct refresh). The broker stores no
-tokens, coalesces concurrent refreshes of the same token into one upstream call,
-and reads the secret only from its environment (e.g. a Kubernetes Secret sourced
-from Vault). See the broker section in the guide for k8s + Vault deployment, the
-env contract, and the security model.
+**Why a broker is needed.** go-jira ships as a **public PKCE client**: login
+needs no secret, so the published binary stays clean. But some Jira Data Center
+OAuth applications are registered as **confidential clients** — and Jira DC then
+**requires `client_secret` on the `grant_type=refresh_token` step** (login still
+works without it; only refresh is rejected). A published binary can never embed
+that secret — anyone could run `strings` on it and read it. The token refresh
+broker resolves this: it holds the `client_secret` **server-side** and adds it to
+the upstream refresh call on the CLI's behalf, so the secret never reaches the
+client.
+
+Set `JIRA_TOKEN_BROKER_URL` and go-jira routes **only the refresh step** through
+`go-jira broker serve`. **Login is unchanged** — it stays a direct public PKCE
+flow with no secret; the broker is involved on refresh only. When the env var is
+unset, behaviour is **identical to today** (direct refresh) and the CLI **never**
+holds the secret.
+
+```mermaid
+flowchart LR
+    subgraph login["go-jira login — unchanged"]
+        direction LR
+        CLI1["CLI"] -->|"public PKCE, no secret"| J1["Jira DC"]
+    end
+    subgraph refresh["go-jira token refresh — via broker"]
+        direction LR
+        CLI2["CLI"] -->|"refresh_token + client_id"| B["broker<br/>(holds client_secret)"]
+        B -->|"refresh_token + client_id + client_secret"| J2["Jira DC"]
+        J2 -->|"rotated token pair"| B
+        B -->|"new token pair"| CLI2
+    end
+```
+
+The broker stores **no** tokens, coalesces concurrent refreshes of the same token
+into a single upstream call (Jira DC invalidates the old refresh token on every
+refresh, so naïve concurrent calls would race), and reads the secret only from
+its environment (e.g. a Kubernetes Secret sourced from Vault). Run it as the
+**same binary** — `go-jira broker serve` — behind an internal-only, TLS ingress;
+the network is the primary access control, with an optional caller bearer token
+(`JIRA_BROKER_TOKEN`) for defence in depth. See the
+[broker section in the guide](docs/oauth-usage.md#6-token-refresh-broker-confidential-clients)
+for the k8s + Vault deployment, the request-coalescing sequence diagram, the env
+contract, and the full security model.
 
 See **[docs/oauth-usage.md](docs/oauth-usage.md)** for full setup: registering
 the client in Jira, scopes, storage backends, CI/CD refresh-token rotation, and
