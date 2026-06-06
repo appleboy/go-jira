@@ -1,0 +1,43 @@
+# Local Jira Software + PostgreSQL stack for testing the go-jira CLI against.
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f jira   # wait for "Server startup" before opening the UI
+#
+# Then open http://localhost:8080 and complete the setup wizard.
+services:
+  jira:
+    image: atlassian/jira-software:9.12
+    container_name: jira
+    depends_on:
+      - jiradb
+    ports:
+      - "8080:8080"
+    volumes:
+      - jiraVolume:/var/atlassian/application-data/jira
+    environment:
+      ATL_JDBC_URL: jdbc:postgresql://jiradb:5432/jira
+      ATL_JDBC_USER: jira
+      ATL_JDBC_PASSWORD: jira
+      ATL_DB_DRIVER: org.postgresql.Driver
+      ATL_DB_TYPE: postgres72 # PostgreSQL 10+ all use this value
+    restart: unless-stopped
+
+  jiradb:
+    image: postgres:15
+    container_name: jiradb
+    environment:
+      POSTGRES_DB: jira
+      POSTGRES_USER: jira
+      POSTGRES_PASSWORD: jira
+    volumes:
+      - jiraDbVolume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jira -d jira"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  jiraVolume:
+  jiraDbVolume:
