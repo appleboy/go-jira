@@ -3,7 +3,7 @@
 #   docker compose up -d
 #   docker compose logs -f jira   # wait for "Server startup" before opening the UI
 #
-# Then open http://localhost:8080 and complete the setup wizard.
+# Then open http://localhost:8090 and complete the setup wizard.
 services:
   jira:
     image: atlassian/jira-software:9.12
@@ -11,7 +11,7 @@ services:
     depends_on:
       - jiradb
     ports:
-      - "8080:8080"
+      - "8090:8080"
     volumes:
       - jiraVolume:/var/atlassian/application-data/jira
     environment:
