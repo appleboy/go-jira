@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.14.0 - 2026-06-19
+
+### Features
+
+- **`delete` subcommand.** Remove a Jira issue by key with `go-jira delete
+  --key GAIA-123 --confirm`. Deletion requires the explicit `--confirm` flag,
+  and `--delete-subtasks` additionally removes the issue's subtasks (defaulting
+  to off rather than the SDK's hardcoded `deleteSubtasks=true`). Honors the
+  shared `--output` flag for JSON results.
+
+### Internal
+
+- Bump `codecov/codecov-action` from 6 to 7.
+
 ## v0.13.0 - 2026-06-06
 
 ### Features
