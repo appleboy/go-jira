@@ -74,7 +74,8 @@ const (
 	flagCallbackHTTPS = "callback-https"
 	flagScope         = "scope"
 	flagTimeout       = "timeout"
-	flagConfirm       = "confirm"
+	flagConfirm        = "confirm"
+	flagDeleteSubtasks = "delete-subtasks"
 
 	// Token refresh broker flags. --broker-url / --broker-token are client-side
 	// (route refresh through the broker); --listen / --tls-cert / --tls-key are
@@ -286,6 +287,7 @@ Composability:
 		newSearchCmd(),
 		newCreateCmd(),
 		newUpdateCmd(),
+		newDeleteCmd(),
 		newGetCmd(),
 		newSprintsCmd(),
 		newEpicsCmd(),
