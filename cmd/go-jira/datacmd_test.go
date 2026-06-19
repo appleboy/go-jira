@@ -396,6 +396,88 @@ func TestBoardsCmd(t *testing.T) {
 	}
 }
 
+func TestDeleteCmdMissingConfirm(t *testing.T) {
+	_, err := runDataCmd(t, newDeleteCmd(), "https://example.invalid", "--key", "GAIA-1")
+	if err == nil || !strings.Contains(err.Error(), "--confirm") {
+		t.Fatalf("expected --confirm error, got %v", err)
+	}
+}
+
+func TestDeleteCmd(t *testing.T) {
+	var gotMethod, gotPath, gotQuery string
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotMethod = r.Method
+			gotPath = r.URL.Path
+			gotQuery = r.URL.RawQuery
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer server.Close()
+
+	out, err := runDataCmd(t, newDeleteCmd(), server.URL, "--key", "GAIA-123", "--confirm")
+	if err != nil {
+		t.Fatalf("delete returned error: %v", err)
+	}
+	if gotMethod != http.MethodDelete {
+		t.Errorf("expected DELETE request, got %s", gotMethod)
+	}
+	if gotPath != "/rest/api/2/issue/GAIA-123" {
+		t.Errorf("unexpected path: %s", gotPath)
+	}
+	// Without --delete-subtasks the cascade param must be absent; otherwise a
+	// regression that always cascades would slip past TestDeleteCmdSubtasks.
+	if gotQuery != "" {
+		t.Errorf("expected no query string by default, got %q", gotQuery)
+	}
+	if !strings.Contains(out, "deleted") || !strings.Contains(out, "GAIA-123") {
+		t.Errorf("delete output unexpected: %s", out)
+	}
+}
+
+func TestDeleteCmdSubtasks(t *testing.T) {
+	var gotQuery string
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotQuery = r.URL.RawQuery
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer server.Close()
+
+	_, err := runDataCmd(t, newDeleteCmd(), server.URL,
+		"--key", "GAIA-123", "--confirm", "--delete-subtasks")
+	if err != nil {
+		t.Fatalf("delete --delete-subtasks returned error: %v", err)
+	}
+	if gotQuery != "deleteSubtasks=true" {
+		t.Errorf("expected deleteSubtasks=true query param, got %q", gotQuery)
+	}
+}
+
+func TestDeleteCmdNotFound(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"errorMessages":["Issue does not exist"]}`))
+		}),
+	)
+	defer server.Close()
+
+	_, err := runDataCmd(t, newDeleteCmd(), server.URL, "--key", "GAIA-999", "--confirm")
+	if err == nil {
+		t.Fatal("expected error for HTTP 404")
+	}
+	if !strings.Contains(err.Error(), "GAIA-999") {
+		t.Errorf("error should mention the issue key, got: %v", err)
+	}
+	// Assert the 404 actually surfaced, not merely some non-2xx — otherwise this
+	// test would still pass if the not-found path silently degraded.
+	if !strings.Contains(err.Error(), "404") {
+		t.Errorf("error should surface the 404 status, got: %v", err)
+	}
+}
+
 func TestLinkCmd(t *testing.T) {
 	var gotBody jira.IssueLink
 	server := httptest.NewServer(

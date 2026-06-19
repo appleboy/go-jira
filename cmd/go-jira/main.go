@@ -74,7 +74,12 @@ const (
 	flagCallbackHTTPS = "callback-https"
 	flagScope         = "scope"
 	flagTimeout       = "timeout"
-	flagConfirm       = "confirm"
+
+	// Confirmation and cascade flags for destructive commands: --confirm guards
+	// `token print` and `delete`; --delete-subtasks cascades an issue delete to
+	// its subtasks.
+	flagConfirm        = "confirm"
+	flagDeleteSubtasks = "delete-subtasks"
 
 	// Token refresh broker flags. --broker-url / --broker-token are client-side
 	// (route refresh through the broker); --listen / --tls-cert / --tls-key are
@@ -286,6 +291,7 @@ Composability:
 		newSearchCmd(),
 		newCreateCmd(),
 		newUpdateCmd(),
+		newDeleteCmd(),
 		newGetCmd(),
 		newSprintsCmd(),
 		newEpicsCmd(),
