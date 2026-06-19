@@ -74,6 +74,10 @@ const (
 	flagCallbackHTTPS = "callback-https"
 	flagScope         = "scope"
 	flagTimeout       = "timeout"
+
+	// Confirmation and cascade flags for destructive commands: --confirm guards
+	// `token print` and `delete`; --delete-subtasks cascades an issue delete to
+	// its subtasks.
 	flagConfirm        = "confirm"
 	flagDeleteSubtasks = "delete-subtasks"
 

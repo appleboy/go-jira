@@ -404,11 +404,12 @@ func TestDeleteCmdMissingConfirm(t *testing.T) {
 }
 
 func TestDeleteCmd(t *testing.T) {
-	var gotMethod, gotPath string
+	var gotMethod, gotPath, gotQuery string
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotMethod = r.Method
 			gotPath = r.URL.Path
+			gotQuery = r.URL.RawQuery
 			w.WriteHeader(http.StatusNoContent)
 		}),
 	)
@@ -423,6 +424,11 @@ func TestDeleteCmd(t *testing.T) {
 	}
 	if gotPath != "/rest/api/2/issue/GAIA-123" {
 		t.Errorf("unexpected path: %s", gotPath)
+	}
+	// Without --delete-subtasks the cascade param must be absent; otherwise a
+	// regression that always cascades would slip past TestDeleteCmdSubtasks.
+	if gotQuery != "" {
+		t.Errorf("expected no query string by default, got %q", gotQuery)
 	}
 	if !strings.Contains(out, "deleted") || !strings.Contains(out, "GAIA-123") {
 		t.Errorf("delete output unexpected: %s", out)
@@ -464,6 +470,11 @@ func TestDeleteCmdNotFound(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "GAIA-999") {
 		t.Errorf("error should mention the issue key, got: %v", err)
+	}
+	// Assert the 404 actually surfaced, not merely some non-2xx — otherwise this
+	// test would still pass if the not-found path silently degraded.
+	if !strings.Contains(err.Error(), "404") {
+		t.Errorf("error should surface the 404 status, got: %v", err)
 	}
 }
 

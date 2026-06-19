@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -39,7 +40,7 @@ func newDeleteCmd() *cobra.Command {
 func runDelete(cmd *cobra.Command) error {
 	confirm, _ := cmd.Flags().GetBool(flagConfirm)
 	if !confirm {
-		return fmt.Errorf("use --confirm to confirm deletion")
+		return errors.New("use --confirm to confirm deletion")
 	}
 
 	config, err := loadDataConfig(cmd)
@@ -57,6 +58,9 @@ func runDelete(cmd *cobra.Command) error {
 		return err
 	}
 
+	// Build the DELETE request by hand rather than via Issue.DeleteWithContext:
+	// that SDK helper hardcodes deleteSubtasks=true, so it cannot honor the
+	// default (--delete-subtasks=false). Send the flag as a query param instead.
 	u := &url.URL{Path: "rest/api/2/issue/" + key}
 	if deleteSubtasks {
 		u.RawQuery = "deleteSubtasks=true"
