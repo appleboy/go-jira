@@ -10,7 +10,7 @@ jobs:
     name: lint
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup go
         uses: actions/setup-go@v6
         with:
@@ -42,7 +42,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
