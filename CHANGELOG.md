@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.14.1 - 2026-07-17
+
+### Internal
+
+- Bump Go to 1.25.12 to pull in the stdlib fix for CVE-2026-39822, an
+  `os.Root` symlink-following directory traversal flagged as HIGH on the
+  release binary.
+- Bump GitHub Actions to their latest versions: `actions/setup-go` from v6 to
+  v7 and `actions/cache` from v5 to v6.
+
 ## v0.14.0 - 2026-06-19
 
 ### Features
