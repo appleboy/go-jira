@@ -119,16 +119,18 @@ const (
 	envBrokerTLSCert     = "JIRA_BROKER_TLS_CERT"
 	envBrokerTLSKey      = "JIRA_BROKER_TLS_KEY"
 
-	// JIRA_-prefixed aliases for the core auth/config fields, matching the env
-	// naming used throughout the docs and the auth-resolver error message. The
-	// action config still resolves these via the INPUT_<KEY>/<KEY> convention;
-	// these are additional fallbacks (lowest precedence) so the documented
-	// JIRA_* examples work as written.
-	envBaseURL  = "JIRA_BASE_URL"
-	envUsername = "JIRA_USERNAME"
-	envPassword = "JIRA_PASSWORD"
-	envToken    = "JIRA_TOKEN"
-	envInsecure = "JIRA_INSECURE"
+	// JIRA_-prefixed names for the core auth/config fields, matching the env
+	// naming used throughout the docs and the auth-resolver error message.
+	// The base URL has a dedicated precedence order so a generic BASE_URL from
+	// another tool cannot override the Jira-specific setting. INPUT_BASE_URL is
+	// retained for GitHub/Gitea Actions and BASE_URL as a legacy fallback.
+	envBaseURL       = "JIRA_BASE_URL"
+	envInputBaseURL  = "INPUT_BASE_URL"
+	envLegacyBaseURL = "BASE_URL"
+	envUsername      = "JIRA_USERNAME"
+	envPassword      = "JIRA_PASSWORD"
+	envToken         = "JIRA_TOKEN"
+	envInsecure      = "JIRA_INSECURE"
 )
 
 const (
@@ -368,7 +370,8 @@ func addEditableIssueFlags(cmd *cobra.Command) {
 // addCommonFlags registers flags shared by all subcommands that talk to Jira.
 func addCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().String(flagEnvFile, ".env", "Read in a file of environment variables")
-	cmd.Flags().String(flagBaseURL, "", "Jira base URL (env: BASE_URL / INPUT_BASE_URL)")
+	cmd.Flags().String(flagBaseURL, "",
+		"Jira base URL (env: JIRA_BASE_URL; Actions: INPUT_BASE_URL)")
 	cmd.Flags().
 		Bool(flagInsecure, false, "Skip TLS verification (env: INSECURE / INPUT_INSECURE)")
 	cmd.Flags().Bool(flagDebug, false, "Dump resolved configuration (env: DEBUG / INPUT_DEBUG)")

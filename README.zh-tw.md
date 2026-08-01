@@ -145,6 +145,10 @@ go-jira 支援四種認證模式：
 | JIRA_OAUTH_REFRESH_TOKEN_OUTPUT | 寫入輪換後 refresh token 的檔案路徑                |
 | JIRA_MASTER_PASSWORD            | 加密檔 token 儲存的主密碼（無 keyring 時）         |
 
+`JIRA_BASE_URL` 是本機與 `.env` 檔案使用的正式名稱。`INPUT_BASE_URL` 保留供
+GitHub/Gitea Actions 使用；`BASE_URL` 僅為最低優先序的舊版相容後備值。
+若 `JIRA_BASE_URL` 與 `BASE_URL` 同時存在，將採用 `JIRA_BASE_URL`。
+
 ### 使用範例
 
 > Action 行為在 `run` 子命令下執行。所有動作旗標與 GitHub Actions 的 `INPUT_*`

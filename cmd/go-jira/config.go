@@ -63,13 +63,28 @@ type Config struct {
 	brokerToken string
 }
 
-// loadConfig resolves configuration from CLI flags (when explicitly set)
-// falling back to environment variables via util.GetGlobalValue.
-//
-// The INPUT_<KEY> → <KEY> lookup order inside util.GetGlobalValue is preserved
-// verbatim, so GitHub Actions (which sets INPUT_*) and local .env usage both
-// keep working. Passing cmd == nil sends every action lookup straight to the
-// environment, keeping tests and non-cobra callers working unchanged.
+// resolveBaseURL resolves the Jira URL separately from the other action
+// settings. JIRA_BASE_URL is the canonical local/.env name, while
+// INPUT_BASE_URL remains ahead of it for GitHub/Gitea Actions compatibility.
+// The generic BASE_URL is accepted only as the lowest-priority legacy fallback
+// so an unrelated value cannot override an explicitly Jira-scoped setting.
+func resolveBaseURL(cmd *cobra.Command) string {
+	if flagChanged(cmd, flagBaseURL) {
+		v, _ := cmd.Flags().GetString(flagBaseURL)
+		return v
+	}
+	for _, key := range []string{envInputBaseURL, envBaseURL, envLegacyBaseURL} {
+		if v := os.Getenv(key); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// loadConfig resolves configuration from CLI flags (when explicitly set),
+// falling back to environment variables. Most action settings preserve the
+// INPUT_<KEY> → <KEY> order from util.GetGlobalValue; the base URL uses the
+// Jira-specific order documented by resolveBaseURL.
 func loadConfig(cmd *cobra.Command) Config {
 	getString := func(flagName, envKey string) string {
 		if cmd != nil && cmd.Flags().Lookup(flagName) != nil && cmd.Flags().Changed(flagName) {
@@ -87,7 +102,7 @@ func loadConfig(cmd *cobra.Command) Config {
 	}
 
 	cfg := Config{
-		baseURL:      getString(flagBaseURL, "base_url"),
+		baseURL:      resolveBaseURL(cmd),
 		insecure:     getBool(flagInsecure, "insecure"),
 		username:     getString(flagUsername, "username"),
 		password:     getString(flagPassword, "password"),
@@ -118,12 +133,8 @@ func loadConfig(cmd *cobra.Command) Config {
 		cfg.sprintField = defaultSprintField
 	}
 
-	// Accept the JIRA_-prefixed env vars as aliases (lowest precedence: flag >
-	// INPUT_<KEY>/<KEY> > JIRA_<KEY>), so the JIRA_* examples in the docs and
-	// the auth-resolver error message work as written.
-	if cfg.baseURL == "" {
-		cfg.baseURL = os.Getenv(envBaseURL)
-	}
+	// Accept JIRA_-prefixed aliases for the remaining core auth fields (lowest
+	// precedence: flag > INPUT_<KEY>/<KEY> > JIRA_<KEY>).
 	if cfg.username == "" {
 		cfg.username = os.Getenv(envUsername)
 	}

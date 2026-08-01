@@ -135,9 +135,10 @@ func oauthValueSource(cmd *cobra.Command, flagName, envKey, value, embedded stri
 }
 
 // configSource reports where a value came from: flag, env, or default/unset.
-// aliasEnv, when non-empty, is a JIRA_-prefixed alias (e.g. JIRA_BASE_URL)
-// checked alongside the INPUT_<KEY>/<KEY> convention so the reported source
-// matches loadConfig's resolution.
+// aliasEnv, when non-empty, is an additional JIRA_-prefixed environment name
+// checked alongside the INPUT_<KEY>/<KEY> convention. This function reports
+// only the source category, so precedence between environment names does not
+// affect its result.
 func configSource(cmd *cobra.Command, flagName, envKey, aliasEnv string) string {
 	if cmd != nil && flagName != "" && cmd.Flags().Lookup(flagName) != nil &&
 		cmd.Flags().Changed(flagName) {

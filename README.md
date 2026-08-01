@@ -159,6 +159,11 @@ go-jira supports four authentication modes:
 | JIRA_OAUTH_CALLBACK_HTTPS       | `true` to serve the HTTPS callback with an auto-generated in-memory cert (no cert files; browser shows a one-time warning) |
 | JIRA_MASTER_PASSWORD            | Master password for the encrypted file token store (when no keyring)                                                       |
 
+`JIRA_BASE_URL` is the canonical variable for local use and `.env` files.
+`INPUT_BASE_URL` remains supported for GitHub/Gitea Actions. `BASE_URL` is a
+legacy, lowest-priority fallback. If both `JIRA_BASE_URL` and `BASE_URL` are set,
+`JIRA_BASE_URL` wins.
+
 ### Usage
 
 The Action behavior runs under the `run` subcommand. All action flags and the

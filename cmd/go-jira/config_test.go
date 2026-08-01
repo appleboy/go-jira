@@ -431,13 +431,16 @@ func TestLoadConfig(t *testing.T) {
 }
 
 // TestLoadConfig_InputPrefixStillWorks is a regression guard for the
-// GitHub Actions code path: when only INPUT_* env vars are present (and no
-// flags are passed), loadConfig must still pick them up via
-// util.GetGlobalValue. This is the exact path CI/CD relies on.
+// GitHub Actions code path: when INPUT_* env vars are present (and no flags
+// are passed), loadConfig must still pick them up. INPUT_BASE_URL also remains
+// ahead of the local and legacy base-URL names; this is the path CI/CD relies
+// on.
 func TestLoadConfig_InputPrefixStillWorks(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("INPUT_BASE_URL", "https://from-input.example.com")
+	os.Setenv(envInputBaseURL, "https://from-input.example.com")
+	os.Setenv(envBaseURL, "https://from-jira.example.com")
+	os.Setenv(envLegacyBaseURL, "https://from-legacy.example.com")
 	os.Setenv("INPUT_TOKEN", "input-token")
 	os.Setenv("INPUT_REF", "ABC-1")
 	os.Setenv("INPUT_MARKDOWN", "true")
@@ -458,13 +461,12 @@ func TestLoadConfig_InputPrefixStillWorks(t *testing.T) {
 	}
 }
 
-// TestLoadConfig_BareEnvStillWorks confirms the fallback path
-// (INPUT_* unset, only bare KEY env vars set) keeps working — this is how
-// local .env files drive the tool.
+// TestLoadConfig_BareEnvStillWorks confirms the legacy fallback path
+// (INPUT_* and JIRA_BASE_URL unset, only bare KEY env vars set) keeps working.
 func TestLoadConfig_BareEnvStillWorks(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("BASE_URL", "https://from-bare.example.com")
+	os.Setenv(envLegacyBaseURL, "https://from-bare.example.com")
 	os.Setenv("TOKEN", "bare-token")
 	os.Setenv("REF", "ABC-2")
 
@@ -512,21 +514,31 @@ func TestLoadConfig_JiraAliasesWork(t *testing.T) {
 	}
 }
 
-// TestLoadConfig_BareEnvBeatsJiraAlias verifies precedence: the existing
-// INPUT_<KEY>/<KEY> convention wins over the JIRA_ alias when both are set.
-func TestLoadConfig_BareEnvBeatsJiraAlias(t *testing.T) {
+// TestLoadConfig_JiraBaseURLBeatsLegacyBaseURL guards against collisions with
+// a generic BASE_URL set by another tool or loaded into the process first.
+func TestLoadConfig_JiraBaseURLBeatsLegacyBaseURL(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("BASE_URL", "https://from-bare.example.com")
-	os.Setenv("JIRA_BASE_URL", "https://from-jira.example.com")
-	os.Setenv("TOKEN", "bare-token")
-	os.Setenv("JIRA_TOKEN", "jira-token")
+	os.Setenv(envLegacyBaseURL, "https://from-legacy.example.com")
+	os.Setenv(envBaseURL, "https://from-jira.example.com")
 
 	got := loadConfig(nil)
 
-	if got.baseURL != "https://from-bare.example.com" {
-		t.Errorf("baseURL = %q, want BASE_URL to win over JIRA_BASE_URL", got.baseURL)
+	if got.baseURL != "https://from-jira.example.com" {
+		t.Errorf("baseURL = %q, want JIRA_BASE_URL to win over legacy BASE_URL", got.baseURL)
 	}
+}
+
+// TestLoadConfig_BareTokenBeatsJiraAlias preserves the existing credential
+// precedence; only the base URL gives the JIRA_-prefixed name higher priority.
+func TestLoadConfig_BareTokenBeatsJiraAlias(t *testing.T) {
+	clearInputEnv(t)
+
+	os.Setenv("TOKEN", "bare-token")
+	os.Setenv(envToken, "jira-token")
+
+	got := loadConfig(nil)
+
 	if got.token != "bare-token" {
 		t.Errorf("token = %q, want TOKEN to win over JIRA_TOKEN", got.token)
 	}
@@ -539,6 +551,8 @@ func TestLoadConfig_FlagOverridesEnv(t *testing.T) {
 	clearInputEnv(t)
 
 	os.Setenv("INPUT_BASE_URL", "https://from-env.example.com")
+	os.Setenv(envBaseURL, "https://from-jira.example.com")
+	os.Setenv(envLegacyBaseURL, "https://from-legacy.example.com")
 	os.Setenv("INPUT_TOKEN", "env-token")
 	os.Setenv("INPUT_REF", "ENV-1")
 	os.Setenv("INPUT_MARKDOWN", "false")
