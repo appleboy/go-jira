@@ -160,9 +160,9 @@ go-jira supports four authentication modes:
 | JIRA_MASTER_PASSWORD            | Master password for the encrypted file token store (when no keyring)                                                       |
 
 `JIRA_BASE_URL` is the canonical variable for local use and `.env` files.
-`INPUT_BASE_URL` remains supported for GitHub/Gitea Actions. `BASE_URL` is a
-legacy, lowest-priority fallback. If both `JIRA_BASE_URL` and `BASE_URL` are set,
-`JIRA_BASE_URL` wins.
+`INPUT_BASE_URL` remains supported for GitHub/Gitea Actions. The generic
+`BASE_URL` variable is not read, preventing unrelated application settings from
+changing the Jira target.
 
 ### Usage
 

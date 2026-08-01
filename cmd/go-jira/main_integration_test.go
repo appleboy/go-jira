@@ -387,7 +387,7 @@ func TestRun(t *testing.T) {
 				"INPUT_BASE_URL", "INPUT_INSECURE", "INPUT_USERNAME", "INPUT_PASSWORD",
 				"INPUT_TOKEN", "INPUT_REF", "INPUT_ISSUE_FORMAT", "INPUT_TRANSITION",
 				"INPUT_RESOLUTION", "INPUT_COMMENT", "INPUT_ASSIGNEE", "INPUT_MARKDOWN",
-				"INPUT_DEBUG", envBaseURL, envLegacyBaseURL,
+				"INPUT_DEBUG", envBaseURL, "BASE_URL",
 			}
 			for _, key := range envVars {
 				originalEnv[key] = os.Getenv(key)
@@ -467,7 +467,7 @@ INPUT_REF=ABC-123
 	// Simulate an unrelated process-level BASE_URL. The Jira-specific value
 	// loaded from the env file must win even though godotenv preserves existing
 	// process variables.
-	os.Setenv(envLegacyBaseURL, "not-a-valid-url")
+	os.Setenv("BASE_URL", "not-a-valid-url")
 	os.Setenv("INPUT_INSECURE", "true")
 
 	// Run with env file via the --env-file flag on a fresh cobra command.

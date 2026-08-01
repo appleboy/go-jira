@@ -66,14 +66,14 @@ type Config struct {
 // resolveBaseURL resolves the Jira URL separately from the other action
 // settings. JIRA_BASE_URL is the canonical local/.env name, while
 // INPUT_BASE_URL remains ahead of it for GitHub/Gitea Actions compatibility.
-// The generic BASE_URL is accepted only as the lowest-priority legacy fallback
-// so an unrelated value cannot override an explicitly Jira-scoped setting.
+// The generic BASE_URL is intentionally not read so unrelated application
+// configuration cannot affect the Jira target.
 func resolveBaseURL(cmd *cobra.Command) string {
 	if flagChanged(cmd, flagBaseURL) {
 		v, _ := cmd.Flags().GetString(flagBaseURL)
 		return v
 	}
-	for _, key := range []string{envInputBaseURL, envBaseURL, envLegacyBaseURL} {
+	for _, key := range []string{envInputBaseURL, envBaseURL} {
 		if v := os.Getenv(key); v != "" {
 			return v
 		}

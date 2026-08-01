@@ -12,9 +12,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// sourceEnv is the SOURCE column value reported when a config value was
-// resolved from an environment variable.
-const sourceEnv = "env"
+// SOURCE column values reported by `config show`.
+const (
+	sourceEnv     = "env"
+	sourceFlag    = "flag"
+	sourceDefault = "default/unset"
+)
 
 // newConfigCmd builds the `config` command group.
 func newConfigCmd() *cobra.Command {
@@ -71,7 +74,8 @@ func runConfigShow(cmd *cobra.Command) error {
 			oauthValueSource(cmd, flagName, envKey, value, embedded))
 	}
 
-	row("base_url", config.baseURL, flagBaseURL, "base_url", envBaseURL)
+	fmt.Fprintf(w, "base_url\t%s\t%s\n",
+		redactIfSecret("base_url", config.baseURL), baseURLSource(cmd))
 	row("insecure", fmt.Sprintf("%t", config.insecure), flagInsecure, "insecure", envInsecure)
 	row("token", config.token, flagToken, "token", envToken)
 	row("username", config.username, flagUsername, "username", envUsername)
@@ -126,12 +130,25 @@ func oauthValueSource(cmd *cobra.Command, flagName, envKey, value, embedded stri
 		return sourceEnv
 	}
 	if flagChanged(cmd, flagName) {
-		return "flag"
+		return sourceFlag
 	}
 	if embedded != "" && value == embedded {
 		return "embedded-default"
 	}
-	return "default/unset"
+	return sourceDefault
+}
+
+// baseURLSource mirrors resolveBaseURL without treating the generic BASE_URL
+// as a valid source. Keeping this separate from configSource avoids the latter's
+// INPUT_<KEY>/<KEY> convention, which remains correct for the other fields.
+func baseURLSource(cmd *cobra.Command) string {
+	if flagChanged(cmd, flagBaseURL) {
+		return sourceFlag
+	}
+	if os.Getenv(envInputBaseURL) != "" || os.Getenv(envBaseURL) != "" {
+		return sourceEnv
+	}
+	return sourceDefault
 }
 
 // configSource reports where a value came from: flag, env, or default/unset.
@@ -142,7 +159,7 @@ func oauthValueSource(cmd *cobra.Command, flagName, envKey, value, embedded stri
 func configSource(cmd *cobra.Command, flagName, envKey, aliasEnv string) string {
 	if cmd != nil && flagName != "" && cmd.Flags().Lookup(flagName) != nil &&
 		cmd.Flags().Changed(flagName) {
-		return "flag"
+		return sourceFlag
 	}
 	if envKey != "" && util.GetGlobalValue(envKey) != "" {
 		return sourceEnv
@@ -150,7 +167,7 @@ func configSource(cmd *cobra.Command, flagName, envKey, aliasEnv string) string 
 	if aliasEnv != "" && os.Getenv(aliasEnv) != "" {
 		return sourceEnv
 	}
-	return "default/unset"
+	return sourceDefault
 }
 
 // detectAuthMode reports which auth mode run would select, mirroring

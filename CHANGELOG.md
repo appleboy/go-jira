@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Stop reading the generic `BASE_URL` environment variable.** This is a
+  breaking change for users who rely on `BASE_URL` for the Jira instance URL.
+  Use `JIRA_BASE_URL` for local and `.env` configuration;
+  `INPUT_BASE_URL` remains supported for GitHub/Gitea Actions, and the explicit
+  `--base-url` flag remains the highest-priority setting. This prevents
+  unrelated application configuration from changing the Jira target.
+
 ## v0.14.1 - 2026-07-17
 
 ### Internal

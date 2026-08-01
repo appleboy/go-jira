@@ -146,8 +146,8 @@ go-jira 支持四种认证模式：
 | JIRA_MASTER_PASSWORD            | 加密文件 token 存储的主密码（无 keyring 时）       |
 
 `JIRA_BASE_URL` 是本地环境和 `.env` 文件使用的正式名称。`INPUT_BASE_URL` 保留供
-GitHub/Gitea Actions 使用；`BASE_URL` 仅作为最低优先级的旧版兼容回退值。
-同时设置 `JIRA_BASE_URL` 和 `BASE_URL` 时，将采用 `JIRA_BASE_URL`。
+GitHub/Gitea Actions 使用。程序不会读取通用的 `BASE_URL`，避免其他应用程序的
+设置意外改变 Jira 目标。
 
 ### 使用示例
 

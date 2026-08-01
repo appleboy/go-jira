@@ -122,15 +122,14 @@ const (
 	// JIRA_-prefixed names for the core auth/config fields, matching the env
 	// naming used throughout the docs and the auth-resolver error message.
 	// The base URL has a dedicated precedence order so a generic BASE_URL from
-	// another tool cannot override the Jira-specific setting. INPUT_BASE_URL is
-	// retained for GitHub/Gitea Actions and BASE_URL as a legacy fallback.
-	envBaseURL       = "JIRA_BASE_URL"
-	envInputBaseURL  = "INPUT_BASE_URL"
-	envLegacyBaseURL = "BASE_URL"
-	envUsername      = "JIRA_USERNAME"
-	envPassword      = "JIRA_PASSWORD"
-	envToken         = "JIRA_TOKEN"
-	envInsecure      = "JIRA_INSECURE"
+	// another tool cannot affect Jira configuration. INPUT_BASE_URL is retained
+	// only for GitHub/Gitea Actions compatibility.
+	envBaseURL      = "JIRA_BASE_URL"
+	envInputBaseURL = "INPUT_BASE_URL"
+	envUsername     = "JIRA_USERNAME"
+	envPassword     = "JIRA_PASSWORD"
+	envToken        = "JIRA_TOKEN"
+	envInsecure     = "JIRA_INSECURE"
 )
 
 const (
