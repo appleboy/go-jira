@@ -431,13 +431,15 @@ func TestLoadConfig(t *testing.T) {
 }
 
 // TestLoadConfig_InputPrefixStillWorks is a regression guard for the
-// GitHub Actions code path: when only INPUT_* env vars are present (and no
-// flags are passed), loadConfig must still pick them up via
-// util.GetGlobalValue. This is the exact path CI/CD relies on.
+// GitHub Actions code path: when INPUT_* env vars are present (and no flags
+// are passed), loadConfig must still pick them up. INPUT_BASE_URL also remains
+// ahead of JIRA_BASE_URL; the generic BASE_URL is intentionally ignored.
 func TestLoadConfig_InputPrefixStillWorks(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("INPUT_BASE_URL", "https://from-input.example.com")
+	os.Setenv(envInputBaseURL, "https://from-input.example.com")
+	os.Setenv(envBaseURL, "https://from-jira.example.com")
+	os.Setenv("BASE_URL", "https://unrelated.example.com")
 	os.Setenv("INPUT_TOKEN", "input-token")
 	os.Setenv("INPUT_REF", "ABC-1")
 	os.Setenv("INPUT_MARKDOWN", "true")
@@ -458,20 +460,19 @@ func TestLoadConfig_InputPrefixStillWorks(t *testing.T) {
 	}
 }
 
-// TestLoadConfig_BareEnvStillWorks confirms the fallback path
-// (INPUT_* unset, only bare KEY env vars set) keeps working — this is how
-// local .env files drive the tool.
-func TestLoadConfig_BareEnvStillWorks(t *testing.T) {
+// TestLoadConfig_GenericBaseURLIsIgnored confirms only the URL field drops the
+// bare-name convention; unrelated existing bare action settings still work.
+func TestLoadConfig_GenericBaseURLIsIgnored(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("BASE_URL", "https://from-bare.example.com")
+	os.Setenv("BASE_URL", "https://unrelated.example.com")
 	os.Setenv("TOKEN", "bare-token")
 	os.Setenv("REF", "ABC-2")
 
 	got := loadConfig(nil)
 
-	if got.baseURL != "https://from-bare.example.com" {
-		t.Errorf("baseURL = %q, want BASE_URL value", got.baseURL)
+	if got.baseURL != "" {
+		t.Errorf("baseURL = %q, want generic BASE_URL to be ignored", got.baseURL)
 	}
 	if got.token != "bare-token" {
 		t.Errorf("token = %q, want TOKEN value", got.token)
@@ -512,21 +513,71 @@ func TestLoadConfig_JiraAliasesWork(t *testing.T) {
 	}
 }
 
-// TestLoadConfig_BareEnvBeatsJiraAlias verifies precedence: the existing
-// INPUT_<KEY>/<KEY> convention wins over the JIRA_ alias when both are set.
-func TestLoadConfig_BareEnvBeatsJiraAlias(t *testing.T) {
+// TestLoadConfig_JiraBaseURLIgnoresGenericBaseURL guards against collisions
+// with a generic BASE_URL set by another tool or loaded into the process first.
+func TestLoadConfig_JiraBaseURLIgnoresGenericBaseURL(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("BASE_URL", "https://from-bare.example.com")
-	os.Setenv("JIRA_BASE_URL", "https://from-jira.example.com")
-	os.Setenv("TOKEN", "bare-token")
-	os.Setenv("JIRA_TOKEN", "jira-token")
+	os.Setenv("BASE_URL", "https://unrelated.example.com")
+	os.Setenv(envBaseURL, "https://from-jira.example.com")
 
 	got := loadConfig(nil)
 
-	if got.baseURL != "https://from-bare.example.com" {
-		t.Errorf("baseURL = %q, want BASE_URL to win over JIRA_BASE_URL", got.baseURL)
+	if got.baseURL != "https://from-jira.example.com" {
+		t.Errorf("baseURL = %q, want JIRA_BASE_URL while generic BASE_URL is ignored", got.baseURL)
 	}
+}
+
+func TestBaseURLSourceIgnoresGenericBaseURL(t *testing.T) {
+	clearInputEnv(t)
+	os.Setenv("BASE_URL", "https://unrelated.example.com")
+
+	if got := baseURLSource(nil); got != sourceDefault {
+		t.Errorf("baseURLSource() = %q, want %q", got, sourceDefault)
+	}
+
+	os.Setenv(envBaseURL, "https://from-jira.example.com")
+	if got := baseURLSource(nil); got != sourceEnv {
+		t.Errorf("baseURLSource() = %q, want env", got)
+	}
+}
+
+func TestConfigShowIgnoresGenericBaseURL(t *testing.T) {
+	clearInputEnv(t)
+	t.Setenv("BASE_URL", "https://unrelated.example.com")
+
+	out := captureStderr(t, func() {
+		cmd := newConfigShowCmd()
+		if err := cmd.ParseFlags([]string{"--env-file="}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		if err := runConfigShow(cmd); err != nil {
+			t.Fatalf("runConfigShow: %v", err)
+		}
+	})
+
+	for line := range strings.SplitSeq(out, "\n") {
+		cols := strings.Fields(line)
+		if len(cols) >= 3 && cols[0] == "base_url" {
+			if cols[1] != "(unset)" || cols[2] != sourceDefault {
+				t.Errorf("base_url row = %q, want (unset) %s", line, sourceDefault)
+			}
+			return
+		}
+	}
+	t.Fatalf("base_url row not found in config show output:\n%s", out)
+}
+
+// TestLoadConfig_BareTokenBeatsJiraAlias preserves the existing credential
+// precedence for fields that still support both bare and JIRA_-prefixed names.
+func TestLoadConfig_BareTokenBeatsJiraAlias(t *testing.T) {
+	clearInputEnv(t)
+
+	os.Setenv("TOKEN", "bare-token")
+	os.Setenv(envToken, "jira-token")
+
+	got := loadConfig(nil)
+
 	if got.token != "bare-token" {
 		t.Errorf("token = %q, want TOKEN to win over JIRA_TOKEN", got.token)
 	}
@@ -539,6 +590,8 @@ func TestLoadConfig_FlagOverridesEnv(t *testing.T) {
 	clearInputEnv(t)
 
 	os.Setenv("INPUT_BASE_URL", "https://from-env.example.com")
+	os.Setenv(envBaseURL, "https://from-jira.example.com")
+	os.Setenv("BASE_URL", "https://unrelated.example.com")
 	os.Setenv("INPUT_TOKEN", "env-token")
 	os.Setenv("INPUT_REF", "ENV-1")
 	os.Setenv("INPUT_MARKDOWN", "false")

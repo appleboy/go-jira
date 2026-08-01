@@ -387,7 +387,7 @@ func TestRun(t *testing.T) {
 				"INPUT_BASE_URL", "INPUT_INSECURE", "INPUT_USERNAME", "INPUT_PASSWORD",
 				"INPUT_TOKEN", "INPUT_REF", "INPUT_ISSUE_FORMAT", "INPUT_TRANSITION",
 				"INPUT_RESOLUTION", "INPUT_COMMENT", "INPUT_ASSIGNEE", "INPUT_MARKDOWN",
-				"INPUT_DEBUG",
+				"INPUT_DEBUG", envBaseURL, "BASE_URL",
 			}
 			for _, key := range envVars {
 				originalEnv[key] = os.Getenv(key)
@@ -403,7 +403,8 @@ func TestRun(t *testing.T) {
 				}
 			}()
 
-			// Setup test server only if BASE_URL is not explicitly tested to be missing
+			// Setup a test server unless INPUT_BASE_URL is explicitly testing the
+			// missing-value validation path.
 			if _, hasBaseURL := tt.envVars["INPUT_BASE_URL"]; !hasBaseURL {
 				server := setupTestServer(tt.serverOptions)
 				defer server.Close()
@@ -438,8 +439,15 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunWithEnvFile(t *testing.T) {
+	clearInputEnv(t)
+
+	// Setup test server before writing the env file so the file itself supplies
+	// the URL exercised by run.
+	server := setupTestServer(testServerOptions{})
+	defer server.Close()
+
 	// Create a temporary .env file
-	envContent := `INPUT_BASE_URL=https://jira.example.com
+	envContent := envBaseURL + "=" + server.URL + `
 INPUT_TOKEN=testtoken
 INPUT_REF=ABC-123
 `
@@ -456,17 +464,11 @@ INPUT_REF=ABC-123
 		t.Fatal(err)
 	}
 
-	// Setup test server
-	server := setupTestServer(testServerOptions{})
-	defer server.Close()
-
-	// Override base URL and insecure with test server
-	os.Setenv("INPUT_BASE_URL", server.URL)
+	// Simulate an unrelated process-level BASE_URL. The Jira-specific value
+	// loaded from the env file must win even though godotenv preserves existing
+	// process variables.
+	os.Setenv("BASE_URL", "not-a-valid-url")
 	os.Setenv("INPUT_INSECURE", "true")
-	defer func() {
-		os.Unsetenv("INPUT_BASE_URL")
-		os.Unsetenv("INPUT_INSECURE")
-	}()
 
 	// Run with env file via the --env-file flag on a fresh cobra command.
 	cmd := newRunCmd()
