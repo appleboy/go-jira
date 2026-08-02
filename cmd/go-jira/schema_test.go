@@ -47,6 +47,42 @@ func TestSchemaJSONIncludesCommandsAndRequiredFlags(t *testing.T) {
 	if token == nil || findCommand(token.Subcommands, "status") == nil {
 		t.Fatal("expected token.status in schema subcommand tree")
 	}
+
+	// Nested issue-transition command tree, including the required selector
+	// flags agents need to discover before attempting a state-changing call.
+	transition := findCommand(doc.Commands, "transition")
+	if transition == nil {
+		t.Fatal("transition command missing from schema")
+	}
+	if transition.Group != groupIssues {
+		t.Errorf("transition group = %q, want %q", transition.Group, groupIssues)
+	}
+	list := findCommand(transition.Subcommands, "list")
+	if list == nil {
+		t.Fatal("expected transition.list in schema subcommand tree")
+	}
+	listKey := findFlag(list.Flags, flagKey)
+	if listKey == nil || !listKey.Required {
+		t.Fatalf("transition.list --%s should be present and required", flagKey)
+	}
+
+	execute := findCommand(transition.Subcommands, "execute")
+	if execute == nil {
+		t.Fatal("expected transition.execute in schema subcommand tree")
+	}
+	for _, name := range []string{flagKey, flagTransition} {
+		flag := findFlag(execute.Flags, name)
+		if flag == nil || !flag.Required {
+			t.Errorf("transition.execute --%s should be present and required", name)
+		}
+	}
+	resolution := findFlag(execute.Flags, flagResolution)
+	if resolution == nil {
+		t.Fatalf("transition.execute --%s should be present", flagResolution)
+	}
+	if resolution.Required {
+		t.Errorf("transition.execute --%s should remain optional", flagResolution)
+	}
 }
 
 // TestSchemaJSONIsValidJSON ensures the rendered JSON output parses cleanly.

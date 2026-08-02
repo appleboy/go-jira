@@ -43,6 +43,7 @@ func TestSubcommandsRegistered(t *testing.T) {
 	want := map[string]bool{
 		"run": false, "login": false, "logout": false,
 		"whoami": false, "token": false, "config": false,
+		"transition": false,
 	}
 	for _, c := range cmd.Commands() {
 		want[c.Name()] = true

@@ -59,6 +59,7 @@ const (
 	flagEpic        = "epic"
 	flagSprint      = "sprint"
 	flagKey         = "key"
+	flagTransition  = "transition"
 	flagBoardID     = "board-id"
 	flagState       = "state"
 	flagBoardType   = "type"
@@ -294,6 +295,7 @@ Composability:
 		newUpdateCmd(),
 		newDeleteCmd(),
 		newGetCmd(),
+		newTransitionCmd(),
 		newSprintsCmd(),
 		newEpicsCmd(),
 		newBoardsCmd(),
