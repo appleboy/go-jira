@@ -328,18 +328,18 @@ server's `Retry-After` hint (requests are not retried automatically):
 }
 ```
 
-| Command   | Purpose                                   | Key flags                                                                                                                |
-| --------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `search`  | Run a JQL query                           | `--jql` (required), `--fields`, `--limit`                                                                                |
-| `get`     | Fetch summary + status of one issue       | `--key` (required)                                                                                                       |
-| `create`  | Create a Task issue                       | `--project`, `--summary` (required), `--assignee`, `--description`, `--components`, `--labels`, `--epic`, `--sprint`     |
-| `update`  | Partially update an issue's fields        | `--key` (required) + any of `--summary`, `--description`, `--assignee`, `--components`, `--labels`, `--epic`, `--sprint` |
-| `sprints` | List sprints for a board (Agile API)      | `--board-id` (required), `--state`, `--limit`                                                                            |
-| `epics`   | List active epics for a board (Agile API) | `--board-id` (required), `--limit`                                                                                       |
-| `boards`  | Discover boards for a project (Agile API) | `--project` (required), `--type`, `--limit`                                                                              |
-| `link`    | Link two issues                           | `--from`, `--to` (required), `--link-type`                                                                               |
-| `transition list` | List transitions available for one issue | `--key` (required), `--output`                                                                                       |
-| `transition execute` | Transition one issue by ID or name | `--key` (required), `--transition` (required), `--resolution`, `--output`                                             |
+| Command              | Purpose                                   | Key flags                                                                                                                |
+| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `search`             | Run a JQL query                           | `--jql` (required), `--fields`, `--limit`                                                                                |
+| `get`                | Fetch summary + status of one issue       | `--key` (required)                                                                                                       |
+| `create`             | Create a Task issue                       | `--project`, `--summary` (required), `--assignee`, `--description`, `--components`, `--labels`, `--epic`, `--sprint`     |
+| `update`             | Partially update an issue's fields        | `--key` (required) + any of `--summary`, `--description`, `--assignee`, `--components`, `--labels`, `--epic`, `--sprint` |
+| `sprints`            | List sprints for a board (Agile API)      | `--board-id` (required), `--state`, `--limit`                                                                            |
+| `epics`              | List active epics for a board (Agile API) | `--board-id` (required), `--limit`                                                                                       |
+| `boards`             | Discover boards for a project (Agile API) | `--project` (required), `--type`, `--limit`                                                                              |
+| `link`               | Link two issues                           | `--from`, `--to` (required), `--link-type`                                                                               |
+| `transition list`    | List transitions available for one issue  | `--key` (required), `--output`                                                                                           |
+| `transition execute` | Transition one issue by ID or name        | `--key` (required), `--transition` (required), `--resolution`, `--output`                                                |
 
 ### Composability (pipes, quiet, color)
 
