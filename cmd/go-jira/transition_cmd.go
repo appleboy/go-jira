@@ -291,11 +291,15 @@ func transitionChoices(transitions []jira.Transition) string {
 func transitionOutputs(transitions []jira.Transition) []transitionOutput {
 	output := make([]transitionOutput, 0, len(transitions))
 	for _, transition := range transitions {
+		fields := transition.Fields
+		if fields == nil {
+			fields = map[string]jira.TransitionField{}
+		}
 		output = append(output, transitionOutput{
 			ID:     transition.ID,
 			Name:   transition.Name,
 			To:     transition.To.Name,
-			Fields: transition.Fields,
+			Fields: fields,
 		})
 	}
 	return output

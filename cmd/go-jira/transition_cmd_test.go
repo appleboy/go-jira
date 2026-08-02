@@ -194,6 +194,39 @@ func TestTransitionListCmdEmpty(t *testing.T) {
 	}
 }
 
+func TestTransitionListCmdNormalizesNilFields(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertTestTransitionGET(t, r)
+		writeTestTransitions(t, w, []jira.Transition{
+			{
+				ID:   "31",
+				Name: "Done",
+				To:   jira.Status{ID: "10002", Name: "Done"},
+			},
+		})
+	}))
+	defer server.Close()
+
+	out, err := runTransitionTestCmd(t, newTransitionListCmd(), server.URL,
+		"--key", "GAIA-123")
+	if err != nil {
+		t.Fatalf("transition list with nil fields returned error: %v", err)
+	}
+	var got testTransitionListResult
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("decode transition list JSON %q: %v", out, err)
+	}
+	if len(got.Transitions) != 1 {
+		t.Fatalf("list transitions = %+v, want one entry", got.Transitions)
+	}
+	if got.Transitions[0].Fields == nil {
+		t.Errorf("list fields = null, want an empty object")
+	}
+	if len(got.Transitions[0].Fields) != 0 {
+		t.Errorf("list fields = %+v, want an empty object", got.Transitions[0].Fields)
+	}
+}
+
 func TestTransitionExecuteCmdByIDAndName(t *testing.T) {
 	tests := []struct {
 		name       string

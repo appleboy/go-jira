@@ -339,7 +339,7 @@ server's `Retry-After` hint (requests are not retried automatically):
 | `boards`  | Discover boards for a project (Agile API) | `--project` (required), `--type`, `--limit`                                                                              |
 | `link`    | Link two issues                           | `--from`, `--to` (required), `--link-type`                                                                               |
 | `transition list` | List transitions available for one issue | `--key` (required), `--output`                                                                                       |
-| `transition execute` | Transition one issue by ID or name | `--key`, `--transition` (required), `--resolution`, `--output`                                                        |
+| `transition execute` | Transition one issue by ID or name | `--key` (required), `--transition` (required), `--resolution`, `--output`                                             |
 
 ### Composability (pipes, quiet, color)
 
