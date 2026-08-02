@@ -34,6 +34,7 @@
       - [使用 OAuth 登入（本機開發）](#使用-oauth-登入本機開發)
       - [顯示版本](#顯示版本)
       - [使用自訂環境檔](#使用自訂環境檔)
+  - [Jira issue 狀態轉移](#jira-issue-狀態轉移)
   - [可組合性（管線、安靜、顏色）](#可組合性管線安靜顏色)
   - [Schema 自我描述（供代理程式使用）](#schema-自我描述供代理程式使用)
   - [OAuth 2.0](#oauth-20)
@@ -194,6 +195,44 @@ go run ./cmd/go-jira --version
 ```bash
 go run ./cmd/go-jira run --env-file=custom.env
 ```
+
+## Jira issue 狀態轉移
+
+獨立的 `transition` 命令一次處理一個 issue。請先列出 Jira 目前允許此帳號對該
+issue 執行的 transitions，再以 ID 或名稱執行其中一項：
+
+```bash
+# 列出目前可用的 transitions（預設輸出 JSON）
+go-jira transition list --key GAIA-123
+
+# 每個 transition 以 ID／名稱／目標狀態的 tab 分隔格式輸出一列
+go-jira transition list --key GAIA-123 --output text
+
+# 以不分大小寫的完整名稱執行
+go-jira transition execute --key GAIA-123 --transition Done
+
+# 以完全相符的 transition ID 執行
+go-jira transition execute --key GAIA-123 --transition 31
+
+# 執行 transition 時可選擇同時設定 resolution
+go-jira transition execute --key GAIA-123 --transition Done --resolution Fixed
+```
+
+`execute` 每次變更前都會重新取得可用 transitions。完全相符的 ID 優先；若 ID
+不符，selector 必須以不分大小寫的方式完整匹配 transition 名稱。找不到時不會送出
+變更請求；若多個 transition 同名，命令會回報名稱有歧義，並要求改用 ID。
+
+兩個子命令都支援 `--output json|text`。`list` 的預設 JSON 包含 issue `key` 與
+`transitions` 陣列；每筆資料會提供 `id`、`name`、目標狀態（`to`），以及 Jira
+回傳的 transition 欄位中繼資料（`fields`）。文字格式則每列輸出
+`ID<TAB>NAME<TAB>DESTINATION_STATUS`。成功的 `execute` JSON 會回報
+`status: "transitioned"`、issue key、所選 transition 的 ID、名稱與目標狀態；文字
+格式會輸出例如 `transitioned GAIA-123 via 31 (Done) -> Done` 的單行結果。只有 Jira
+接受 transition 後才會輸出成功結果。`--resolution` 是唯一支援的額外 transition
+screen 欄位。
+
+既有的 `go-jira run --to-transition` 仍可從自由文字擷取多個 issue key，並保留原有
+以名稱執行批次 transition 的行為。
 
 ## 可組合性（管線、安靜、顏色）
 

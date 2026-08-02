@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Features
+
+- **Standalone issue transition commands.** Use `go-jira transition list
+  --key GAIA-123` to inspect the transitions currently available for one issue,
+  then `go-jira transition execute --key GAIA-123 --transition <ID-or-name>` to
+  execute one after validating it against a fresh list. Exact IDs take
+  precedence over case-insensitive exact names; `--resolution` remains optional,
+  and both commands support JSON or text output. The existing batch-oriented
+  `go-jira run --to-transition` interface remains unchanged.
+
 ### Changed
 
 - **Stop reading the generic `BASE_URL` environment variable.** This is a

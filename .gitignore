@@ -25,3 +25,6 @@ go.work.sum
 .env
 coverage.txt
 bin/*
+
+# Local mkcert TLS artifacts
+/localhost+*.pem

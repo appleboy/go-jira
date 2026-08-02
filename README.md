@@ -36,6 +36,9 @@
       - [Use custom environment file](#use-custom-environment-file)
   - [Use in GitHub / Gitea Actions](#use-in-github--gitea-actions)
   - [Data subcommands](#data-subcommands)
+    - [Issue transitions](#issue-transitions)
+    - [Exit codes and error output](#exit-codes-and-error-output)
+    - [Composability (pipes, quiet, color)](#composability-pipes-quiet-color)
   - [Schema introspection (for agents)](#schema-introspection-for-agents)
   - [OAuth 2.0](#oauth-20)
     - [Token refresh broker (confidential clients)](#token-refresh-broker-confidential-clients)
@@ -252,6 +255,50 @@ URL, and `.env` resolution as every other command, and print machine-readable
 JSON to stdout by default. Pass `--output text` for a concise human-readable
 summary; errors go to stderr with a non-zero exit code (see below).
 
+### Issue transitions
+
+The standalone `transition` commands operate on one issue at a time. First list
+the transitions Jira currently makes available to your account for the issue,
+then execute one by its ID or name:
+
+```bash
+# List the currently available transitions (JSON by default)
+go-jira transition list --key GAIA-123
+
+# Print one tab-separated ID / name / destination-status row per transition
+go-jira transition list --key GAIA-123 --output text
+
+# Execute by case-insensitive exact name
+go-jira transition execute --key GAIA-123 --transition Done
+
+# Execute by exact transition ID
+go-jira transition execute --key GAIA-123 --transition 31
+
+# Optionally set a resolution while executing the transition
+go-jira transition execute --key GAIA-123 --transition Done --resolution Fixed
+```
+
+`execute` fetches the available transitions immediately before every change.
+An exact ID match wins; otherwise the selector must case-insensitively match one
+complete transition name. An unavailable selector fails without sending the
+transition request, while duplicate names are rejected as ambiguous and must be
+selected by ID.
+
+Both leaf commands accept `--output json|text`. The default JSON result from
+`list` contains the issue `key` and a `transitions` array whose entries expose
+`id`, `name`, destination status (`to`), and Jira's transition-field metadata
+(`fields`). Text output prints `ID<TAB>NAME<TAB>DESTINATION_STATUS`, one row per
+transition. A successful `execute` JSON result reports
+`status: "transitioned"`, the issue key, and the selected transition's ID, name,
+and destination status; text output prints a concise line such as
+`transitioned GAIA-123 via 31 (Done) -> Done`. Success is emitted only after Jira
+accepts the transition. The optional `--resolution` flag is the only supported
+transition-screen field.
+
+The existing `go-jira run --to-transition` interface remains available for
+extracting multiple issue keys from free-form text and preserves its existing
+name-based batch behavior.
+
 ### Exit codes and error output
 
 Every command exits with a distinct code per error class so scripts and agents
@@ -291,6 +338,8 @@ server's `Retry-After` hint (requests are not retried automatically):
 | `epics`   | List active epics for a board (Agile API) | `--board-id` (required), `--limit`                                                                                       |
 | `boards`  | Discover boards for a project (Agile API) | `--project` (required), `--type`, `--limit`                                                                              |
 | `link`    | Link two issues                           | `--from`, `--to` (required), `--link-type`                                                                               |
+| `transition list` | List transitions available for one issue | `--key` (required), `--output`                                                                                       |
+| `transition execute` | Transition one issue by ID or name | `--key`, `--transition` (required), `--resolution`, `--output`                                                        |
 
 ### Composability (pipes, quiet, color)
 
