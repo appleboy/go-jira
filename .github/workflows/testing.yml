@@ -27,6 +27,7 @@ jobs:
         name: hadolint for Dockerfile
         with:
           dockerfile: docker/Dockerfile
+          failure-threshold: error
 
   testing:
     strategy:
