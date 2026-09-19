@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.15.1 - 2026-09-19
+
+### Internal
+
+- Raise the minimum Go version to 1.26.0 and update `golang.org/x/oauth2`,
+  `golang.org/x/sys`, and `golang.org/x/text` dependencies.
+- Test against Go 1.26 and 1.27 in CI, and use Go 1.26.6 for Docker builds.
+- Update Hadolint to v3.5.0 and set its failure threshold to errors.
+
 ## v0.15.0 - 2026-08-02
 
 ### Features
