@@ -63,7 +63,8 @@ func genLoopbackCert(t *testing.T) (certPath, keyPath string) {
 func writePEM(t *testing.T, path, blockType string, der []byte) {
 	t.Helper()
 	if err := os.WriteFile(path, pem.EncodeToMemory(
-		&pem.Block{Type: blockType, Bytes: der}), 0o600); err != nil {
+		&pem.Block{Type: blockType, Bytes: der},
+	), 0o600); err != nil {
 		t.Fatalf("write %s: %v", path, err)
 	}
 }
@@ -167,7 +168,7 @@ func TestLoginEndToEndTLS(t *testing.T) {
 			t.Errorf("parse authorize url: %v", err)
 		}
 		state := u.Query().Get("state")
-		query := fmt.Sprintf("code=browser-code&state=%s", url.QueryEscape(state))
+		query := "code=browser-code&state=" + url.QueryEscape(state)
 		go getCallbackTLS(t, port, query)
 		return "", nil, errors.New("browser stubbed")
 	}
@@ -265,7 +266,7 @@ func TestLoginEndToEndGeneratedTLS(t *testing.T) {
 			t.Errorf("parse authorize url: %v", err)
 		}
 		state := u.Query().Get("state")
-		query := fmt.Sprintf("code=browser-code&state=%s", url.QueryEscape(state))
+		query := "code=browser-code&state=" + url.QueryEscape(state)
 		go getCallbackTLS(t, port, query)
 		return "", nil, errors.New("browser stubbed")
 	}

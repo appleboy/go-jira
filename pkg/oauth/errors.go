@@ -25,7 +25,8 @@ var (
 	ErrInvalidClient = errors.New(
 		"oauth: invalid_client (check client_id; if the app is a confidential " +
 			"client that requires a secret on refresh, route refresh through a token " +
-			"refresh broker by setting JIRA_TOKEN_BROKER_URL)")
+			"refresh broker by setting JIRA_TOKEN_BROKER_URL)",
+	)
 	ErrServerError = errors.New("oauth: server error")
 	// ErrBrokerUnauthorized means the token refresh broker rejected the caller's
 	// own credential (the JIRA_BROKER_TOKEN bearer was missing or wrong). It is a

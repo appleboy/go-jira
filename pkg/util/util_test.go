@@ -1,7 +1,6 @@
 package util
 
 import (
-	"os"
 	"testing"
 )
 
@@ -65,11 +64,10 @@ func TestToBool(t *testing.T) {
 
 func TestGetGlobalValue(t *testing.T) {
 	tests := []struct {
-		name        string
-		key         string
-		envVars     map[string]string
-		want        string
-		shouldClear []string
+		name    string
+		key     string
+		envVars map[string]string
+		want    string
 	}{
 		{
 			name: "get INPUT_ prefixed value",
@@ -78,8 +76,7 @@ func TestGetGlobalValue(t *testing.T) {
 				"INPUT_MYKEY": "input-value",
 				"MYKEY":       "regular-value",
 			},
-			want:        "input-value",
-			shouldClear: []string{"INPUT_MYKEY", "MYKEY"},
+			want: "input-value",
 		},
 		{
 			name: "fallback to non-prefixed when INPUT_ not set",
@@ -87,15 +84,13 @@ func TestGetGlobalValue(t *testing.T) {
 			envVars: map[string]string{
 				"TESTKEY": "test-value",
 			},
-			want:        "test-value",
-			shouldClear: []string{"TESTKEY"},
+			want: "test-value",
 		},
 		{
-			name:        "empty when no env vars set",
-			key:         "missing",
-			envVars:     map[string]string{},
-			want:        "",
-			shouldClear: []string{},
+			name:    "empty when no env vars set",
+			key:     "missing",
+			envVars: map[string]string{},
+			want:    "",
 		},
 		{
 			name: "case insensitive key lookup",
@@ -103,8 +98,7 @@ func TestGetGlobalValue(t *testing.T) {
 			envVars: map[string]string{
 				"INPUT_MIXEDCASE": "mixed-value",
 			},
-			want:        "mixed-value",
-			shouldClear: []string{"INPUT_MIXEDCASE"},
+			want: "mixed-value",
 		},
 	}
 
@@ -112,15 +106,8 @@ func TestGetGlobalValue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set environment variables
 			for k, v := range tt.envVars {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
-
-			// Clean up environment variables after test
-			defer func() {
-				for _, k := range tt.shouldClear {
-					os.Unsetenv(k)
-				}
-			}()
 
 			got := GetGlobalValue(tt.key)
 			if got != tt.want {
