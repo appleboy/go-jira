@@ -43,7 +43,8 @@ func newTestServer(t *testing.T, opts Options) *Server {
 func postRefresh(s *Server, body any, authz string) *httptest.ResponseRecorder {
 	payload, _ := json.Marshal(body)
 	req := httptest.NewRequestWithContext(
-		context.Background(), http.MethodPost, RefreshPath, bytes.NewReader(payload))
+		context.Background(), http.MethodPost, RefreshPath, bytes.NewReader(payload),
+	)
 	req.Header.Set("Content-Type", "application/json")
 	if authz != "" {
 		req.Header.Set("Authorization", authz)

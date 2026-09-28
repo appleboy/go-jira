@@ -61,7 +61,8 @@ func runEpics(cmd *cobra.Command) error {
 		ctx, boardID, &jira.GetEpicsOptions{
 			Done:          &done,
 			SearchOptions: jira.SearchOptions{MaxResults: limit},
-		})
+		},
+	)
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}

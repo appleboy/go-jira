@@ -73,12 +73,14 @@ func Login(
 	if redirect.Port() != strconv.Itoa(port) {
 		return nil, fmt.Errorf(
 			"oauth login: redirect URI %q port does not match callback port %d",
-			cfg.RedirectURI, port)
+			cfg.RedirectURI, port,
+		)
 	}
 	if redirect.Path != callbackPath {
 		return nil, fmt.Errorf(
 			"oauth login: redirect URI %q path must be %s",
-			cfg.RedirectURI, callbackPath)
+			cfg.RedirectURI, callbackPath,
+		)
 	}
 
 	state, err := NewState()

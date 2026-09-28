@@ -57,7 +57,6 @@ func newTokenPrintCmd() *cobra.Command {
 
 func newTokenStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		//nolint:goconst // cobra subcommand name, independent of the statusKey field constant
 		Use:   "status",
 		Short: "Show token mode, time remaining, scopes, and storage backend",
 		Example: `  # Inspect the stored token without revealing it
@@ -131,7 +130,8 @@ func runTokenPrint(cmd *cobra.Command) error {
 	}
 	if confirmed, _ := cmd.Flags().GetBool(flagConfirm); !confirmed {
 		return errors.New(
-			"this command prints a sensitive token; re-run with --confirm to acknowledge")
+			"this command prints a sensitive token; re-run with --confirm to acknowledge",
+		)
 	}
 	fmt.Println(loaded.token.AccessToken)
 	return nil

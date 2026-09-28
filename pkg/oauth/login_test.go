@@ -63,7 +63,8 @@ func genLoopbackCert(t *testing.T) (certPath, keyPath string) {
 func writePEM(t *testing.T, path, blockType string, der []byte) {
 	t.Helper()
 	if err := os.WriteFile(path, pem.EncodeToMemory(
-		&pem.Block{Type: blockType, Bytes: der}), 0o600); err != nil {
+		&pem.Block{Type: blockType, Bytes: der},
+	), 0o600); err != nil {
 		t.Fatalf("write %s: %v", path, err)
 	}
 }

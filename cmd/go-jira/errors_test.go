@@ -236,7 +236,8 @@ func TestDiagTransportRecordsErrorStatus(t *testing.T) {
 
 	doGet := func(path string) {
 		req, err := http.NewRequestWithContext(
-			withDiag(context.Background(), d), http.MethodGet, srv.URL+path, nil)
+			withDiag(context.Background(), d), http.MethodGet, srv.URL+path, nil,
+		)
 		if err != nil {
 			t.Fatalf("new request: %v", err)
 		}

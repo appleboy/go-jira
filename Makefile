@@ -1,4 +1,5 @@
 GO ?= go
+TOOLS_MOD := -modfile=go.tools.mod
 EXECUTABLE := go-jira
 GOFILES := $(shell find . -type f -name "*.go")
 TAGS ?=
@@ -60,10 +61,17 @@ bench:
 ## lint: run golangci-lint
 .PHONY: lint
 lint:
-	@golangci-lint run ./...
+	$(GO) tool $(TOOLS_MOD) golangci-lint run ./...
 
 ## help: print this help message
 .PHONY: help
 help:
 	@echo 'Usage:'
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
+.PHONY: fmt
+fmt: ## Format Go files using golangci-lint
+	$(GO) tool $(TOOLS_MOD) golangci-lint fmt
+
+.PHONY: install-tools fmt lint
+install-tools: ## Download pinned Go tools
+	$(GO) mod download $(TOOLS_MOD)

@@ -320,7 +320,8 @@ func validateNoControlChars(args []string) error {
 					code: exitUsage,
 					kind: kindUsage,
 					message: fmt.Sprintf(
-						"argument contains a disallowed control character (0x%02X)", r),
+						"argument contains a disallowed control character (0x%02X)", r,
+					),
 				}
 			}
 		}

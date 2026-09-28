@@ -154,7 +154,8 @@ func (a *OAuthAuthenticator) notifyRotation(rotated *storage.StoredToken) error 
 	if err := a.OnRotate(rotated); err != nil {
 		if a.mode == ModeOAuthEnv {
 			return fmt.Errorf(
-				"oauth-env: persist rotated refresh token (secret is now stale): %w", err)
+				"oauth-env: persist rotated refresh token (secret is now stale): %w", err,
+			)
 		}
 		slog.Warn("oauth: OnRotate hook failed", "error", err)
 	}
@@ -200,7 +201,8 @@ func (rt *oauthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 	if req.Body != nil {
 		if req.GetBody == nil {
 			return nil, errors.New(
-				"oauth: got 401 but request body cannot be rewound to retry")
+				"oauth: got 401 but request body cannot be rewound to retry",
+			)
 		}
 		body, err := req.GetBody()
 		if err != nil {
