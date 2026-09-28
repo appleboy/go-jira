@@ -168,7 +168,7 @@ func TestLoginEndToEndTLS(t *testing.T) {
 			t.Errorf("parse authorize url: %v", err)
 		}
 		state := u.Query().Get("state")
-		query := fmt.Sprintf("code=browser-code&state=%s", url.QueryEscape(state))
+		query := "code=browser-code&state=" + url.QueryEscape(state)
 		go getCallbackTLS(t, port, query)
 		return "", nil, errors.New("browser stubbed")
 	}
@@ -266,7 +266,7 @@ func TestLoginEndToEndGeneratedTLS(t *testing.T) {
 			t.Errorf("parse authorize url: %v", err)
 		}
 		state := u.Query().Get("state")
-		query := fmt.Sprintf("code=browser-code&state=%s", url.QueryEscape(state))
+		query := "code=browser-code&state=" + url.QueryEscape(state)
 		go getCallbackTLS(t, port, query)
 		return "", nil, errors.New("browser stubbed")
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"text/tabwriter"
 
 	"github.com/appleboy/go-jira/pkg/auth"
@@ -76,7 +77,7 @@ func runConfigShow(cmd *cobra.Command) error {
 
 	fmt.Fprintf(w, "base_url\t%s\t%s\n",
 		redactIfSecret("base_url", config.baseURL), baseURLSource(cmd))
-	row("insecure", fmt.Sprintf("%t", config.insecure), flagInsecure, "insecure", envInsecure)
+	row("insecure", strconv.FormatBool(config.insecure), flagInsecure, "insecure", envInsecure)
 	row("token", config.token, flagToken, "token", envToken)
 	row("username", config.username, flagUsername, "username", envUsername)
 	row("password", config.password, flagPassword, "password", envPassword)

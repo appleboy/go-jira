@@ -472,11 +472,9 @@ func TestRefreshCoalescedFailureMetrics(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range n {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			postRefresh(s, RefreshRequest{RefreshToken: "old"}, "")
-		}()
+		})
 	}
 
 	<-started        // the single executor has reached the upstream call

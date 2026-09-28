@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	jira "github.com/andygrunwald/go-jira"
-	"github.com/appleboy/com/convert"
 )
 
 // processTransitions processes issue transitions concurrently
@@ -42,7 +41,7 @@ func processTransitions(
 				TransitionID: transition.ID,
 			}
 			if resolution != "" {
-				input.ResolutionID = convert.ToPtr(resolution)
+				input.ResolutionID = new(resolution)
 			}
 			resp, err := jiraClient.Issue.DoTransitionPayloadWithContext(
 				ctx,

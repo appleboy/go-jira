@@ -284,7 +284,7 @@ func TestAddComments(t *testing.T) {
 			comment: "Test comment",
 			issues: func() []*jira.Issue {
 				issues := make([]*jira.Issue, 20)
-				for i := 0; i < 20; i++ {
+				for i := range 20 {
 					issues[i] = &jira.Issue{
 						Key: "TEST-" + string(rune(i+100)),
 						Fields: &jira.IssueFields{

@@ -97,12 +97,12 @@ func TestProcessTransitions(t *testing.T) {
 						if err != nil {
 							t.Errorf("failed to read body: %v", err)
 						}
-						var payload map[string]interface{}
+						var payload map[string]any
 						if err := json.Unmarshal(body, &payload); err != nil {
 							t.Errorf("failed to unmarshal body: %v", err)
 						}
-						if fields, ok := payload["fields"].(map[string]interface{}); ok {
-							if resolution, ok := fields["resolution"].(map[string]interface{}); ok {
+						if fields, ok := payload["fields"].(map[string]any); ok {
+							if resolution, ok := fields["resolution"].(map[string]any); ok {
 								if id, ok := resolution["id"].(string); ok && id != "10" {
 									t.Errorf("expected resolution ID 10, got %s", id)
 								}
@@ -299,7 +299,7 @@ func TestProcessTransitions(t *testing.T) {
 // Helper function to create many test issues
 func createManyIssues(count int) []*jira.Issue {
 	issues := make([]*jira.Issue, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		issues[i] = &jira.Issue{
 			Key: "TEST-" + string(rune(i+100)),
 			Fields: &jira.IssueFields{

@@ -202,13 +202,11 @@ func TestEnsureFreshConcurrentRefreshesOnce(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 10 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if _, err := a.ensureFresh(context.Background()); err != nil {
 				t.Errorf("ensureFresh: %v", err)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

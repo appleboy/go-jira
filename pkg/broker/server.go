@@ -292,8 +292,7 @@ func (s *Server) writeError(w http.ResponseWriter, status int, code, desc string
 // classifyRefreshError extracts the HTTP status and OAuth2 error code from an
 // *APIError, defaulting to 500 server_error for any other failure.
 func classifyRefreshError(err error) (int, string) {
-	var apiErr *APIError
-	if errors.As(err, &apiErr) {
+	if apiErr, ok := errors.AsType[*APIError](err); ok {
 		return apiErr.Status, apiErr.Code
 	}
 	return http.StatusInternalServerError, codeServerError
@@ -401,7 +400,7 @@ func (c *resultCache) do(
 	c.inflight[key] = call
 	c.mu.Unlock()
 
-	executed = true
+	executed = true //nolint:wastedassign // Preserve the executor flag when the deferred recovery handles a panic.
 	// The cleanup runs via defer so the inflight entry is always cleared and
 	// waiters are always released — even if fn panics. Otherwise a single panic
 	// would wedge this key forever and leak every coalesced (and future) waiter.

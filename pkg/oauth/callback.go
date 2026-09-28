@@ -48,7 +48,7 @@ func (c *Config) resolveCallbackCert() (*tls.Certificate, error) {
 		}
 		return &cert, nil
 	default:
-		return nil, nil
+		return nil, nil //nolint:nilnil // No certificate selects the supported plain HTTP callback.
 	}
 }
 

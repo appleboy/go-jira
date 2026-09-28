@@ -381,27 +381,7 @@ func TestRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Save and clear environment
-			originalEnv := make(map[string]string)
-			envVars := []string{
-				"INPUT_BASE_URL", "INPUT_INSECURE", "INPUT_USERNAME", "INPUT_PASSWORD",
-				"INPUT_TOKEN", "INPUT_REF", "INPUT_ISSUE_FORMAT", "INPUT_TRANSITION",
-				"INPUT_RESOLUTION", "INPUT_COMMENT", "INPUT_ASSIGNEE", "INPUT_MARKDOWN",
-				"INPUT_DEBUG", envBaseURL, "BASE_URL",
-			}
-			for _, key := range envVars {
-				originalEnv[key] = os.Getenv(key)
-				os.Unsetenv(key)
-			}
-			defer func() {
-				for key, val := range originalEnv {
-					if val == "" {
-						os.Unsetenv(key)
-					} else {
-						os.Setenv(key, val)
-					}
-				}
-			}()
+			clearInputEnv(t)
 
 			// Setup a test server unless INPUT_BASE_URL is explicitly testing the
 			// missing-value validation path.
@@ -413,7 +393,7 @@ func TestRun(t *testing.T) {
 
 			// Set environment variables for test
 			for key, val := range tt.envVars {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			// Run the function
@@ -451,13 +431,13 @@ func TestRunWithEnvFile(t *testing.T) {
 INPUT_TOKEN=testtoken
 INPUT_REF=ABC-123
 `
-	tmpfile, err := os.CreateTemp("", "test.env")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "test.env")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpfile.Name())
 
-	if _, err := tmpfile.Write([]byte(envContent)); err != nil {
+	if _, err := tmpfile.WriteString(envContent); err != nil {
 		t.Fatal(err)
 	}
 	if err := tmpfile.Close(); err != nil {
@@ -467,8 +447,8 @@ INPUT_REF=ABC-123
 	// Simulate an unrelated process-level BASE_URL. The Jira-specific value
 	// loaded from the env file must win even though godotenv preserves existing
 	// process variables.
-	os.Setenv("BASE_URL", "not-a-valid-url")
-	os.Setenv("INPUT_INSECURE", "true")
+	t.Setenv("BASE_URL", "not-a-valid-url")
+	t.Setenv("INPUT_INSECURE", "true")
 
 	// Run with env file via the --env-file flag on a fresh cobra command.
 	cmd := newRunCmd()
@@ -502,15 +482,7 @@ func TestRunMissingExplicitEnvFile(t *testing.T) {
 // TestRunDefaultEnvFileMissingIsSilent verifies the default .env path is still
 // silently ignored when absent — only explicit --env-file is fatal on miss.
 func TestRunDefaultEnvFileMissingIsSilent(t *testing.T) {
-	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(oldWd) }()
+	t.Chdir(t.TempDir())
 
 	server := setupTestServer(testServerOptions{})
 	defer server.Close()
@@ -522,13 +494,8 @@ func TestRunDefaultEnvFileMissingIsSilent(t *testing.T) {
 		"INPUT_REF":      "ABC-123",
 	}
 	for k, v := range envVars {
-		os.Setenv(k, v)
+		t.Setenv(k, v)
 	}
-	defer func() {
-		for k := range envVars {
-			os.Unsetenv(k)
-		}
-	}()
 
 	cmd := newRunCmd()
 	if err := cmd.ParseFlags(nil); err != nil {

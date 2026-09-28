@@ -116,8 +116,7 @@ func classify(err error, diag *requestDiag) *cliError {
 		return nil
 	}
 
-	var ce *cliError
-	if errors.As(err, &ce) {
+	if ce, ok := errors.AsType[*cliError](err); ok {
 		return ce
 	}
 

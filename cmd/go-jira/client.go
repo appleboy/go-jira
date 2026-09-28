@@ -55,7 +55,7 @@ func getSelf(ctx context.Context, jiraClient *jira.Client) (*jira.User, error) {
 // getUser retrieves a user by username
 func getUser(ctx context.Context, jiraClient *jira.Client, username string) (*jira.User, error) {
 	if username == "" {
-		return nil, nil
+		return nil, nil //nolint:nilnil // An empty username means no user lookup was requested.
 	}
 
 	user, resp, err := jiraClient.User.GetByUsernameWithContext(ctx, username)

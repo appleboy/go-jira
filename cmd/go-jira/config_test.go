@@ -20,8 +20,7 @@ func captureSlog(t *testing.T) *bytes.Buffer {
 }
 
 // clearInputEnv unsets every INPUT_* and bare env var that loadConfig reads
-// and returns a restore function. Tests use this to get a clean slate without
-// polluting each other.
+// and restores their original presence and values on cleanup.
 func clearInputEnv(t *testing.T) {
 	t.Helper()
 	keys := []string{
@@ -35,20 +34,19 @@ func clearInputEnv(t *testing.T) {
 		"JIRA_BASE_URL", "JIRA_USERNAME", "JIRA_PASSWORD",
 		"JIRA_TOKEN", "JIRA_INSECURE",
 	}
-	saved := make(map[string]string, len(keys))
 	for _, k := range keys {
-		saved[k] = os.Getenv(k)
-		os.Unsetenv(k)
+		unsetTestEnv(t, k)
 	}
-	t.Cleanup(func() {
-		for k, v := range saved {
-			if v == "" {
-				os.Unsetenv(k)
-			} else {
-				os.Setenv(k, v)
-			}
-		}
-	})
+}
+
+// unsetTestEnv leaves a variable absent while retaining t.Setenv's restoration.
+// Absence matters when loading .env files, which preserve existing variables.
+func unsetTestEnv(t *testing.T, key string) {
+	t.Helper()
+	t.Setenv(key, "")
+	if err := os.Unsetenv(key); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestRedirectURI(t *testing.T) {
@@ -138,7 +136,7 @@ func TestResolveCallbackPort(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.env == "" {
-				os.Unsetenv(envOAuthCallbackPort)
+				unsetTestEnv(t, envOAuthCallbackPort)
 			} else {
 				t.Setenv(envOAuthCallbackPort, tt.env)
 			}
@@ -268,30 +266,6 @@ func TestValidateConfig(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	// Save original environment
-	originalEnv := make(map[string]string)
-	envVars := []string{
-		"INPUT_BASE_URL", "INPUT_INSECURE", "INPUT_USERNAME", "INPUT_PASSWORD",
-		"INPUT_TOKEN", "INPUT_REF", "INPUT_ISSUE_FORMAT", "INPUT_TRANSITION",
-		"INPUT_RESOLUTION", "INPUT_COMMENT", "INPUT_ASSIGNEE", "INPUT_MARKDOWN",
-		"INPUT_DEBUG",
-	}
-	for _, key := range envVars {
-		originalEnv[key] = os.Getenv(key)
-	}
-
-	// Cleanup function to restore environment
-	cleanup := func() {
-		for key, val := range originalEnv {
-			if val == "" {
-				os.Unsetenv(key)
-			} else {
-				os.Setenv(key, val)
-			}
-		}
-	}
-	defer cleanup()
-
 	tests := []struct {
 		name     string
 		envVars  map[string]string
@@ -374,14 +348,11 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Clear environment
-			for _, key := range envVars {
-				os.Unsetenv(key)
-			}
+			clearInputEnv(t)
 
 			// Set test environment variables
 			for key, val := range tt.envVars {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			got := loadConfig(nil)
@@ -437,12 +408,12 @@ func TestLoadConfig(t *testing.T) {
 func TestLoadConfig_InputPrefixStillWorks(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv(envInputBaseURL, "https://from-input.example.com")
-	os.Setenv(envBaseURL, "https://from-jira.example.com")
-	os.Setenv("BASE_URL", "https://unrelated.example.com")
-	os.Setenv("INPUT_TOKEN", "input-token")
-	os.Setenv("INPUT_REF", "ABC-1")
-	os.Setenv("INPUT_MARKDOWN", "true")
+	t.Setenv(envInputBaseURL, "https://from-input.example.com")
+	t.Setenv(envBaseURL, "https://from-jira.example.com")
+	t.Setenv("BASE_URL", "https://unrelated.example.com")
+	t.Setenv("INPUT_TOKEN", "input-token")
+	t.Setenv("INPUT_REF", "ABC-1")
+	t.Setenv("INPUT_MARKDOWN", "true")
 
 	got := loadConfig(nil)
 
@@ -465,9 +436,9 @@ func TestLoadConfig_InputPrefixStillWorks(t *testing.T) {
 func TestLoadConfig_GenericBaseURLIsIgnored(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("BASE_URL", "https://unrelated.example.com")
-	os.Setenv("TOKEN", "bare-token")
-	os.Setenv("REF", "ABC-2")
+	t.Setenv("BASE_URL", "https://unrelated.example.com")
+	t.Setenv("TOKEN", "bare-token")
+	t.Setenv("REF", "ABC-2")
 
 	got := loadConfig(nil)
 
@@ -488,11 +459,11 @@ func TestLoadConfig_GenericBaseURLIsIgnored(t *testing.T) {
 func TestLoadConfig_JiraAliasesWork(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("JIRA_BASE_URL", "https://jira-alias.example.com")
-	os.Setenv("JIRA_USERNAME", "alias-user")
-	os.Setenv("JIRA_PASSWORD", "alias-pass")
-	os.Setenv("JIRA_TOKEN", "alias-token")
-	os.Setenv("JIRA_INSECURE", "true")
+	t.Setenv("JIRA_BASE_URL", "https://jira-alias.example.com")
+	t.Setenv("JIRA_USERNAME", "alias-user")
+	t.Setenv("JIRA_PASSWORD", "alias-pass")
+	t.Setenv("JIRA_TOKEN", "alias-token")
+	t.Setenv("JIRA_INSECURE", "true")
 
 	got := loadConfig(nil)
 
@@ -518,8 +489,8 @@ func TestLoadConfig_JiraAliasesWork(t *testing.T) {
 func TestLoadConfig_JiraBaseURLIgnoresGenericBaseURL(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("BASE_URL", "https://unrelated.example.com")
-	os.Setenv(envBaseURL, "https://from-jira.example.com")
+	t.Setenv("BASE_URL", "https://unrelated.example.com")
+	t.Setenv(envBaseURL, "https://from-jira.example.com")
 
 	got := loadConfig(nil)
 
@@ -530,13 +501,13 @@ func TestLoadConfig_JiraBaseURLIgnoresGenericBaseURL(t *testing.T) {
 
 func TestBaseURLSourceIgnoresGenericBaseURL(t *testing.T) {
 	clearInputEnv(t)
-	os.Setenv("BASE_URL", "https://unrelated.example.com")
+	t.Setenv("BASE_URL", "https://unrelated.example.com")
 
 	if got := baseURLSource(nil); got != sourceDefault {
 		t.Errorf("baseURLSource() = %q, want %q", got, sourceDefault)
 	}
 
-	os.Setenv(envBaseURL, "https://from-jira.example.com")
+	t.Setenv(envBaseURL, "https://from-jira.example.com")
 	if got := baseURLSource(nil); got != sourceEnv {
 		t.Errorf("baseURLSource() = %q, want env", got)
 	}
@@ -573,8 +544,8 @@ func TestConfigShowIgnoresGenericBaseURL(t *testing.T) {
 func TestLoadConfig_BareTokenBeatsJiraAlias(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("TOKEN", "bare-token")
-	os.Setenv(envToken, "jira-token")
+	t.Setenv("TOKEN", "bare-token")
+	t.Setenv(envToken, "jira-token")
 
 	got := loadConfig(nil)
 
@@ -589,12 +560,12 @@ func TestLoadConfig_BareTokenBeatsJiraAlias(t *testing.T) {
 func TestLoadConfig_FlagOverridesEnv(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("INPUT_BASE_URL", "https://from-env.example.com")
-	os.Setenv(envBaseURL, "https://from-jira.example.com")
-	os.Setenv("BASE_URL", "https://unrelated.example.com")
-	os.Setenv("INPUT_TOKEN", "env-token")
-	os.Setenv("INPUT_REF", "ENV-1")
-	os.Setenv("INPUT_MARKDOWN", "false")
+	t.Setenv("INPUT_BASE_URL", "https://from-env.example.com")
+	t.Setenv(envBaseURL, "https://from-jira.example.com")
+	t.Setenv("BASE_URL", "https://unrelated.example.com")
+	t.Setenv("INPUT_TOKEN", "env-token")
+	t.Setenv("INPUT_REF", "ENV-1")
+	t.Setenv("INPUT_MARKDOWN", "false")
 
 	cmd := newRunCmd()
 	if err := cmd.ParseFlags([]string{
@@ -630,9 +601,9 @@ func TestLoadConfig_FlagOverridesEnv(t *testing.T) {
 func TestLoadConfig_UnsetFlagFallsBackToEnv(t *testing.T) {
 	clearInputEnv(t)
 
-	os.Setenv("INPUT_BASE_URL", "https://from-env.example.com")
-	os.Setenv("INPUT_TOKEN", "env-token")
-	os.Setenv("INPUT_REF", "ENV-1")
+	t.Setenv("INPUT_BASE_URL", "https://from-env.example.com")
+	t.Setenv("INPUT_TOKEN", "env-token")
+	t.Setenv("INPUT_REF", "ENV-1")
 
 	cmd := newRunCmd()
 	// Parse empty args — no flag is Changed().
@@ -680,8 +651,8 @@ func TestLoadConfig_WarnsOnSecretFlags(t *testing.T) {
 
 	t.Run("env vars do not warn", func(t *testing.T) {
 		clearInputEnv(t)
-		os.Setenv("INPUT_PASSWORD", "hunter2")
-		os.Setenv("INPUT_TOKEN", "t0k3n")
+		t.Setenv("INPUT_PASSWORD", "hunter2")
+		t.Setenv("INPUT_TOKEN", "t0k3n")
 		buf := captureSlog(t)
 
 		cmd := newRunCmd()
