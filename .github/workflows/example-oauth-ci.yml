@@ -6,7 +6,11 @@
 # Jira DC rotates the refresh token on every refresh. go-jira writes the new
 # refresh token to JIRA_OAUTH_REFRESH_TOKEN_OUTPUT; you MUST persist it back to
 # your secret store (see the final step) or the next run will fail with
-# invalid_grant. If you cannot automate that, prefer a Personal Access Token
+# invalid_grant. Configure the JIRA_BASE_URL repository variable and the
+# JIRA_OAUTH_CLIENT_ID, JIRA_OAUTH_REFRESH_TOKEN, and SECRET_UPDATE_TOKEN secrets
+# before enabling updates. Unconfigured repositories and commits without Jira
+# issue keys skip the example.
+# If you cannot automate token persistence, prefer a Personal Access Token
 # (JIRA_TOKEN) instead — it does not rotate.
 name: Jira Update (OAuth)
 
@@ -17,15 +21,33 @@ on:
 jobs:
   update-jira:
     runs-on: ubuntu-latest
+    env:
+      JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+      JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
+      JIRA_OAUTH_REFRESH_TOKEN: ${{ secrets.JIRA_OAUTH_REFRESH_TOKEN }}
+      GH_TOKEN: ${{ secrets.SECRET_UPDATE_TOKEN }}
+      REF: ${{ github.event.head_commit.message }}
     steps:
+      - name: Check configuration and issue reference
+        id: jira
+        shell: bash
+        run: |
+          if [[ -z "$JIRA_BASE_URL" || -z "$JIRA_OAUTH_CLIENT_ID" || -z "$JIRA_OAUTH_REFRESH_TOKEN" || -z "$GH_TOKEN" ]]; then
+            echo "Skipping Jira example: configure the Jira URL and OAuth/token-persistence secrets first."
+            exit 0
+          fi
+          if [[ ! "$REF" =~ [A-Z]{1,10}-[1-9][0-9]* ]]; then
+            echo "Skipping Jira example: no Jira issue key in the commit message."
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
       # go-jira ships as a published container image; run it directly. The
       # runner.temp dir is mounted so the rotated refresh token written by
       # JIRA_OAUTH_REFRESH_TOKEN_OUTPUT is visible to the persist step below.
       - name: Update Jira issues
+        if: steps.jira.outputs.enabled == 'true'
         env:
-          JIRA_BASE_URL: https://jira.example.com
-          JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
-          JIRA_OAUTH_REFRESH_TOKEN: ${{ secrets.JIRA_OAUTH_REFRESH_TOKEN }}
           JIRA_OAUTH_REFRESH_TOKEN_OUTPUT: ${{ runner.temp }}/new-refresh-token
         run: |
           docker run --rm \
@@ -33,14 +55,17 @@ jobs:
             -e JIRA_OAUTH_REFRESH_TOKEN -e JIRA_OAUTH_REFRESH_TOKEN_OUTPUT \
             -v "${{ runner.temp }}:${{ runner.temp }}" \
             ghcr.io/appleboy/go-jira:latest run \
-              --ref="${{ github.event.head_commit.message }}" \
+              --ref="$REF" \
               --to-transition=Done \
               --resolution=Fixed
 
       - name: Persist rotated refresh token
-        if: always() && hashFiles(format('{0}/new-refresh-token', runner.temp)) != ''
+        if: always() && steps.jira.outputs.enabled == 'true'
         env:
-          GH_TOKEN: ${{ secrets.SECRET_UPDATE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
+          if [[ ! -s "${{ runner.temp }}/new-refresh-token" ]]; then
+            exit 0
+          fi
           NEW=$(cat "${{ runner.temp }}/new-refresh-token")
           gh secret set JIRA_OAUTH_REFRESH_TOKEN -b"$NEW"
