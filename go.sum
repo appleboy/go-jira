@@ -1,5 +1,5 @@
-github.com/appleboy/com v1.2.1 h1:4bqaVFSxy1Q3mRotTIcF8TLryTet0652iNDNVV16skM=
-github.com/appleboy/com v1.2.1/go.mod h1:KKYavyU5ejOp8c4vW+daKMf6Dw2DxE9IjqmWAhy0huo=
+github.com/appleboy/com v1.2.2 h1:eLoAqD305sRVkudcQfsKOdqhIcd+PFCbXnLsGgO/K3E=
+github.com/appleboy/com v1.2.2/go.mod h1:RrVtZRIoYKWM2FD9TmURrytp0NUy/8OZq8SMXpQZQI8=
 github.com/appleboy/go-jira-lib v1.16.4 h1:R/FZeY9LRi/58bOB3T3gzDxCYQ9bvjBleyGOF7LNXQc=
 github.com/appleboy/go-jira-lib v1.16.4/go.mod h1:UQH4IBVxIYWbgagc0LF/k9FRs9xjIiQ8hIcC6HfLwFU=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
@@ -54,8 +54,6 @@ golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.48.0 h1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=
 golang.org/x/sys v0.48.0/go.mod h1:hNLxWAXmnKAxqDtdwIYC4bM9oQPEecfsnNMuSxOs3og=
 golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
-golang.org/x/text v0.42.0 h1:JbOZXgfeCPU9gacVtYliJqOhD+zhrEqK4LfdpmlUZqI=
-golang.org/x/text v0.42.0/go.mod h1:ojzP1Z+2QtioaF8DTtO8K5q7JWVVYwZKenzujK0Zd0E=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=

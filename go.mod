@@ -4,7 +4,7 @@ go 1.26.8
 
 require (
 	github.com/andygrunwald/go-jira v1.17.0
-	github.com/appleboy/com v1.2.1
+	github.com/appleboy/com v1.2.2
 	github.com/joho/godotenv v1.5.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/spf13/cobra v1.10.2
@@ -24,7 +24,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
 )
 
 replace github.com/andygrunwald/go-jira => github.com/appleboy/go-jira-lib v1.16.4
