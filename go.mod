@@ -12,7 +12,7 @@ require (
 	github.com/trivago/tgo v1.0.7
 	github.com/yassinebenaid/godump v0.11.1
 	github.com/zalando/go-keyring v0.2.8
-	golang.org/x/oauth2 v0.37.0
+	golang.org/x/oauth2 v0.38.0
 )
 
 require (
@@ -24,7 +24,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
 )
 
 replace github.com/andygrunwald/go-jira => github.com/appleboy/go-jira-lib v1.16.4
